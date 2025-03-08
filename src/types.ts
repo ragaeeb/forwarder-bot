@@ -4,16 +4,17 @@ import type { Bot, DeriveDefinitions, MessageContext, TelegramUser } from 'grami
 import type { DynamoDBService } from './services/dynamodb.js';
 
 export interface BotConfig {
+    adminGroupId: string;
     configId: string;
-    contactGroupId: string;
     setupAt: string;
+    setupBy: TelegramUser;
 }
 
 export type ForwardContext = MessageContext<Bot<{}, DeriveDefinitions>> & {
-    api?: BotAPI;
+    api: BotAPI;
     args: null | string;
-    db?: DynamoDBService;
-    me?: TelegramUser;
+    db: DynamoDBService;
+    me: TelegramUser;
 };
 
 export interface Message {

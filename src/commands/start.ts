@@ -1,4 +1,4 @@
-import { ForwardContext } from '@/types.js';
+import type { ForwardContext } from '@/types.js';
 
 export const onStart = async (ctx: ForwardContext) => {
     await ctx.reply(

@@ -1,6 +1,6 @@
 import env from 'env-var';
+import process from 'node:process';
 
-// Environment variables with validation
 export const config = {
     BOT_TOKEN: env.get('BOT_TOKEN').required().asString(),
     NODE_ENV: env.get('NODE_ENV').default('development').asEnum(['development', 'dev', 'production', 'prod', 'test']),
