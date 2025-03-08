@@ -1,0 +1,60 @@
+# "org" ensures this Service is used with the correct Serverless Framework Access Key.
+org: ilmtest
+# "app" enables Serverless Framework Dashboard features and sharing them with other Services.
+app: ilmtest-serverless
+# "service" is the name of this project. This will also be added to your AWS resource names.
+service: telegram-forwarder-bot
+
+frameworkVersion: '4'
+
+provider:
+    name: aws
+    runtime: nodejs22.x
+    architecture: arm64
+    environment:
+        NODE_ENV: \${opt:stage, 'dev'}
+        BOT_TOKEN: \${env:BOT_TOKEN}
+        CONTACT_GROUP_ID: \${env:CONTACT_GROUP_ID}
+    iam:
+        role:
+            statements:
+                - Effect: Allow
+                  Action:
+                      - dynamodb:Query
+                      - dynamodb:Scan
+                      - dynamodb:GetItem
+                      - dynamodb:PutItem
+                      - dynamodb:UpdateItem
+                      - dynamodb:DeleteItem
+                  Resource: !GetAtt ThreadsTable.Arn
+
+functions:
+    webhook:
+        handler: dist/index.handler
+        events:
+            - httpApi:
+                  path: /{token}
+                  method: post
+
+resources:
+    Resources:
+        ThreadsTable:
+            Type: AWS::DynamoDB::Table
+            Properties:
+                TableName: \${self:service}-\${opt:stage, 'dev'}-threads
+                BillingMode: PAY_PER_REQUEST
+                AttributeDefinitions:
+                    - AttributeName: userId
+                      AttributeType: S
+                    - AttributeName: threadId
+                      AttributeType: S
+                KeySchema:
+                    - AttributeName: userId
+                      KeyType: HASH
+                GlobalSecondaryIndexes:
+                    - IndexName: ThreadIdIndex
+                      KeySchema:
+                          - AttributeName: threadId
+                            KeyType: HASH
+                      Projection:
+                          ProjectionType: ALL

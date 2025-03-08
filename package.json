@@ -1,0 +1,38 @@
+{
+    "name": "telegram-forwarder-bot",
+    "version": "0.1.0",
+    "main": "src/index.ts",
+    "private": true,
+    "scripts": {
+        "build": "bun build src/index.ts --outdir=dist --target=node",
+        "deploy": "bun run build && serverless deploy",
+        "dev": "bun --watch src/index.ts",
+        "lint": "bun x eslint src --ext .ts",
+        "test": "vitest run"
+    },
+    "dependencies": {
+        "@aws-sdk/client-dynamodb": "^3.758.0",
+        "@aws-sdk/lib-dynamodb": "^3.758.0",
+        "env-var": "^7.5.0",
+        "gramio": "^0.2.4"
+    },
+    "description": "Telegram bot that forwards messages between users and a group with topics",
+    "devDependencies": {
+        "@eslint/js": "^9.22.0",
+        "@types/aws-lambda": "^8.10.147",
+        "@types/node": "^22.13.10",
+        "eslint": "^9.22.0",
+        "eslint-config-prettier": "^10.1.1",
+        "eslint-plugin-perfectionist": "^4.10.0",
+        "eslint-plugin-prettier": "^5.2.3",
+        "globals": "^16.0.0",
+        "prettier": "^3.5.3",
+        "serverless": "^4.7.0",
+        "typescript": "^5.8.2",
+        "typescript-eslint": "^8.26.0"
+    },
+    "engines": {
+        "bun": ">=1.0.25"
+    },
+    "type": "module"
+}
