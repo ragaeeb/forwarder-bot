@@ -1,8 +1,9 @@
+import logger from '@/utils/logger.js';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, GetCommand, PutCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
 
 import { config } from '../config.js';
-import { BotConfig, Message, ThreadData, UserState } from '../types.js';
+import { BotConfig, SavedMessage as SavedMessage, ThreadData } from '../types.js';
 
 export class DynamoDBService {
     private client: DynamoDBDocumentClient;
@@ -14,7 +15,6 @@ export class DynamoDBService {
         this.tableName = config.TABLE_NAME;
     }
 
-    // Bot configuration methods
     async getConfig(): Promise<BotConfig | null> {
         try {
             const response = await this.client.send(
@@ -26,12 +26,12 @@ export class DynamoDBService {
 
             return (response.Item as BotConfig) || null;
         } catch (error) {
-            console.error('Error getting bot config', error);
+            logger.error('Error getting bot config', error);
             return null;
         }
     }
 
-    async getMessagesByUserId(userId: string): Promise<Message[]> {
+    async getMessagesByUserId(userId: string): Promise<SavedMessage[]> {
         try {
             const response = await this.client.send(
                 new QueryCommand({
@@ -44,14 +44,14 @@ export class DynamoDBService {
                 }),
             );
 
-            return (response.Items || []) as Message[];
+            return (response.Items || []) as SavedMessage[];
         } catch (error) {
-            console.error('Error getting messages by user ID', { error, userId });
+            logger.error('Error getting messages by user ID', { error, userId });
             return [];
         }
     }
 
-    async getThreadByThreadId(threadId: string): Promise<null | ThreadData> {
+    async getThreadById(threadId: string): Promise<ThreadData | undefined> {
         try {
             const response = await this.client.send(
                 new QueryCommand({
@@ -64,14 +64,15 @@ export class DynamoDBService {
                 }),
             );
 
-            return response.Items && response.Items.length > 0 ? (response.Items[0] as ThreadData) : null;
+            if (response.Items && response.Items.length > 0) {
+                return response.Items[0] as ThreadData;
+            }
         } catch (error) {
-            console.error('Error getting thread by thread ID', { error, threadId });
-            return null;
+            logger.error('Error getting thread by thread ID', { error, threadId });
         }
     }
 
-    async getThreadByUserId(userId: string): Promise<null | ThreadData> {
+    async getThreadByUserId(userId: string): Promise<ThreadData | undefined> {
         try {
             const response = await this.client.send(
                 new GetCommand({
@@ -80,31 +81,13 @@ export class DynamoDBService {
                 }),
             );
 
-            return (response.Item as ThreadData) || null;
+            return response.Item as ThreadData;
         } catch (error) {
-            console.error('Error getting thread by user ID', { error, userId });
-            return null;
+            logger.error('Error getting thread by user ID', { error, userId });
         }
     }
 
-    // User state methods for setup flows
-    async getUserState(userId: string): Promise<null | UserState> {
-        try {
-            const response = await this.client.send(
-                new GetCommand({
-                    Key: { userId: `${userId}#state` },
-                    TableName: this.tableName,
-                }),
-            );
-
-            return (response.Item as UserState) || null;
-        } catch (error) {
-            console.error('Error getting user state', { error, userId });
-            return null;
-        }
-    }
-
-    async saveConfig(config: BotConfig): Promise<void> {
+    async saveConfig(config: BotConfig): Promise<BotConfig> {
         try {
             await this.client.send(
                 new PutCommand({
@@ -115,17 +98,19 @@ export class DynamoDBService {
                     TableName: this.tableName,
                 }),
             );
+
+            return config;
         } catch (error) {
-            console.error('Error saving bot config', { config, error });
+            logger.error('Error saving bot config', { config, error });
             throw error;
         }
     }
 
-    async saveMessage(message: Message): Promise<void> {
+    async saveMessage(message: SavedMessage): Promise<SavedMessage> {
         try {
             const messageData = {
                 ...message,
-                userId: `${message.userId}#messages`,
+                userId: `${message.from.userId}#messages`,
             };
 
             await this.client.send(
@@ -134,13 +119,15 @@ export class DynamoDBService {
                     TableName: this.tableName,
                 }),
             );
+
+            return message;
         } catch (error) {
-            console.error('Error saving message', { error, message });
+            logger.error('Error saving message', { error, message });
             throw error;
         }
     }
 
-    async saveThread(thread: ThreadData): Promise<void> {
+    async saveThread(thread: ThreadData): Promise<ThreadData> {
         try {
             await this.client.send(
                 new PutCommand({
@@ -148,24 +135,10 @@ export class DynamoDBService {
                     TableName: this.tableName,
                 }),
             );
+
+            return thread;
         } catch (error) {
-            console.error('Error saving thread', { error, thread });
-            throw error;
-        }
-    }
-    async saveUserState(userId: string, state: UserState): Promise<void> {
-        try {
-            await this.client.send(
-                new PutCommand({
-                    Item: {
-                        userId: `${userId}#state`,
-                        ...state,
-                    },
-                    TableName: this.tableName,
-                }),
-            );
-        } catch (error) {
-            console.error('Error saving user state', { error, state, userId });
+            logger.error('Error saving thread', { error, thread });
             throw error;
         }
     }

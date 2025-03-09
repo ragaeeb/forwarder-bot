@@ -1,33 +1,38 @@
 import type { ForwardContext } from '@/types.js';
-import type { TelegramForumTopic } from 'gramio';
+import type { TelegramForumTopic, TelegramUser } from 'gramio';
 
 import { config } from '@/config.js';
 import logger from '@/utils/logger.js';
+import { replyWithError, replyWithSuccess } from '@/utils/replyUtils.js';
 
-const createAndDeleteTopic = async ({ api }: ForwardContext, chatId: number) => {
-    const testTopic = (await api.createForumTopic({
+const testPermissionsAndFinishSetup = async (ctx: ForwardContext, chatId: number) => {
+    const testTopic = (await ctx.api.createForumTopic({
         chat_id: chatId,
         name: 'Test Topic Permissions',
     })) as TelegramForumTopic;
 
-    await api.deleteForumTopic({
+    await ctx.api.deleteForumTopic({
         chat_id: chatId,
         message_thread_id: testTopic.message_thread_id,
     });
+
+    // Store group as the forwarding destination
+    await ctx.db.saveConfig({
+        adminGroupId: chatId.toString(),
+        configId: 'main',
+        setupAt: new Date().toISOString(),
+        setupBy: ctx.update?.message?.from as TelegramUser,
+    });
+
+    return replyWithSuccess(
+        ctx,
+        `Setup complete! Group ${chatId.toString()} is now set as the contact inbox.\n\nIt is recommended that you delete the setup message for security purposes.`,
+    );
 };
 
 export const onSetup = async (ctx: ForwardContext) => {
     // Extract token from command, e.g. /setup 123456:ABC-DEF1234
-    const {
-        args: providedToken,
-        chat: { id: chatId },
-        db,
-    } = ctx;
-
-    if (!ctx.update?.message?.from) {
-        await ctx.reply('⚠️ Unknown error');
-        return;
-    }
+    const { args: providedToken } = ctx;
 
     if (providedToken === config.BOT_TOKEN) {
         if (ctx.chat?.type !== 'supergroup') {
@@ -36,28 +41,16 @@ export const onSetup = async (ctx: ForwardContext) => {
         }
 
         try {
-            await createAndDeleteTopic(ctx, chatId);
-
-            // Store group as the forwarding destination
-            await db.saveConfig({
-                adminGroupId: chatId.toString(),
-                configId: 'main',
-                setupAt: new Date().toISOString(),
-                setupBy: ctx.update.message.from,
-            });
-
-            await ctx.reply(
-                `✅ Setup complete! Group ${chatId.toString()} is now set as the contact inbox. It is recommended that you delete the setup message for security purposes.`,
-            );
+            await testPermissionsAndFinishSetup(ctx, ctx.chat.id);
         } catch (error) {
             logger.error('Setup failed:', error);
-            await ctx.reply(
-                '❌ Setup failed. Please ensure topics are enabled and the bot has privileges to Manage Topics.',
+
+            await replyWithError(
+                ctx,
+                'Setup failed. Please ensure topics are enabled and the bot has privileges to Manage Topics.',
             );
         }
     } else if (providedToken) {
-        await ctx.reply('❌ Invalid token');
-    } else {
-        await ctx.reply('Usage: /setup YOUR_BOT_TOKEN');
+        logger.warn(`Invalid token ${providedToken}`);
     }
 };
