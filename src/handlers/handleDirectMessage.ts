@@ -7,7 +7,6 @@ import { createNewThread, getUpsertedThread } from '@/utils/threadUtils.js';
 import { TelegramMessage } from 'gramio';
 
 const forwardMessageToGroup = async (ctx: ForwardContext, groupId: string, threadId: number) => {
-    console.log('forwardMessageToGroup');
     await ctx.api.forwardMessage({
         chat_id: groupId,
         from_chat_id: ctx.chatId,
