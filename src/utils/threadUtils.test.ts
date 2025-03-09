@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { ForwardContext, ThreadData } from '../types.js';
 
 import logger from './logger.js';
-import { createNewThread, getUpsertedThread, updateThreadByMessage } from './threadUtils';
+import { createNewThread, getUpsertedThread, updateThreadByMessage } from './threadUtils.js';
 
 vi.mock('./logger.js');
 

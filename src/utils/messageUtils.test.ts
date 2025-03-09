@@ -2,7 +2,7 @@ import type { TelegramMessage } from 'gramio';
 
 import { describe, expect, it } from 'vitest';
 
-import { mapTelegramMessageToSavedMessage } from './messageUtils';
+import { mapTelegramMessageToSavedMessage } from './messageUtils.js';
 
 describe('messageUtils', () => {
     describe('mapTelegramMessageToSavedMessage', () => {

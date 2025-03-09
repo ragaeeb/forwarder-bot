@@ -1,18 +1,13 @@
 import logger from '@/utils/logger.js';
-import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, GetCommand, PutCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { BotConfig, SavedMessage, ThreadData } from '../types.js';
 
-import { config } from '../config.js';
-import { DynamoDBService } from './dynamodb';
+import { DynamoDBService } from './dynamodb.js';
 
-// Mock dependencies
 vi.mock('@aws-sdk/client-dynamodb', () => ({
-    DynamoDBClient: vi.fn().mockImplementation(() => ({
-        // Empty mock implementation
-    })),
+    DynamoDBClient: vi.fn().mockImplementation(() => ({})),
 }));
 
 vi.mock('@aws-sdk/lib-dynamodb', () => ({
@@ -48,7 +43,6 @@ describe('DynamoDBService', () => {
     beforeEach(() => {
         vi.clearAllMocks();
 
-        // Setup the mock client
         mockClient = {
             send: vi.fn(),
         };
@@ -256,7 +250,7 @@ describe('DynamoDBService', () => {
                 adminGroupId: 'admin-123',
                 configId: 'config-123',
                 setupAt: '2023-01-01T00:00:00Z',
-                setupBy: { firstName: 'Admin', id: 123 },
+                setupBy: { first_name: 'Admin', id: 123, is_bot: false },
             };
 
             mockClient.send.mockResolvedValueOnce({});
@@ -278,7 +272,7 @@ describe('DynamoDBService', () => {
                 adminGroupId: 'admin-123',
                 configId: 'config-123',
                 setupAt: '2023-01-01T00:00:00Z',
-                setupBy: { firstName: 'Admin', id: 123 },
+                setupBy: { first_name: 'Admin', id: 123, is_bot: false },
             };
 
             const error = new Error('DynamoDB error');

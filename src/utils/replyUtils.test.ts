@@ -1,8 +1,8 @@
+import type { ForwardContext } from '@/types.js';
+
 import { describe, expect, it, vi } from 'vitest';
 
-import type { ForwardContext } from '../types';
-
-import { replyWithError, replyWithSuccess, replyWithUnknownError } from './replyUtils';
+import { replyWithError, replyWithSuccess, replyWithUnknownError } from './replyUtils.js';
 
 describe('replyUtils', () => {
     const createMockContext = (overrides = {}) =>
