@@ -3,30 +3,26 @@ import type { TelegramMessage, User } from 'gramio';
 
 import logger from './logger.js';
 
-export const mapUserToThreadName = ({ firstName, id, lastName, username }: User) => {
+const mapUserToThreadName = ({ firstName, id, lastName, username }: User) => {
     const label = [firstName, lastName, username && `(${username})`].filter(Boolean).join(' ');
     return [id, label].filter(Boolean).join(': ');
 };
 
 export const createNewThread = async (ctx: ForwardContext, groupId: string) => {
-    if (!ctx.from || !ctx.update?.message) {
-        return;
-    }
-
     try {
         const response = await ctx.api.createForumTopic({
             chat_id: groupId,
-            name: mapUserToThreadName(ctx.from),
+            name: mapUserToThreadName(ctx.from as User),
         });
 
         return ctx.db.saveThread({
             chatId: ctx.chat.id.toString(),
             createdAt: new Date((ctx.update?.message?.date as number) * 1000).toISOString(),
-            lastMessageId: ctx.update?.message?.message_id.toString(),
+            lastMessageId: ctx.update?.message?.message_id.toString() as string,
             name: response.name,
             threadId: response.message_thread_id,
             updatedAt: new Date().toISOString(),
-            userId: ctx.from?.id.toString(),
+            userId: ctx.from?.id.toString() as string,
         });
     } catch (error) {
         logger.error('Failed to create thread', { error });

@@ -1,6 +1,12 @@
 # Telegram Forwarder Bot Setup Guide
 
 [![wakatime](https://wakatime.com/badge/user/a0b906ce-b8e7-4463-8bce-383238df6d4b/project/6a20ebdb-2180-45e8-b924-c7ca363bbf5b.svg)](https://wakatime.com/badge/user/a0b906ce-b8e7-4463-8bce-383238df6d4b/project/6a20ebdb-2180-45e8-b924-c7ca363bbf5b)
+![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/ragaeeb/forwarder-bot?labelColor=171717&color=FF570A&link=https%3A%2F%2Fcoderabbit.ai&label=CodeRabbit%20Reviews)
+[![codecov](https://codecov.io/gh/ragaeeb/forwarder-bot/graph/badge.svg?token=HKDV2QKQCL)](https://codecov.io/gh/ragaeeb/forwarder-bot)
+[![Bot API](https://img.shields.io/badge/Bot%20API-8.2-blue?logo=telegram&style=flat&labelColor=000&color=3b82f6)](https://core.telegram.org/bots/api)
+[![Node.js CI](https://github.com/ragaeeb/forwarder-bot/actions/workflows/build.yml/badge.svg)](https://github.com/ragaeeb/forwarder-bot/actions/workflows/build.yml) ![GitHub License](https://img.shields.io/github/license/ragaeeb/forwarder-bot)
+![typescript](https://badgen.net/badge/icon/typescript?icon=typescript&label&color=blue)
+![npm](https://img.shields.io/npm/dm/forwarder-bot)
 
 This guide will help you set up a Telegram bot that forwards messages between users and a group with topics.
 

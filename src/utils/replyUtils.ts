@@ -1,6 +1,6 @@
 import type { ForwardContext } from '@/types.js';
 
-export const replyWithEmoji = async (ctx: ForwardContext, emoji: string, message: string) => {
+const replyWithEmoji = async (ctx: ForwardContext, emoji: string, message: string) => {
     return ctx.reply(`${emoji} ${message}`);
 };
 
