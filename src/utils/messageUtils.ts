@@ -20,23 +20,28 @@ const getMediaId = (message: TelegramMessage) => {
 };
 
 export const mapTelegramMessageToSavedMessage = (message: TelegramMessage, type: 'admin' | 'user'): SavedMessage => {
+    const mediaType = getMediaType(message);
+    const mediaId = getMediaId(message);
+
     return {
-        caption: message.caption,
         chatId: message.chat.id.toString(),
-        forwardOrigin: message.forward_origin,
         from: {
-            firstName: message.from?.first_name,
-            lastName: message.from?.last_name,
+            ...(message.from?.first_name && { firstName: message.from?.first_name }),
+            ...(message.from?.last_name && { lastName: message.from?.last_name }),
+            ...(message.from?.username && { username: message.from?.username }),
             userId: message.from?.id.toString() as string,
-            username: message.from?.username,
         },
         id: message.message_id.toString(),
-        mediaId: getMediaId(message),
-        mediaType: getMediaType(message),
-        quote: message.quote?.text,
-        replyToMessageId: message.reply_to_message?.message_id.toString(),
         text: message.text || '',
         timestamp: new Date(message.date * 1000).toISOString(),
         type,
+        ...(message.caption && { caption: message.caption }),
+        ...(message.forward_origin && { forwardOrigin: message.forward_origin }),
+        ...(mediaType && { mediaType }),
+        ...(mediaId && { mediaId }),
+        ...(message.quote?.text && { quote: message.quote.text }),
+        ...(message.reply_to_message?.message_id && {
+            replyToMessageId: message.reply_to_message.message_id.toString(),
+        }),
     };
 };

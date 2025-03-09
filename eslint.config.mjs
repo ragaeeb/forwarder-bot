@@ -1,4 +1,5 @@
 import pluginJs from '@eslint/js';
+import vitest from '@vitest/eslint-plugin';
 import eslintConfigPrettier from 'eslint-config-prettier';
 import perfectionist from 'eslint-plugin-perfectionist';
 import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended';
@@ -17,6 +18,15 @@ export default [
     {
         rules: {
             '@typescript-eslint/no-explicit-any': 'off',
+        },
+    },
+    {
+        files: ['src/**/*.test.ts'],
+        plugins: {
+            vitest,
+        },
+        rules: {
+            ...vitest.configs.recommended.rules,
         },
     },
 ];
