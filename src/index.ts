@@ -11,8 +11,13 @@ const db = new DynamoDBService();
 
 registerHandlers(bot, db);
 
-const user = await bot.start();
-logger.info(`Bot @${user?.username} started successfully`);
+try {
+    const user = await bot.start();
+    logger.info(`Bot @${user?.username} started successfully`);
+} catch (error) {
+    logger.error('Failed to start bot:', error);
+    process.exit(1);
+}
 
 const cleanUp = async () => {
     logger.info(`Shutting down gracefully...`);

@@ -68,7 +68,7 @@ export const handleAdminReplyToCustomer = async (ctx: ForwardContext) => {
         mapTelegramMessageToSavedMessage(
             {
                 ...ctx.update?.message,
-                messageId: sentMessage.message_id,
+                message_id: sentMessage.message_id,
                 reply_to_message: sentMessage.reply_to_message,
             } as TelegramMessage,
             'admin',
