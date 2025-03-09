@@ -20,7 +20,12 @@ export const onGenericMessage = async (ctx: ForwardContext) => {
         return;
     }
 
-    if (ctx.chat.id.toString() === adminGroupId && message.reply_to_message && message.message_thread_id) {
+    if (
+        ctx.chat.id.toString() === adminGroupId &&
+        ctx.chat.type === 'supergroup' &&
+        message.reply_to_message &&
+        message.message_thread_id
+    ) {
         // an admin replied to a user
         const result = await handleAdminReplyToCustomer(ctx);
 

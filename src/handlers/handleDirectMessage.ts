@@ -2,11 +2,12 @@ import type { ForwardContext } from '@/types.js';
 
 import logger from '@/utils/logger.js';
 import { mapTelegramMessageToSavedMessage } from '@/utils/messageUtils.js';
-import { replyWithSuccess, replyWithUnknownError } from '@/utils/replyUtils.js';
+import { replyWithSuccess } from '@/utils/replyUtils.js';
 import { createNewThread, getUpsertedThread } from '@/utils/threadUtils.js';
 import { TelegramMessage } from 'gramio';
 
 const forwardMessageToGroup = async (ctx: ForwardContext, groupId: string, threadId: number) => {
+    console.log('forwardMessageToGroup');
     await ctx.api.forwardMessage({
         chat_id: groupId,
         from_chat_id: ctx.chatId,
@@ -36,7 +37,11 @@ export const handleDirectMessage = async (ctx: ForwardContext, adminGroupId: str
         await ctx.db.saveMessage(mapTelegramMessageToSavedMessage(ctx.update?.message as TelegramMessage, 'user'));
 
         try {
-            return forwardMessageToGroup(ctx, adminGroupId, threadData.threadId);
+            const result = await forwardMessageToGroup(ctx, adminGroupId, threadData.threadId);
+
+            if (result) {
+                return result;
+            }
         } catch (error: any) {
             logger.error('Failed to forward message', { error, userId: ctx.from?.id });
 
