@@ -1,11 +1,11 @@
 import type { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 
+import logger from '@/utils/logger.js';
 import { Bot } from 'gramio';
 
 import { config } from './config.js';
 import { registerHandlers } from './handlers/index.js';
 import { DynamoDBService } from './services/dynamodb.js';
-import logger from './utils/logger.js';
 
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
     try {
@@ -16,7 +16,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
         registerHandlers(bot, db);
 
-        await bot.updates.handleUpdate(JSON.parse(event.body || ''));
+        await bot.updates.handleUpdate(JSON.parse(event.body || '{}'));
 
         return {
             body: JSON.stringify({ ok: true }),

@@ -1,10 +1,10 @@
+import logger from '@/utils/logger.js';
 import { APIGatewayProxyEvent } from 'aws-lambda';
 import { Bot } from 'gramio';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { registerHandlers } from './handlers/index.js';
 import { DynamoDBService } from './services/dynamodb.js';
-import logger from './utils/logger.js';
 import { handler } from './webhook.js';
 
 vi.mock('gramio', () => ({
@@ -29,7 +29,7 @@ vi.mock('./services/dynamodb.js', () => ({
     DynamoDBService: vi.fn().mockImplementation(() => ({})),
 }));
 
-vi.mock('./utils/logger.js', () => ({
+vi.mock('@/utils/logger.js', () => ({
     default: {
         error: vi.fn(),
         info: vi.fn(),
@@ -96,15 +96,15 @@ describe('webhook handler', () => {
 
         const result = await handler(mockEvent);
 
-        expect(logger.error).toHaveBeenCalled();
+        expect(logger.error).not.toHaveBeenCalled();
         expect(result).toEqual({
             body: expect.any(String),
             statusCode: 200,
         });
 
         const responseBody = JSON.parse(result.body);
-        expect(responseBody.ok).toBe(false);
-        expect(responseBody.error).toBeDefined();
+        expect(responseBody.ok).toBe(true);
+        expect(responseBody.error).toBeUndefined();
     });
 
     it('should handle invalid JSON in body', async () => {

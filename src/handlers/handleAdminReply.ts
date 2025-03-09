@@ -6,6 +6,15 @@ import { mapTelegramMessageToSavedMessage } from '@/utils/messageUtils.js';
 import { replyWithError, replyWithSuccess } from '@/utils/replyUtils.js';
 import { updateThreadByMessage } from '@/utils/threadUtils.js';
 
+/*
+ * Forwards a message from an admin to a user based on the message type.
+ * Currently supports text, photo, and document message types.
+ *
+ * @param api - The Telegram API methods to use for sending
+ * @param chatId - The destination chat ID to send to
+ * @param message - The Telegram message to forward
+ * @returns The sent message response or null/undefined for unsupported types
+ */
 const forwardMessageToUser = async (
     api: SuppressedAPIMethods<keyof APIMethods>,
     chatId: string,

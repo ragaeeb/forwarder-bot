@@ -20,12 +20,13 @@ export const onGenericMessage = async (ctx: ForwardContext) => {
         return;
     }
 
-    if (
+    const isAdminReply =
         ctx.chat.id.toString() === adminGroupId &&
         ctx.chat.type === 'supergroup' &&
         message.reply_to_message &&
-        message.message_thread_id
-    ) {
+        message.message_thread_id;
+
+    if (isAdminReply) {
         // an admin replied to a user
         const result = await handleAdminReplyToCustomer(ctx);
 
@@ -34,8 +35,10 @@ export const onGenericMessage = async (ctx: ForwardContext) => {
         }
     }
 
+    const isDirectMessage = ctx.chat.type === 'private' && ctx.chat?.id.toString() !== adminGroupId;
+
     // Handle direct messages (if not from the contact group)
-    if (ctx.chat.type === 'private' && ctx.chat?.id.toString() !== adminGroupId) {
+    if (isDirectMessage) {
         // user sent a DM to the bot
         const result = await handleDirectMessage(ctx, adminGroupId);
 

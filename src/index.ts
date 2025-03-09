@@ -4,6 +4,7 @@ import process from 'node:process';
 import { config } from './config.js';
 import { registerHandlers } from './handlers/index.js';
 import { DynamoDBService } from './services/dynamodb.js';
+import logger from './utils/logger.js';
 
 const bot = new Bot(config.BOT_TOKEN);
 const db = new DynamoDBService();
@@ -11,11 +12,12 @@ const db = new DynamoDBService();
 registerHandlers(bot, db);
 
 const user = await bot.start();
-console.info(`Bot @${user?.username} started successfully`);
+logger.info(`Bot @${user?.username} started successfully`);
 
 const cleanUp = async () => {
-    console.info(`Shutting down gracefully...`);
+    logger.info(`Shutting down gracefully...`);
     await bot.stop();
+
     process.exit(0);
 };
 

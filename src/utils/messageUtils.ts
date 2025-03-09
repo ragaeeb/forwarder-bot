@@ -1,5 +1,5 @@
-import { SavedMessage } from '@/types.js';
-import { TelegramMessage } from 'gramio';
+import type { SavedMessage } from '@/types.js';
+import type { TelegramMessage } from 'gramio';
 
 const getMediaType = (message: TelegramMessage) => {
     return (['photo', 'document', 'video', 'voice', 'audio', 'sticker'] as const).find((key) => message[key]);

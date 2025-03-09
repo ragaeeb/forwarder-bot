@@ -1,16 +1,16 @@
+import { onSetup } from '@/commands/setup.js';
+import { onStart } from '@/commands/start.js';
 import { DynamoDBService } from '@/services/dynamodb.js';
 import { describe, expect, it, vi } from 'vitest';
 
-import { onSetup } from '../commands/setup.js';
-import { onStart } from '../commands/start.js';
 import { onGenericMessage } from './genericMessage.js';
 import { registerHandlers } from './index.js';
 
-vi.mock('../commands/start.js', () => ({
+vi.mock('@/commands/start.js', () => ({
     onStart: vi.fn(),
 }));
 
-vi.mock('../commands/setup.js', () => ({
+vi.mock('@/commands/setup.js', () => ({
     onSetup: vi.fn(),
 }));
 

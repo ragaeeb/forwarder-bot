@@ -2,8 +2,9 @@ import type { DynamoDBService } from '@/services/dynamodb.js';
 import type { ForwardContext } from '@/types.js';
 import type { Bot, Context, ContextType, DeriveDefinitions, Handler } from 'gramio';
 
-import { onSetup } from '../commands/setup.js';
-import { onStart } from '../commands/start.js';
+import { onSetup } from '@/commands/setup.js';
+import { onStart } from '@/commands/start.js';
+
 import { onGenericMessage } from './genericMessage.js';
 
 type CommandHandler = (
