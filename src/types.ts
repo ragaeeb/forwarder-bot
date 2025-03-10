@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-empty-object-type */
 import type { Bot, DeriveDefinitions, MessageContext, TelegramMessageOrigin, TelegramUser } from 'gramio';
 
 import type { DynamoDBService } from './services/dynamodb.js';
@@ -10,8 +9,8 @@ export interface BotConfig {
     setupBy: TelegramUser;
 }
 
-export type ForwardContext = MessageContext<Bot<{}, DeriveDefinitions>> & {
-    api: Bot<{}, DeriveDefinitions>['api'];
+export type ForwardContext = MessageContext<Bot<Record<string, never>, DeriveDefinitions>> & {
+    api: Bot<Record<string, never>, DeriveDefinitions>['api'];
     args: null | string;
     db: DynamoDBService;
     me: TelegramUser;
