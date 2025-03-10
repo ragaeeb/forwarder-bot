@@ -4,8 +4,10 @@ import type { Bot, Context, ContextType, DeriveDefinitions, Handler } from 'gram
 
 import { onSetup } from '@/commands/setup.js';
 import { onStart } from '@/commands/start.js';
+import logger from '@/utils/logger.js';
 
 import { onGenericMessage } from './genericMessage.js';
+import { handleEditedMessage } from './handleEditedMessage.js';
 
 /**
  * Type for handling bot commands with context
@@ -60,12 +62,23 @@ const withDB = (db: DynamoDBService) => {
  * @param db - DynamoDB service instance
  */
 export const registerHandlers = (bot: Bot, db: DynamoDBService) => {
+    logger.info(`registerHandlers`);
+
     bot.use(withBot as Middleware);
     bot.use(withDB(db) as Middleware);
+    bot.use((ctx, next) => {
+        ctx.bot = bot;
+        return next();
+    });
+
+    logger.info(`registering commands`);
 
     bot.command('start', onStart as CommandHandler);
     bot.command('setup', onSetup as CommandHandler); // Handle setup command with token verification
 
+    logger.info(`register onMessage`);
+
     // Handle direct messages from users
     bot.on('message', onGenericMessage as UpdateHandler);
+    bot.on('edited_message', handleEditedMessage as UpdateHandler);
 };

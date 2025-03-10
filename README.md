@@ -84,8 +84,6 @@ This guide will help you set up a Telegram bot that forwards messages between us
 4. Edit the `.env` file with your configuration:
     ```
     BOT_TOKEN=your_bot_token_here
-    CONTACT_GROUP_ID=your_group_id_here
-    NODE_ENV=development
     ```
 
 ### 6. Local Development (Optional)
@@ -114,7 +112,7 @@ bun run dev
 
 4. Set the webhook URL for your bot (replace values with your own):
     ```bash
-    curl -X POST "https://api.telegram.org/bot{YOUR_BOT_TOKEN}/setWebhook?url={YOUR_WEBHOOK_URL}/{YOUR_BOT_TOKEN}"
+    curl -X POST "https://api.telegram.org/bot{YOUR_BOT_TOKEN}/setWebhook?url={YOUR_WEBHOOK_URL}"
     ```
 
 ## Usage
@@ -126,15 +124,12 @@ bun run dev
 
 ## Environment Variables
 
-| Variable         | Description                                  | Required | Default     |
-| ---------------- | -------------------------------------------- | -------- | ----------- |
-| BOT_TOKEN        | Telegram Bot API token                       | Yes      | -           |
-| CONTACT_GROUP_ID | ID of the group where messages are forwarded | Yes      | -           |
-| REDIS_URL        | URL for Redis connection                     | Yes      | -           |
-| NODE_ENV         | Environment (development/production)         | No       | development |
-| SENTRY_DSN       | Sentry DSN for error tracking                | No       | -           |
-| LOG_LEVEL        | Logging level (debug/info/warn/error)        | No       | info        |
-| API_URL          | API Gateway URL after deployment             | No       | -           |
+| Variable  | Description                           | Required | Default |
+| --------- | ------------------------------------- | -------- | ------- |
+| BOT_TOKEN | Telegram Bot API token                | Yes      | -       |
+| REDIS_URL | URL for Redis connection              | Yes      | -       |
+| LOG_LEVEL | Logging level (debug/info/warn/error) | No       | info    |
+| API_URL   | API Gateway URL after deployment      | No       | -       |
 
 ## Customization
 

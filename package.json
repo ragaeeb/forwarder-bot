@@ -4,7 +4,7 @@
     "main": "src/index.ts",
     "private": true,
     "scripts": {
-        "build": "bun build src/index.ts --outdir=dist --target=node",
+        "build": "bun build src/webhook.ts --outdir=dist --target=node --sourcemap",
         "deploy": "bun run build && serverless deploy",
         "dev": "bun --watch src/index.ts",
         "lint": "bun x eslint src --ext .ts",

@@ -22,6 +22,7 @@ export class DynamoDBService {
         const dbClient = new DynamoDBClient({});
         this.client = DynamoDBDocumentClient.from(dbClient);
         this.tableName = config.TABLE_NAME;
+        logger.info(`Using DynamoDB table: ${this.tableName}`);
     }
 
     /**
@@ -31,6 +32,8 @@ export class DynamoDBService {
 
     async getConfig(): Promise<BotConfig | null> {
         try {
+            logger.info(`getConfig()`);
+
             const response = await this.client.send(
                 new GetCommand({
                     Key: { userId: 'config' },
@@ -77,6 +80,8 @@ export class DynamoDBService {
      */
     async getThreadById(threadId: string): Promise<ThreadData | undefined> {
         try {
+            logger.info(`getThreadById ${threadId}`);
+
             const response = await this.client.send(
                 new QueryCommand({
                     ExpressionAttributeValues: {
@@ -88,11 +93,13 @@ export class DynamoDBService {
                 }),
             );
 
+            logger.info(`response ${JSON.stringify(response)}`);
+
             if (response.Items && response.Items.length > 0) {
                 return response.Items[0] as ThreadData;
             }
         } catch (error) {
-            logger.error('Error getting thread by thread ID', { error, threadId });
+            logger.error(`Error getting thread by thread ID ${JSON.stringify(error)}`);
         }
     }
 
@@ -103,6 +110,7 @@ export class DynamoDBService {
      */
     async getThreadByUserId(userId: string): Promise<ThreadData | undefined> {
         try {
+            logger.info(`getThreadByUserId: ${userId}`);
             const response = await this.client.send(
                 new GetCommand({
                     Key: { userId },
@@ -110,6 +118,7 @@ export class DynamoDBService {
                 }),
             );
 
+            logger.info(`response.Item: ${JSON.stringify(response.Item)}`);
             return response.Item as ThreadData;
         } catch (error) {
             logger.error('Error getting thread by user ID', { error, userId });
@@ -124,6 +133,8 @@ export class DynamoDBService {
      */
     async saveConfig(config: BotConfig): Promise<BotConfig> {
         try {
+            logger.info(`saveConfig ${JSON.stringify(config)}`);
+
             await this.client.send(
                 new PutCommand({
                     Item: {
@@ -155,6 +166,8 @@ export class DynamoDBService {
                 userId: `${message.from.userId}#messages`,
             };
 
+            logger.info(`saveMessage ${JSON.stringify(message)}`);
+
             await this.client.send(
                 new PutCommand({
                     Item: messageData,
@@ -177,6 +190,7 @@ export class DynamoDBService {
      */
     async saveThread(thread: ThreadData): Promise<ThreadData> {
         try {
+            logger.info(`saveThread ${JSON.stringify(thread)}`);
             await this.client.send(
                 new PutCommand({
                     Item: thread,

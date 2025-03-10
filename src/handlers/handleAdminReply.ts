@@ -47,6 +47,7 @@ const forwardMessageToUser = async (
 };
 
 export const handleAdminReplyToCustomer = async (ctx: ForwardContext) => {
+    logger.info(`handleAdminReplyToCustomer`);
     const threadId = ctx.update?.message?.message_thread_id?.toString() as string;
 
     // Get thread data by thread ID
@@ -57,7 +58,7 @@ export const handleAdminReplyToCustomer = async (ctx: ForwardContext) => {
         return replyWithError(ctx, 'Could not find the thread data for this user.');
     }
 
-    const sentMessage = await forwardMessageToUser(ctx.api, thread.chatId, ctx.update?.message as TelegramMessage);
+    const sentMessage = await forwardMessageToUser(ctx.bot.api, thread.chatId, ctx.update?.message as TelegramMessage);
 
     if (!sentMessage) {
         logger.warn('Unsupported message type', { message: ctx.update?.message });

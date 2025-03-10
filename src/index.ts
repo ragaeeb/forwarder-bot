@@ -6,6 +6,8 @@ import { registerHandlers } from './handlers/index.js';
 import { DynamoDBService } from './services/dynamodb.js';
 import logger from './utils/logger.js';
 
+logger.info(`index.ts dev entry point`);
+
 const bot = new Bot(config.BOT_TOKEN);
 const db = new DynamoDBService();
 

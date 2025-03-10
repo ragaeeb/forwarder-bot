@@ -12,9 +12,8 @@ provider:
     runtime: nodejs22.x
     architecture: arm64
     environment:
-        NODE_ENV: \${opt:stage, 'dev'}
-        BOT_TOKEN: \${env:BOT_TOKEN}
-        CONTACT_GROUP_ID: \${env:CONTACT_GROUP_ID}
+        BOT_TOKEN: ${env:BOT_TOKEN}
+        TABLE_NAME: telegram-forwarder-bot-table
     iam:
         role:
             statements:
@@ -26,11 +25,13 @@ provider:
                       - dynamodb:PutItem
                       - dynamodb:UpdateItem
                       - dynamodb:DeleteItem
-                  Resource: !GetAtt ThreadsTable.Arn
+                  Resource:
+                      - !GetAtt ThreadsTable.Arn
+                      - !Join ['', [!GetAtt ThreadsTable.Arn, '/index/*']]
 
 functions:
     webhook:
-        handler: dist/index.handler
+        handler: dist/webhook.handler
         events:
             - httpApi:
                   path: /{token}
@@ -41,7 +42,7 @@ resources:
         ThreadsTable:
             Type: AWS::DynamoDB::Table
             Properties:
-                TableName: \${self:service}-\${opt:stage, 'dev'}-threads
+                TableName: telegram-forwarder-bot-table
                 BillingMode: PAY_PER_REQUEST
                 AttributeDefinitions:
                     - AttributeName: userId

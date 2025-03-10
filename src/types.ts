@@ -14,6 +14,7 @@ export type ForwardContext = MessageContext<Bot<Record<string, never>, DeriveDef
     args: null | string;
     db: DynamoDBService;
     me: TelegramUser;
+    bot: Bot;
 };
 
 export interface SavedMessage {
@@ -29,6 +30,7 @@ export interface SavedMessage {
     id: string;
     mediaId?: string;
     mediaType?: string;
+    originalMessageId?: string; // for edited messages
     quote?: string;
     replyToMessageId?: string;
     text: string;
@@ -41,7 +43,7 @@ export interface ThreadData {
     createdAt: string;
     lastMessageId: string;
     name: string;
-    threadId: number;
+    threadId: string;
     updatedAt: string;
     userId: string;
 }
