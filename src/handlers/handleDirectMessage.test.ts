@@ -120,8 +120,8 @@ describe('handleDirectMessage', () => {
         try {
             await handleDirectMessage(ctx, 'admin-group-123');
             // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        } catch (e) {
-            // Ignore the error
+        } catch (_) {
+            // Intentionally ignoring the error since it's expected and tested separately
         }
 
         expect(logger.error).toHaveBeenCalled();

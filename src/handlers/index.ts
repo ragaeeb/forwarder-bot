@@ -7,16 +7,32 @@ import { onStart } from '@/commands/start.js';
 
 import { onGenericMessage } from './genericMessage.js';
 
+/**
+ * Type for handling bot commands with context
+ */
 type CommandHandler = (
-    context: ContextType<any, 'message'> &
+    context: ContextType<Bot, 'message'> &
         DeriveDefinitions['global'] &
         DeriveDefinitions['message'] & {
             args: null | string;
         },
 ) => unknown;
-type Middleware = Handler<Context<any> & DeriveDefinitions['global']>;
-type UpdateHandler = Handler<ContextType<any, any> & DeriveDefinitions & DeriveDefinitions['global']>;
 
+/**
+ * Middleware for processing requests
+ */
+type Middleware = Handler<Context<Bot> & DeriveDefinitions['global']>;
+
+/**
+ * Handler for processing updates
+ */
+type UpdateHandler = Handler<ContextType<Bot, any> & DeriveDefinitions & DeriveDefinitions['global']>;
+
+/**
+ * Middleware to attach bot information to context
+ * @param ctx - Forward context
+ * @param next - Next middleware function
+ */
 const withBot = async (ctx: ForwardContext, next: () => Promise<void>) => {
     const me = await ctx.api?.getMe();
     ctx.me = me;
@@ -26,6 +42,11 @@ const withBot = async (ctx: ForwardContext, next: () => Promise<void>) => {
     }
 };
 
+/**
+ * Middleware to attach database service to context
+ * @param db - DynamoDB service instance
+ * @returns Middleware function
+ */
 const withDB = (db: DynamoDBService) => {
     return (ctx: ForwardContext, next: () => Promise<void>) => {
         ctx.db = db;
@@ -33,6 +54,11 @@ const withDB = (db: DynamoDBService) => {
     };
 };
 
+/**
+ * Register handlers and middleware for the bot
+ * @param bot - Bot instance
+ * @param db - DynamoDB service instance
+ */
 export const registerHandlers = (bot: Bot, db: DynamoDBService) => {
     bot.use(withBot as Middleware);
     bot.use(withDB(db) as Middleware);

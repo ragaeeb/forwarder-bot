@@ -6,7 +6,7 @@ const getMediaType = (message: TelegramMessage) => {
 };
 
 const getMediaId = (message: TelegramMessage) => {
-    if (message.photo && message.photo?.length > 0) {
+    if (message.photo && message.photo.length > 0) {
         return message.photo[message.photo.length - 1].file_id;
     }
 
@@ -33,7 +33,7 @@ export const mapTelegramMessageToSavedMessage = (message: TelegramMessage, type:
         },
         id: message.message_id.toString(),
         text: message.text || '',
-        timestamp: new Date(message.date * 1000).toISOString(),
+        timestamp: new Date(message.date * 1000).toISOString(), // Convert Unix timestamp (seconds) to ISO string
         type,
         ...(message.caption && { caption: message.caption }),
         ...(message.forward_origin && { forwardOrigin: message.forward_origin }),

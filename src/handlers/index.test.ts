@@ -1,6 +1,8 @@
+import type { DynamoDBService } from '@/services/dynamodb.js';
+import type { Bot } from 'gramio';
+
 import { onSetup } from '@/commands/setup.js';
 import { onStart } from '@/commands/start.js';
-import { DynamoDBService } from '@/services/dynamodb.js';
 import { describe, expect, it, vi } from 'vitest';
 
 import { onGenericMessage } from './genericMessage.js';
@@ -26,9 +28,9 @@ describe('registerHandlers', () => {
             use: vi.fn(),
         };
 
-        const mockDB = {} as DynamoDBService;
+        const mockDB: Partial<DynamoDBService> = {};
 
-        registerHandlers(mockBot as any, mockDB);
+        registerHandlers(mockBot as unknown as Bot, mockDB as DynamoDBService);
 
         expect(mockBot.use).toHaveBeenCalledTimes(2);
         expect(mockBot.command).toHaveBeenCalledTimes(2);
@@ -51,9 +53,9 @@ describe('middleware functions', () => {
         };
 
         const middlewares: Array<any> = [];
-        const mockDB = {} as DynamoDBService;
+        const mockDB = {} as Partial<DynamoDBService>;
 
-        registerHandlers(mockBot as any, mockDB);
+        registerHandlers(mockBot as unknown as Bot, mockDB as DynamoDBService);
 
         const withBotMiddleware = middlewares[0];
 
@@ -64,6 +66,7 @@ describe('middleware functions', () => {
             from: {
                 id: 456,
             },
+            me: undefined,
         };
 
         const mockNext = vi.fn().mockResolvedValue(undefined);

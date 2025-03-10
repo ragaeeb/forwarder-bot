@@ -60,7 +60,7 @@ describe('webhook handler', () => {
             path: '/webhook',
             pathParameters: null,
             queryStringParameters: null,
-            requestContext: {} as any,
+            requestContext: {} as APIGatewayProxyEvent['requestContext'],
             resource: '',
             stageVariables: null,
         };
