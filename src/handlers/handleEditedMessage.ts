@@ -5,7 +5,7 @@ import { mapTelegramMessageToSavedMessage } from '@/utils/messageUtils.js';
 import { TelegramMessage } from 'gramio';
 
 export const handleEditedMessage = async (ctx: ForwardContext) => {
-    logger.info(`handleEditedMessage`);
+    logger.info(ctx.chat, `handleEditedMessage`);
 
     if (ctx.chat?.type !== 'private') {
         logger.info(`Skipping non-DM edited message`);
@@ -15,14 +15,14 @@ export const handleEditedMessage = async (ctx: ForwardContext) => {
     const adminGroupId = (await ctx.db.getConfig())?.adminGroupId;
 
     if (!adminGroupId) {
-        logger.warn(`Setup not yet completed.`);
+        logger.warn(`Bot is not configured. Aborting.`);
         return;
     }
 
     try {
-        // Find the user's thread
+        logger.info(`Looking up thread for user=${ctx.from?.id}`);
         const threadData = await ctx.db.getThreadByUserId(ctx.from?.id.toString() as string);
-        logger.info(`Thread for user ${ctx.from?.id} is ${JSON.stringify(threadData)}`);
+        logger.info(threadData, `Thread for user ${ctx.from?.id}`);
 
         if (!threadData) {
             logger.warn(`Received edited message but no thread exists for user ${ctx.from?.id}`);
@@ -52,13 +52,13 @@ export const handleEditedMessage = async (ctx: ForwardContext) => {
 
         logger.info(`Saving edited message to database ${originalMessageId}`);
 
-        await ctx.db.saveMessage({
+        const result = await ctx.db.saveMessage({
             ...mapTelegramMessageToSavedMessage(ctx.update?.edited_message as TelegramMessage, 'user'),
             id: `${originalMessageId}_edited_${Date.now()}`,
             originalMessageId,
         });
 
-        logger.info(`Saved edited message`);
+        logger.info(`Saved edited message with id=${result.id}`);
     } catch (error) {
         logger.error(error, `Error handling edited message`);
     }

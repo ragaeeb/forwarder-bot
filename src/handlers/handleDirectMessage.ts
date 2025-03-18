@@ -1,13 +1,15 @@
 import type { ForwardContext } from '@/types.js';
+import type { TelegramMessage } from 'gramio';
 
 import logger from '@/utils/logger.js';
 import { mapTelegramMessageToSavedMessage } from '@/utils/messageUtils.js';
 import { replyWithSuccess } from '@/utils/replyUtils.js';
 import { createNewThread, getUpsertedThread } from '@/utils/threadUtils.js';
-import { TelegramMessage } from 'gramio';
 
 const forwardMessageToGroup = async (ctx: ForwardContext, groupId: string, threadId: string) => {
-    logger.info(`forwardMessageToGroup threadId=${threadId}`);
+    logger.info(
+        `forwardMessageToGroup threadId=${threadId}, chatId=${groupId} from=${ctx.chatId}, messageId=${ctx.id}`,
+    );
     await ctx.bot.api.forwardMessage({
         chat_id: groupId,
         from_chat_id: ctx.chatId,
@@ -15,16 +17,16 @@ const forwardMessageToGroup = async (ctx: ForwardContext, groupId: string, threa
         message_thread_id: parseInt(threadId),
     });
 
-    logger.info(`forward successful`);
+    logger.info(`Replying 200 to user for successful forwarding.`);
 
     return replyWithSuccess(ctx, `Message delivered, our team will get back to you in shāʾ Allah.`);
 };
 
 const retryFailedForward = async (ctx: ForwardContext, adminGroupId: string) => {
     try {
-        logger.info(`retryFailedForward: ${adminGroupId}`);
+        logger.info(`retryFailedForward: ${adminGroupId}, creating a new thread.`);
         const threadData = await createNewThread(ctx, adminGroupId);
-        logger.info(`thread created: ${JSON.stringify(threadData)}`);
+        logger.info(threadData, `Thread created`);
 
         if (threadData) {
             return forwardMessageToGroup(ctx, adminGroupId, threadData.threadId); // try again
@@ -36,14 +38,15 @@ const retryFailedForward = async (ctx: ForwardContext, adminGroupId: string) => 
 
 export const handleDirectMessage = async (ctx: ForwardContext, adminGroupId: string) => {
     logger.info(`handleDirectMessage`);
+
     const threadData = await getUpsertedThread(ctx, adminGroupId);
 
     if (threadData) {
-        logger.info(`save message to db`);
+        logger.info(`Saving message to database`);
         await ctx.db.saveMessage(mapTelegramMessageToSavedMessage(ctx.update?.message as TelegramMessage, 'user'));
 
         try {
-            logger.info(`message saved now forwarding to group`);
+            logger.info(`Forwarding DM from user to admin group`);
             const result = await forwardMessageToGroup(ctx, adminGroupId, threadData.threadId);
 
             if (result) {

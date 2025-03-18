@@ -1,4 +1,5 @@
-import { ForwardContext } from '@/types.js';
+import type { ForwardContext } from '@/types.js';
+
 import logger from '@/utils/logger.js';
 import { replyWithUnknownError } from '@/utils/replyUtils.js';
 
@@ -6,7 +7,7 @@ import { handleAdminReplyToCustomer } from './handleAdminReply.js';
 import { handleDirectMessage } from './handleDirectMessage.js';
 
 export const onGenericMessage = async (ctx: ForwardContext) => {
-    logger.info(`onGenericMessage`);
+    logger.info(ctx.chat, `onGenericMessage`);
 
     const adminGroupId = (await ctx.db.getConfig())?.adminGroupId;
 

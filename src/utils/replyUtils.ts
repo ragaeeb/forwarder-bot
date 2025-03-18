@@ -8,6 +8,10 @@ export const replyWithError = async (ctx: ForwardContext, message: string) => {
     return replyWithEmoji(ctx, '❌', message);
 };
 
+export const replyWithWarning = async (ctx: ForwardContext, message: string) => {
+    return replyWithEmoji(ctx, '⚠️', message);
+};
+
 export const replyWithSuccess = async (ctx: ForwardContext, message: string) => {
     return replyWithEmoji(ctx, '✅', message);
 };

@@ -80,7 +80,7 @@ describe('DynamoDBService', () => {
 
             const result = await dynamoDBService.getConfig();
 
-            expect(result).toBeNull();
+            expect(result).toBeUndefined();
         });
 
         it('should handle errors and return null', async () => {
@@ -90,7 +90,7 @@ describe('DynamoDBService', () => {
             const result = await dynamoDBService.getConfig();
 
             expect(logger.error).toHaveBeenCalledTimes(1);
-            expect(result).toBeNull();
+            expect(result).toBeUndefined();
         });
     });
 

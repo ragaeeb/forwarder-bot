@@ -1,6 +1,6 @@
 import type { Bot, DeriveDefinitions, MessageContext, TelegramMessageOrigin, TelegramUser } from 'gramio';
 
-import type { DynamoDBService } from './services/dynamodb.js';
+import type { DataService } from './services/types.js';
 
 export interface BotConfig {
     adminGroupId: string;
@@ -12,9 +12,9 @@ export interface BotConfig {
 export type ForwardContext = MessageContext<Bot<Record<string, never>, DeriveDefinitions>> & {
     api: Bot<Record<string, never>, DeriveDefinitions>['api'];
     args: null | string;
-    db: DynamoDBService;
-    me: TelegramUser;
     bot: Bot;
+    db: DataService;
+    me: TelegramUser;
 };
 
 export interface SavedMessage {

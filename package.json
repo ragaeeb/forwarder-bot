@@ -7,12 +7,14 @@
         "build": "bun build src/webhook.ts --outdir=dist --target=node --sourcemap",
         "deploy": "bun run build && serverless deploy",
         "dev": "bun --watch src/index.ts",
+        "reset": "bun scripts/resetHook.ts",
+        "register": "bun scripts/registerHook.ts",
         "lint": "bun x eslint src --ext .ts",
         "test": "vitest run --coverage"
     },
     "dependencies": {
-        "@aws-sdk/client-dynamodb": "^3.758.0",
-        "@aws-sdk/lib-dynamodb": "^3.758.0",
+        "@aws-sdk/client-dynamodb": "^3.767.0",
+        "@aws-sdk/lib-dynamodb": "^3.767.0",
         "env-var": "^7.5.0",
         "gramio": "^0.2.4",
         "pino": "^9.6.0",
@@ -23,18 +25,18 @@
         "@eslint/js": "^9.22.0",
         "@types/aws-lambda": "^8.10.147",
         "@types/node": "^22.13.10",
-        "@vitest/coverage-v8": "^3.0.8",
-        "@vitest/eslint-plugin": "^1.1.36",
+        "@vitest/coverage-v8": "^3.0.9",
+        "@vitest/eslint-plugin": "^1.1.38",
         "eslint": "^9.22.0",
         "eslint-config-prettier": "^10.1.1",
         "eslint-plugin-perfectionist": "^4.10.1",
         "eslint-plugin-prettier": "^5.2.3",
         "globals": "^16.0.0",
         "prettier": "^3.5.3",
-        "serverless": "^4.7.0",
+        "serverless": "^4.9.0",
         "typescript": "^5.8.2",
-        "typescript-eslint": "^8.26.0",
-        "vitest": "^3.0.8"
+        "typescript-eslint": "^8.26.1",
+        "vitest": "^3.0.9"
     },
     "engines": {
         "bun": ">=1.0.40"

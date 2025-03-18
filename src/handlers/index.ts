@@ -1,4 +1,4 @@
-import type { DynamoDBService } from '@/services/dynamodb.js';
+import type { DataService } from '@/services/types.js';
 import type { ForwardContext } from '@/types.js';
 import type { Bot, Context, ContextType, DeriveDefinitions, Handler } from 'gramio';
 
@@ -49,7 +49,7 @@ const withBot = async (ctx: ForwardContext, next: () => Promise<void>) => {
  * @param db - DynamoDB service instance
  * @returns Middleware function
  */
-const withDB = (db: DynamoDBService) => {
+const withDB = (db: DataService) => {
     return (ctx: ForwardContext, next: () => Promise<void>) => {
         ctx.db = db;
         return next();
@@ -61,7 +61,7 @@ const withDB = (db: DynamoDBService) => {
  * @param bot - Bot instance
  * @param db - DynamoDB service instance
  */
-export const registerHandlers = (bot: Bot, db: DynamoDBService) => {
+export const registerHandlers = (bot: Bot, db: DataService) => {
     logger.info(`registerHandlers`);
 
     bot.use(withBot as Middleware);
@@ -71,14 +71,15 @@ export const registerHandlers = (bot: Bot, db: DynamoDBService) => {
         return next();
     });
 
-    logger.info(`registering commands`);
-
+    logger.info(`Registering commands`);
     bot.command('start', onStart as CommandHandler);
     bot.command('setup', onSetup as CommandHandler); // Handle setup command with token verification
 
-    logger.info(`register onMessage`);
+    logger.info(`Registering message and edit handlers`);
 
     // Handle direct messages from users
     bot.on('message', onGenericMessage as UpdateHandler);
     bot.on('edited_message', handleEditedMessage as UpdateHandler);
+
+    logger.info(`registerHandlers completed`);
 };

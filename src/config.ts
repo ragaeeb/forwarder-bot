@@ -1,5 +1,4 @@
 import env from 'env-var';
-import process from 'node:process';
 
 export const config = {
     BOT_TOKEN: env.get('BOT_TOKEN').required().asString(),

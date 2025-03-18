@@ -21,6 +21,7 @@ const forwardMessageToUser = async (
     message: TelegramMessage,
 ) => {
     if (message.text) {
+        logger.info(`Forwarding text message for chat=${chatId}`);
         return api.sendMessage({
             chat_id: chatId,
             text: message.text,
@@ -28,6 +29,7 @@ const forwardMessageToUser = async (
     }
 
     if (message.photo) {
+        logger.info(`Forwarding photo for chat=${chatId}`);
         const photo = message.photo[message.photo.length - 1];
 
         return api.sendPhoto({
@@ -38,6 +40,8 @@ const forwardMessageToUser = async (
     }
 
     if (message.document) {
+        logger.info(`Forwarding document for chat=${chatId}`);
+
         return api.sendDocument({
             caption: message.caption,
             chat_id: chatId,
@@ -47,8 +51,8 @@ const forwardMessageToUser = async (
 };
 
 export const handleAdminReplyToCustomer = async (ctx: ForwardContext) => {
-    logger.info(`handleAdminReplyToCustomer`);
     const threadId = ctx.update?.message?.message_thread_id?.toString() as string;
+    logger.info(`handleAdminReplyToCustomer: ${threadId}`);
 
     // Get thread data by thread ID
     const thread = await ctx.db.getThreadById(threadId);
@@ -58,12 +62,15 @@ export const handleAdminReplyToCustomer = async (ctx: ForwardContext) => {
         return replyWithError(ctx, 'Could not find the thread data for this user.');
     }
 
+    logger.info(`Forwarding message from admin to user`);
     const sentMessage = await forwardMessageToUser(ctx.bot.api, thread.chatId, ctx.update?.message as TelegramMessage);
 
     if (!sentMessage) {
         logger.warn('Unsupported message type', { message: ctx.update?.message });
         return replyWithError(ctx, 'Unsupported message type. Please send text, photo, or document.');
     }
+
+    logger.info(`Saving message to database`);
 
     await ctx.db.saveMessage(
         mapTelegramMessageToSavedMessage(
@@ -76,7 +83,9 @@ export const handleAdminReplyToCustomer = async (ctx: ForwardContext) => {
         ),
     );
 
+    logger.info(`Updating thread associated with message`);
     await updateThreadByMessage(ctx, thread, sentMessage);
 
+    logger.info(`Sending success to user`);
     return replyWithSuccess(ctx, `Reply sent to user`);
 };

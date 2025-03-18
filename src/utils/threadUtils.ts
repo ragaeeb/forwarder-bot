@@ -16,7 +16,7 @@ export const createNewThread = async (ctx: ForwardContext, groupId: string) => {
             name: mapUserToThreadName(ctx.from as User),
         });
 
-        logger.info(`Thread created ${JSON.stringify(response)}, saving thread`);
+        logger.info(response, `Thread created, saving thread`);
 
         return ctx.db.saveThread({
             chatId: ctx.chat.id.toString(),
@@ -45,7 +45,7 @@ export const getUpsertedThread = async (ctx: ForwardContext, adminGroupId: strin
     logger.info(`Thread for user ${ctx.from?.id} is ${JSON.stringify(threadData)}`);
 
     if (threadData) {
-        logger.info(`Update thread`);
+        logger.info(`Update thread with associated message`);
         return updateThreadByMessage(
             ctx,
             { ...threadData, name: mapUserToThreadName(ctx.from as User) },
@@ -53,6 +53,5 @@ export const getUpsertedThread = async (ctx: ForwardContext, adminGroupId: strin
         );
     }
 
-    logger.info(`Creating new thread`);
     return createNewThread(ctx, adminGroupId);
 };

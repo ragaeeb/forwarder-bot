@@ -1,3 +1,7 @@
+```bash
+serverless logs --function webhook --tail
+```
+
 # Telegram Forwarder Bot Setup Guide
 
 [![wakatime](https://wakatime.com/badge/user/a0b906ce-b8e7-4463-8bce-383238df6d4b/project/6a20ebdb-2180-45e8-b924-c7ca363bbf5b.svg)](https://wakatime.com/badge/user/a0b906ce-b8e7-4463-8bce-383238df6d4b/project/6a20ebdb-2180-45e8-b924-c7ca363bbf5b)

@@ -1,7 +1,7 @@
 import type { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 
 import logger from '@/utils/logger.js';
-import { Bot, webhookHandler } from 'gramio';
+import { Bot } from 'gramio';
 
 import { config } from './config.js';
 import { registerHandlers } from './handlers/index.js';

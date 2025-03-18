@@ -3,6 +3,7 @@ import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, GetCommand, PutCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
 
 import type { BotConfig, SavedMessage, ThreadData } from '../types.js';
+import type { DataService } from './types.js';
 
 import { config } from '../config.js';
 
@@ -10,7 +11,7 @@ import { config } from '../config.js';
  * Service class for interacting with DynamoDB
  * Handles all database operations for the bot
  */
-export class DynamoDBService {
+export class DynamoDBService implements DataService {
     private client: DynamoDBDocumentClient;
     private tableName: string;
 
@@ -30,7 +31,7 @@ export class DynamoDBService {
      * @returns {Promise<BotConfig | null>} The bot configuration or null if not found or on error
      */
 
-    async getConfig(): Promise<BotConfig | null> {
+    async getConfig(): Promise<BotConfig | undefined> {
         try {
             logger.info(`getConfig()`);
 
@@ -41,10 +42,11 @@ export class DynamoDBService {
                 }),
             );
 
-            return (response.Item as BotConfig) || null;
+            logger.info(`getConfig() result: ${Boolean(response.Item)}`);
+
+            return response.Item as BotConfig;
         } catch (error) {
-            logger.error('Error getting bot config', error);
-            return null;
+            logger.error(error, 'Error getting bot config');
         }
     }
 
@@ -55,6 +57,8 @@ export class DynamoDBService {
      */
     async getMessagesByUserId(userId: string): Promise<SavedMessage[]> {
         try {
+            logger.info(`getMessagesByUserId=${userId}`);
+
             const response = await this.client.send(
                 new QueryCommand({
                     ExpressionAttributeValues: {
@@ -66,10 +70,12 @@ export class DynamoDBService {
                 }),
             );
 
+            logger.info(`getMessagesByUserId items.length=${response.Items?.length}`);
+
             return (response.Items || []) as SavedMessage[];
         } catch (error) {
-            logger.error('Error getting messages by user ID', { error, userId });
-            return [];
+            logger.error({ error, userId }, 'Error getting messages by user ID');
+            throw error;
         }
     }
 
@@ -93,13 +99,13 @@ export class DynamoDBService {
                 }),
             );
 
-            logger.info(`response ${JSON.stringify(response)}`);
+            logger.info(`getThreadById items.length=${response.Items?.length}`);
 
             if (response.Items && response.Items.length > 0) {
                 return response.Items[0] as ThreadData;
             }
         } catch (error) {
-            logger.error(`Error getting thread by thread ID ${JSON.stringify(error)}`);
+            logger.error({ error, threadId }, `Error getting thread by thread ID`);
         }
     }
 
@@ -118,10 +124,10 @@ export class DynamoDBService {
                 }),
             );
 
-            logger.info(`response.Item: ${JSON.stringify(response.Item)}`);
+            logger.info(`getThreadByUserId: ${Boolean(response.Item)}`);
             return response.Item as ThreadData;
         } catch (error) {
-            logger.error('Error getting thread by user ID', { error, userId });
+            logger.error({ error, userId }, 'Error getting thread by user ID');
         }
     }
 
@@ -133,7 +139,7 @@ export class DynamoDBService {
      */
     async saveConfig(config: BotConfig): Promise<BotConfig> {
         try {
-            logger.info(`saveConfig ${JSON.stringify(config)}`);
+            logger.info(config, `saveConfig`);
 
             await this.client.send(
                 new PutCommand({
@@ -147,7 +153,7 @@ export class DynamoDBService {
 
             return config;
         } catch (error) {
-            logger.error('Error saving bot config', { config, error });
+            logger.error({ config, error }, 'Error saving bot config');
             throw error;
         }
     }
@@ -166,7 +172,7 @@ export class DynamoDBService {
                 userId: `${message.from.userId}#messages`,
             };
 
-            logger.info(`saveMessage ${JSON.stringify(message)}`);
+            logger.info(`saveMessage ${message.id}`);
 
             await this.client.send(
                 new PutCommand({
@@ -177,7 +183,7 @@ export class DynamoDBService {
 
             return message;
         } catch (error) {
-            logger.error('Error saving message', { error, message });
+            logger.error({ error, message }, 'Error saving message');
             throw error;
         }
     }
@@ -190,7 +196,7 @@ export class DynamoDBService {
      */
     async saveThread(thread: ThreadData): Promise<ThreadData> {
         try {
-            logger.info(`saveThread ${JSON.stringify(thread)}`);
+            logger.info(`saveThread ${thread.threadId}`);
             await this.client.send(
                 new PutCommand({
                     Item: thread,
@@ -200,7 +206,7 @@ export class DynamoDBService {
 
             return thread;
         } catch (error) {
-            logger.error('Error saving thread', { error, thread });
+            logger.error({ error, thread }, 'Error saving thread');
             throw error;
         }
     }
