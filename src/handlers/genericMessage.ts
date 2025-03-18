@@ -7,7 +7,7 @@ import { handleAdminReplyToCustomer } from './handleAdminReply.js';
 import { handleDirectMessage } from './handleDirectMessage.js';
 
 export const onGenericMessage = async (ctx: ForwardContext) => {
-    logger.info(ctx.chat, `onGenericMessage`);
+    logger.info(ctx.update, `onGenericMessage`);
 
     const adminGroupId = (await ctx.db.getConfig())?.adminGroupId;
 
