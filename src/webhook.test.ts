@@ -18,6 +18,7 @@ vi.mock('gramio', () => ({
 vi.mock('./config.js', () => ({
     config: {
         BOT_TOKEN: 'test-token',
+        SECRET_TOKEN: 'test-secret-token', // Add the SECRET_TOKEN
     },
 }));
 
@@ -33,6 +34,7 @@ vi.mock('@/utils/logger.js', () => ({
     default: {
         error: vi.fn(),
         info: vi.fn(),
+        warn: vi.fn(), // Add warn for secret token logging
     },
 }));
 
@@ -52,7 +54,9 @@ describe('webhook handler', () => {
                 },
                 update_id: 123456789,
             }),
-            headers: {},
+            headers: {
+                'x-telegram-bot-api-secret-token': 'test-secret-token', // Add the secret token header
+            },
             httpMethod: 'POST',
             isBase64Encoded: false,
             multiValueHeaders: {},
@@ -66,7 +70,7 @@ describe('webhook handler', () => {
         };
     });
 
-    it('should successfully process a webhook event', async () => {
+    it('should successfully process a webhook event with valid secret token', async () => {
         const result = await handler(mockEvent);
 
         expect(Bot).toHaveBeenCalledWith('test-token');
@@ -87,6 +91,36 @@ describe('webhook handler', () => {
         expect(result).toEqual({
             body: JSON.stringify({ ok: true }),
             statusCode: 200,
+        });
+    });
+
+    it('should reject requests with invalid secret token', async () => {
+        mockEvent.headers['x-telegram-bot-api-secret-token'] = 'invalid-token';
+
+        const result = await handler(mockEvent);
+
+        expect(Bot).not.toHaveBeenCalled();
+        expect(DynamoDBService).not.toHaveBeenCalled();
+        expect(registerHandlers).not.toHaveBeenCalled();
+
+        expect(result).toEqual({
+            body: JSON.stringify({ error: 'Unauthorized', ok: false }),
+            statusCode: 403,
+        });
+    });
+
+    it('should reject requests with missing secret token', async () => {
+        delete mockEvent.headers['x-telegram-bot-api-secret-token'];
+
+        const result = await handler(mockEvent);
+
+        expect(Bot).not.toHaveBeenCalled();
+        expect(DynamoDBService).not.toHaveBeenCalled();
+        expect(registerHandlers).not.toHaveBeenCalled();
+
+        expect(result).toEqual({
+            body: JSON.stringify({ error: 'Unauthorized', ok: false }),
+            statusCode: 403,
         });
     });
 

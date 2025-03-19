@@ -16,6 +16,15 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     try {
         logger.info(`Webhook called: method=${JSON.stringify(event)}`);
 
+        if (event.headers['x-telegram-bot-api-secret-token'] !== config.SECRET_TOKEN) {
+            logger.warn('Invalid secret token in webhook request');
+
+            return {
+                body: JSON.stringify({ error: 'Unauthorized', ok: false }),
+                statusCode: 403,
+            };
+        }
+
         const bot = new Bot(config.BOT_TOKEN);
 
         logger.info(`Starting dynamodb service`);
