@@ -72,23 +72,19 @@ describe('DynamoDBService', () => {
             expect(result).toEqual(mockConfig);
         });
 
-        it('should return null when config not found', async () => {
-            mockClient.send.mockResolvedValueOnce({
-                Item: null,
-            });
+        it('should return undefined when config not found', async () => {
+            mockClient.send.mockResolvedValueOnce({});
 
             const result = await dynamoDBService.getConfig();
 
             expect(result).toBeUndefined();
         });
 
-        it('should handle errors and return null', async () => {
+        it('should handle errors', async () => {
             const error = new Error('DynamoDB error');
             mockClient.send.mockRejectedValueOnce(error);
 
-            const result = await dynamoDBService.getConfig();
-
-            expect(result).toBeUndefined();
+            await expect(dynamoDBService.getConfig()).rejects.toThrow(expect.any(Error));
         });
     });
 
@@ -135,12 +131,9 @@ describe('DynamoDBService', () => {
             expect(result).toEqual([]);
         });
 
-        it('should handle errors and return empty array', async () => {
-            const error = new Error('DynamoDB error');
-            mockClient.send.mockRejectedValueOnce(error);
-
-            const result = await dynamoDBService.getMessagesByUserId('user123');
-            expect(result).toEqual([]);
+        it('should handle errors', async () => {
+            mockClient.send.mockRejectedValueOnce(new Error('DynamoDB error'));
+            await expect(dynamoDBService.getMessagesByUserId('user123')).rejects.toThrow(expect.any(Error));
         });
     });
 
@@ -184,12 +177,11 @@ describe('DynamoDBService', () => {
             expect(result).toBeUndefined();
         });
 
-        it('should handle errors and return undefined', async () => {
+        it('should handle errors', async () => {
             const error = new Error('DynamoDB error');
             mockClient.send.mockRejectedValueOnce(error);
 
-            const result = await dynamoDBService.getThreadById('thread123');
-            expect(result).toBeUndefined();
+            await expect(dynamoDBService.getThreadById('thread123')).rejects.toThrow(expect.any(Error));
         });
     });
 
@@ -201,7 +193,7 @@ describe('DynamoDBService', () => {
                 createdAt: '2023-01-01T00:00:00Z',
                 lastMessageId: 'msg123',
                 name: 'Test Thread',
-                threadId: 123,
+                threadId: '123',
                 updatedAt: '2023-01-01T00:01:00Z',
                 userId: userId,
             };
@@ -227,12 +219,11 @@ describe('DynamoDBService', () => {
             expect(result).toBeUndefined();
         });
 
-        it('should handle errors and return undefined', async () => {
+        it('should handle errors', async () => {
             const error = new Error('DynamoDB error');
             mockClient.send.mockRejectedValueOnce(error);
 
-            const result = await dynamoDBService.getThreadByUserId('user123');
-            expect(result).toBeUndefined();
+            await expect(dynamoDBService.getThreadByUserId('user123')).rejects.toThrow(expect.any(Error));
         });
     });
 

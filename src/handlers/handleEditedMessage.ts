@@ -12,14 +12,14 @@ export const handleEditedMessage = async (ctx: ForwardContext) => {
         return;
     }
 
-    const adminGroupId = (await ctx.db.getConfig())?.adminGroupId;
-
-    if (!adminGroupId) {
-        logger.warn(`Bot is not configured. Aborting.`);
-        return;
-    }
-
     try {
+        const adminGroupId = (await ctx.db.getConfig())?.adminGroupId;
+
+        if (!adminGroupId) {
+            logger.warn(`Bot is not configured. Aborting.`);
+            return;
+        }
+
         logger.info(`Looking up thread for user=${ctx.from?.id}`);
         const threadData = await ctx.db.getThreadByUserId(ctx.from?.id.toString() as string);
         logger.info(threadData, `Thread for user ${ctx.from?.id}`);

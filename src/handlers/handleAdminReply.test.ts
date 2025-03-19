@@ -1,5 +1,4 @@
 import { ForwardContext } from '@/types.js';
-import logger from '@/utils/logger.js';
 import { mapTelegramMessageToSavedMessage } from '@/utils/messageUtils.js';
 import { replyWithError, replyWithSuccess } from '@/utils/replyUtils.js';
 import { updateThreadByMessage } from '@/utils/threadUtils.js';
@@ -56,10 +55,12 @@ describe('handleAdminReply', () => {
 
         it('should successfully forward text message to user', async () => {
             const ctx = {
-                api: {
-                    sendMessage: vi.fn().mockResolvedValue({
-                        message_id: 789,
-                    }),
+                bot: {
+                    api: {
+                        sendMessage: vi.fn().mockResolvedValue({
+                            message_id: 789,
+                        }),
+                    },
                 },
                 db: {
                     getThreadById: vi.fn().mockResolvedValue({
@@ -78,7 +79,7 @@ describe('handleAdminReply', () => {
 
             const result = await handleAdminReplyToCustomer(ctx);
 
-            expect(ctx.api.sendMessage).toHaveBeenCalledWith({
+            expect(ctx.bot.api.sendMessage).toHaveBeenCalledWith({
                 chat_id: '456',
                 text: 'Hello user',
             });
@@ -92,10 +93,12 @@ describe('handleAdminReply', () => {
 
         it('should successfully forward photo message to user', async () => {
             const ctx = {
-                api: {
-                    sendPhoto: vi.fn().mockResolvedValue({
-                        message_id: 789,
-                    }),
+                bot: {
+                    api: {
+                        sendPhoto: vi.fn().mockResolvedValue({
+                            message_id: 789,
+                        }),
+                    },
                 },
                 db: {
                     getThreadById: vi.fn().mockResolvedValue({
@@ -118,7 +121,7 @@ describe('handleAdminReply', () => {
 
             const result = await handleAdminReplyToCustomer(ctx);
 
-            expect(ctx.api.sendPhoto).toHaveBeenCalledWith({
+            expect(ctx.bot.api.sendPhoto).toHaveBeenCalledWith({
                 caption: 'Photo caption',
                 chat_id: '456',
                 photo: 'large_id',
@@ -133,10 +136,12 @@ describe('handleAdminReply', () => {
 
         it('should successfully forward document message to user', async () => {
             const ctx = {
-                api: {
-                    sendDocument: vi.fn().mockResolvedValue({
-                        message_id: 789,
-                    }),
+                bot: {
+                    api: {
+                        sendDocument: vi.fn().mockResolvedValue({
+                            message_id: 789,
+                        }),
+                    },
                 },
                 db: {
                     getThreadById: vi.fn().mockResolvedValue({
@@ -159,7 +164,7 @@ describe('handleAdminReply', () => {
 
             const result = await handleAdminReplyToCustomer(ctx);
 
-            expect(ctx.api.sendDocument).toHaveBeenCalledWith({
+            expect(ctx.bot.api.sendDocument).toHaveBeenCalledWith({
                 caption: 'Document caption',
                 chat_id: '456',
                 document: 'doc_id',
@@ -174,10 +179,12 @@ describe('handleAdminReply', () => {
 
         it('should return an error for unsupported message types', async () => {
             const ctx = {
-                api: {
-                    sendDocument: vi.fn(),
-                    sendMessage: vi.fn(),
-                    sendPhoto: vi.fn(),
+                bot: {
+                    api: {
+                        sendDocument: vi.fn(),
+                        sendMessage: vi.fn(),
+                        sendPhoto: vi.fn(),
+                    },
                 },
                 db: {
                     getThreadById: vi.fn().mockResolvedValue({
@@ -200,9 +207,9 @@ describe('handleAdminReply', () => {
 
             const result = await handleAdminReplyToCustomer(ctx);
 
-            expect(ctx.api.sendMessage).not.toHaveBeenCalled();
-            expect(ctx.api.sendPhoto).not.toHaveBeenCalled();
-            expect(ctx.api.sendDocument).not.toHaveBeenCalled();
+            expect(ctx.bot.api.sendMessage).not.toHaveBeenCalled();
+            expect(ctx.bot.api.sendPhoto).not.toHaveBeenCalled();
+            expect(ctx.bot.api.sendDocument).not.toHaveBeenCalled();
 
             expect(replyWithError).toHaveBeenCalledWith(
                 ctx,

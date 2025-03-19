@@ -47,6 +47,7 @@ export class DynamoDBService implements DataService {
             return response.Item as BotConfig;
         } catch (error) {
             logger.error(error, 'Error getting bot config');
+            throw error;
         }
     }
 
@@ -106,6 +107,7 @@ export class DynamoDBService implements DataService {
             }
         } catch (error) {
             logger.error({ error, threadId }, `Error getting thread by thread ID`);
+            throw error;
         }
     }
 
@@ -128,6 +130,7 @@ export class DynamoDBService implements DataService {
             return response.Item as ThreadData;
         } catch (error) {
             logger.error({ error, userId }, 'Error getting thread by user ID');
+            throw error;
         }
     }
 

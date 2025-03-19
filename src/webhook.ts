@@ -30,9 +30,11 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         await bot.init();
 
         logger.info(`handleUpdate`);
+
         await bot.updates.handleUpdate(JSON.parse(event.body || '{}'));
 
         logger.info(`return 200`);
+
         return {
             body: JSON.stringify({ ok: true }),
             statusCode: 200,

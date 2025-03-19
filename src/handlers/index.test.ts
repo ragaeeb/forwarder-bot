@@ -6,6 +6,7 @@ import { onStart } from '@/commands/start.js';
 import { describe, expect, it, vi } from 'vitest';
 
 import { onGenericMessage } from './genericMessage.js';
+import { handleEditedMessage } from './handleEditedMessage.js';
 import { registerHandlers } from './index.js';
 
 vi.mock('@/commands/start.js', () => ({
@@ -20,6 +21,18 @@ vi.mock('./genericMessage.js', () => ({
     onGenericMessage: vi.fn(),
 }));
 
+vi.mock('./handleEditedMessage.js', () => ({
+    handleEditedMessage: vi.fn(),
+}));
+
+vi.mock('@/utils/logger.js', () => ({
+    default: {
+        error: vi.fn(),
+        info: vi.fn(),
+        warn: vi.fn(),
+    },
+}));
+
 describe('registerHandlers', () => {
     it('should register all middleware and handlers correctly', () => {
         const mockBot = {
@@ -32,13 +45,14 @@ describe('registerHandlers', () => {
 
         registerHandlers(mockBot as unknown as Bot, mockDB as DynamoDBService);
 
-        expect(mockBot.use).toHaveBeenCalledTimes(2);
+        expect(mockBot.use).toHaveBeenCalledTimes(3);
         expect(mockBot.command).toHaveBeenCalledTimes(2);
-        expect(mockBot.on).toHaveBeenCalledTimes(1);
+        expect(mockBot.on).toHaveBeenCalledTimes(2);
 
         expect(mockBot.command).toHaveBeenCalledWith('start', onStart);
         expect(mockBot.command).toHaveBeenCalledWith('setup', onSetup);
-        expect(mockBot.on).toHaveBeenCalledWith('message', onGenericMessage);
+        expect(mockBot.on).toHaveBeenNthCalledWith(1, 'message', onGenericMessage);
+        expect(mockBot.on).toHaveBeenNthCalledWith(2, 'edited_message', handleEditedMessage);
     });
 });
 

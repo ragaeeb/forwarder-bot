@@ -1,4 +1,3 @@
-import logger from '@/utils/logger.js';
 import { APIGatewayProxyEvent } from 'aws-lambda';
 import { Bot } from 'gramio';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -9,6 +8,7 @@ import { handler } from './webhook.js';
 
 vi.mock('gramio', () => ({
     Bot: vi.fn().mockImplementation(() => ({
+        init: vi.fn(),
         updates: {
             handleUpdate: vi.fn().mockResolvedValue(undefined),
         },
@@ -117,6 +117,7 @@ describe('webhook handler', () => {
     it('should handle bot.updates.handleUpdate throwing an error', async () => {
         const mockError = new Error('Bot update handling failed');
         const mockBot = {
+            init: vi.fn(),
             updates: {
                 handleUpdate: vi.fn().mockRejectedValue(mockError),
             },

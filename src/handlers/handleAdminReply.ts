@@ -54,7 +54,6 @@ export const handleAdminReplyToCustomer = async (ctx: ForwardContext) => {
     const threadId = ctx.update?.message?.message_thread_id?.toString() as string;
     logger.info(`handleAdminReplyToCustomer: ${threadId}`);
 
-    // Get thread data by thread ID
     const thread = await ctx.db.getThreadById(threadId);
 
     if (!thread) {
