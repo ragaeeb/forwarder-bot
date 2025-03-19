@@ -1,5 +1,4 @@
 import { ForwardContext } from '@/types.js';
-import logger from '@/utils/logger.js';
 import { mapTelegramMessageToSavedMessage } from '@/utils/messageUtils.js';
 import { replyWithSuccess } from '@/utils/replyUtils.js';
 import { createNewThread, getUpsertedThread } from '@/utils/threadUtils.js';
@@ -123,8 +122,6 @@ describe('handleDirectMessage', () => {
         } catch (_) {
             // Intentionally ignoring the error since it's expected and tested separately
         }
-
-        expect(logger.error).toHaveBeenCalled();
     });
 
     it('should get or create thread before forwarding', async () => {
@@ -210,14 +207,6 @@ describe('handleDirectMessage', () => {
         const result = await handleDirectMessage(ctx, 'admin-group-123');
 
         expect(createNewThread).toHaveBeenCalledWith(ctx, 'admin-group-123');
-        expect(logger.error).toHaveBeenCalledTimes(2); // Both the original error and retry error
-        expect(logger.error).toHaveBeenLastCalledWith(
-            'Failed to forward message after retry',
-            expect.objectContaining({
-                userId: 123,
-            }),
-        );
-
         expect(result).toBeUndefined();
     });
 

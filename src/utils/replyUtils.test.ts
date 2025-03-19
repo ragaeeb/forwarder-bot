@@ -2,7 +2,7 @@ import type { ForwardContext } from '@/types.js';
 
 import { describe, expect, it, vi } from 'vitest';
 
-import { replyWithError, replyWithSuccess, replyWithUnknownError } from './replyUtils.js';
+import { replyWithError, replyWithSuccess, replyWithUnknownError, replyWithWarning } from './replyUtils.js';
 
 describe('replyUtils', () => {
     const createMockContext = (overrides = {}) =>
@@ -31,6 +31,17 @@ describe('replyUtils', () => {
 
             expect(ctx.reply).toHaveBeenCalledWith('✅ Operation completed successfully');
         });
+
+        it('should return the result from ctx.reply', async () => {
+            const mockReplyResult = { message_id: 456, text: 'Test message' };
+            const ctx = createMockContext({
+                reply: vi.fn().mockResolvedValue(mockReplyResult),
+            });
+
+            const result = await replyWithSuccess(ctx, 'Test message');
+
+            expect(result).toBe(mockReplyResult);
+        });
     });
 
     describe('replyWithUnknownError', () => {
@@ -43,14 +54,13 @@ describe('replyUtils', () => {
         });
     });
 
-    it('should return the result from ctx.reply', async () => {
-        const mockReplyResult = { message_id: 456, text: 'Test message' };
-        const ctx = createMockContext({
-            reply: vi.fn().mockResolvedValue(mockReplyResult),
+    describe('replyWithWarning', () => {
+        it('should reply with warning emoji', async () => {
+            const ctx = createMockContext();
+
+            await replyWithWarning(ctx, 'Something');
+
+            expect(ctx.reply).toHaveBeenCalledWith('⚠️ Something');
         });
-
-        const result = await replyWithSuccess(ctx, 'Test message');
-
-        expect(result).toBe(mockReplyResult);
     });
 });

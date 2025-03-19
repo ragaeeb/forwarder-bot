@@ -9,6 +9,7 @@ const testPermissionsAndFinishSetup = async (ctx: ForwardContext) => {
     const { id: chatId } = ctx.chat;
 
     logger.info(`Testing create thread for chat=${chatId}`);
+
     const testTopic = (await ctx.bot.api.createForumTopic({
         chat_id: chatId,
         name: 'Test Topic Permissions',
@@ -16,13 +17,32 @@ const testPermissionsAndFinishSetup = async (ctx: ForwardContext) => {
 
     logger.info(testTopic, `Testing delete thread, and fetch existing config`);
 
-    const [config] = await Promise.all([
-        ctx.db.getConfig(),
-        ctx.bot.api.deleteForumTopic({
-            chat_id: chatId,
-            message_thread_id: testTopic.message_thread_id,
-        }),
-    ]);
+    await ctx.bot.api.deleteForumTopic({
+        chat_id: chatId,
+        message_thread_id: testTopic.message_thread_id,
+    });
+
+    logger.info(`Saving config`);
+
+    // Store group as the forwarding destination
+    await ctx.db.saveConfig({
+        adminGroupId: chatId.toString(),
+        configId: 'main',
+        setupAt: new Date().toISOString(),
+        setupBy: ctx.update?.message?.from as TelegramUser,
+    });
+
+    logger.info(`Replying successful setup to user.`);
+
+    return replyWithSuccess(
+        ctx,
+        `Setup complete! Group ${chatId.toString()} is now set as the contact inbox.\n\nIt is recommended that you delete the setup message for security purposes.`,
+    );
+};
+
+const validatePreconfig = async (ctx: ForwardContext) => {
+    const { id: chatId } = ctx.chat;
+    const config = await ctx.db.getConfig();
 
     if (config) {
         logger.info(`Bot was already configured to chatId=${config.adminGroupId}`);
@@ -45,23 +65,6 @@ const testPermissionsAndFinishSetup = async (ctx: ForwardContext) => {
             logger.error(err, `Failed to notify previous group of reconfiguration`);
         }
     }
-
-    logger.info(`Saving config`);
-
-    // Store group as the forwarding destination
-    await ctx.db.saveConfig({
-        adminGroupId: chatId.toString(),
-        configId: 'main',
-        setupAt: new Date().toISOString(),
-        setupBy: ctx.update?.message?.from as TelegramUser,
-    });
-
-    logger.info(`Replying successful setup to user.`);
-
-    return replyWithSuccess(
-        ctx,
-        `Setup complete! Group ${chatId.toString()} is now set as the contact inbox.\n\nIt is recommended that you delete the setup message for security purposes.`,
-    );
 };
 
 export const onSetup = async (ctx: ForwardContext) => {
@@ -78,7 +81,11 @@ export const onSetup = async (ctx: ForwardContext) => {
         }
 
         try {
-            await testPermissionsAndFinishSetup(ctx);
+            const alreadyConfigured = await validatePreconfig(ctx);
+
+            if (!alreadyConfigured) {
+                await testPermissionsAndFinishSetup(ctx);
+            }
         } catch (error) {
             logger.error(error, `Setup failed`);
 

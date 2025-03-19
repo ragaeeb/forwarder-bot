@@ -3,6 +3,12 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { onStart } from './start.js';
 
+vi.mock('@/utils/logger.js', () => ({
+    default: {
+        info: vi.fn(),
+    },
+}));
+
 describe('start', () => {
     describe('onStart', () => {
         it('should reply to the message', async () => {

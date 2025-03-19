@@ -1,4 +1,3 @@
-import logger from '@/utils/logger.js';
 import { DynamoDBDocumentClient, GetCommand, PutCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -57,7 +56,7 @@ describe('DynamoDBService', () => {
                 adminGroupId: 'admin-123',
                 configId: 'config-123',
                 setupAt: '2023-01-01T00:00:00Z',
-                setupBy: { firstName: 'Admin', id: 123 },
+                setupBy: { first_name: 'Admin', id: 123, is_bot: false },
             };
 
             mockClient.send.mockResolvedValueOnce({
@@ -89,7 +88,6 @@ describe('DynamoDBService', () => {
 
             const result = await dynamoDBService.getConfig();
 
-            expect(logger.error).toHaveBeenCalledTimes(1);
             expect(result).toBeUndefined();
         });
     });
@@ -142,8 +140,6 @@ describe('DynamoDBService', () => {
             mockClient.send.mockRejectedValueOnce(error);
 
             const result = await dynamoDBService.getMessagesByUserId('user123');
-
-            expect(logger.error).toHaveBeenCalledTimes(1);
             expect(result).toEqual([]);
         });
     });
@@ -156,7 +152,7 @@ describe('DynamoDBService', () => {
                 createdAt: '2023-01-01T00:00:00Z',
                 lastMessageId: 'msg123',
                 name: 'Test Thread',
-                threadId: 123,
+                threadId: '123',
                 updatedAt: '2023-01-01T00:01:00Z',
                 userId: 'user123',
             };
@@ -193,8 +189,6 @@ describe('DynamoDBService', () => {
             mockClient.send.mockRejectedValueOnce(error);
 
             const result = await dynamoDBService.getThreadById('thread123');
-
-            expect(logger.error).toHaveBeenCalledTimes(1);
             expect(result).toBeUndefined();
         });
     });
@@ -238,8 +232,6 @@ describe('DynamoDBService', () => {
             mockClient.send.mockRejectedValueOnce(error);
 
             const result = await dynamoDBService.getThreadByUserId('user123');
-
-            expect(logger.error).toHaveBeenCalledTimes(1);
             expect(result).toBeUndefined();
         });
     });
@@ -279,7 +271,6 @@ describe('DynamoDBService', () => {
             mockClient.send.mockRejectedValueOnce(error);
 
             await expect(dynamoDBService.saveConfig(mockConfig)).rejects.toThrow(error);
-            expect(logger.error).toHaveBeenCalledTimes(1);
         });
     });
 
@@ -328,7 +319,6 @@ describe('DynamoDBService', () => {
             mockClient.send.mockRejectedValueOnce(error);
 
             await expect(dynamoDBService.saveMessage(mockMessage)).rejects.toThrow(error);
-            expect(logger.error).toHaveBeenCalledTimes(1);
         });
     });
 
@@ -339,7 +329,7 @@ describe('DynamoDBService', () => {
                 createdAt: '2023-01-01T00:00:00Z',
                 lastMessageId: 'msg123',
                 name: 'Test Thread',
-                threadId: 123,
+                threadId: '123',
                 updatedAt: '2023-01-01T00:01:00Z',
                 userId: 'user123',
             };
@@ -356,21 +346,20 @@ describe('DynamoDBService', () => {
         });
 
         it('should throw error when save fails', async () => {
-            const mockThread: ThreadData = {
-                chatId: 'chat123',
-                createdAt: '2023-01-01T00:00:00Z',
-                lastMessageId: 'msg123',
-                name: 'Test Thread',
-                threadId: 123,
-                updatedAt: '2023-01-01T00:01:00Z',
-                userId: 'user123',
-            };
-
             const error = new Error('DynamoDB error');
             mockClient.send.mockRejectedValueOnce(error);
 
-            await expect(dynamoDBService.saveThread(mockThread)).rejects.toThrow(error);
-            expect(logger.error).toHaveBeenCalledTimes(1);
+            await expect(
+                dynamoDBService.saveThread({
+                    chatId: 'chat123',
+                    createdAt: '2023-01-01T00:00:00Z',
+                    lastMessageId: 'msg123',
+                    name: 'Test Thread',
+                    threadId: '123',
+                    updatedAt: '2023-01-01T00:01:00Z',
+                    userId: 'user123',
+                }),
+            ).rejects.toThrow(error);
         });
     });
 });

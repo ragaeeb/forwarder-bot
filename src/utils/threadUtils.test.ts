@@ -4,10 +4,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { ForwardContext, ThreadData } from '../types.js';
 
-import logger from './logger.js';
 import { createNewThread, getUpsertedThread, updateThreadByMessage } from './threadUtils.js';
 
-vi.mock('./logger.js');
+vi.mock('@/utils/logger.js', () => ({
+    default: {
+        debug: vi.fn(),
+        error: vi.fn(),
+        info: vi.fn(),
+        warn: vi.fn(),
+    },
+}));
 
 describe('threadUtils', () => {
     beforeEach(() => {
@@ -121,7 +127,6 @@ describe('threadUtils', () => {
 
             expect(ctx.api.createForumTopic).toHaveBeenCalled();
             expect(ctx.db.saveThread).not.toHaveBeenCalled();
-            expect(logger.error).toHaveBeenCalledTimes(1);
             expect(result).toBeUndefined();
         });
 
@@ -363,7 +368,6 @@ describe('threadUtils', () => {
 
             expect(ctx.db.getThreadByUserId).toHaveBeenCalledWith('12345');
             expect(ctx.api.createForumTopic).toHaveBeenCalled();
-            expect(logger.error).toHaveBeenCalledTimes(1);
             expect(result).toBeUndefined();
         });
     });

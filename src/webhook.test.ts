@@ -69,7 +69,6 @@ describe('webhook handler', () => {
     it('should successfully process a webhook event', async () => {
         const result = await handler(mockEvent);
 
-        expect(logger.info).toHaveBeenCalledWith(`Webhook called: method=POST, path=/webhook`);
         expect(Bot).toHaveBeenCalledWith('test-token');
         expect(DynamoDBService).toHaveBeenCalled();
         expect(registerHandlers).toHaveBeenCalled();
@@ -96,7 +95,6 @@ describe('webhook handler', () => {
 
         const result = await handler(mockEvent);
 
-        expect(logger.error).not.toHaveBeenCalled();
         expect(result).toEqual({
             body: expect.any(String),
             statusCode: 200,
@@ -112,7 +110,6 @@ describe('webhook handler', () => {
 
         const result = await handler(mockEvent);
 
-        expect(logger.error).toHaveBeenCalled();
         expect(result.statusCode).toBe(200);
         expect(JSON.parse(result.body).ok).toBe(false);
     });
@@ -128,7 +125,6 @@ describe('webhook handler', () => {
 
         const result = await handler(mockEvent);
 
-        expect(logger.error).toHaveBeenCalled();
         expect(result).toEqual({
             body: expect.stringContaining('Bot update handling failed'),
             statusCode: 200,

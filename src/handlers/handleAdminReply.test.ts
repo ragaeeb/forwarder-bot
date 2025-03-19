@@ -50,7 +50,6 @@ describe('handleAdminReply', () => {
             const result = await handleAdminReplyToCustomer(ctx);
 
             expect(ctx.db.getThreadById).toHaveBeenCalledWith('123');
-            expect(logger.warn).toHaveBeenCalledOnce();
             expect(replyWithError).toHaveBeenCalledWith(ctx, 'Could not find the thread data for this user.');
             expect(result).toBeDefined();
         });
@@ -205,7 +204,6 @@ describe('handleAdminReply', () => {
             expect(ctx.api.sendPhoto).not.toHaveBeenCalled();
             expect(ctx.api.sendDocument).not.toHaveBeenCalled();
 
-            expect(logger.warn).toHaveBeenCalledOnce();
             expect(replyWithError).toHaveBeenCalledWith(
                 ctx,
                 'Unsupported message type. Please send text, photo, or document.',

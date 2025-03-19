@@ -9,8 +9,8 @@ import { DynamoDBService } from './services/dynamodb.js';
 
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
     process.on('uncaughtException', (err) => {
-        console.error('Uncaught Exception:', err);
-        console.error('Stack trace:', err.stack);
+        logger.error(err, 'Uncaught Exception:');
+        logger.error(err.stack, 'Stack trace:');
     });
 
     try {
@@ -25,6 +25,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         registerHandlers(bot, db);
 
         logger.info(`Init bot`);
+
         // Process the update via the handler
         await bot.init();
 

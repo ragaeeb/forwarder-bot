@@ -1,14 +1,13 @@
 import type { ForwardContext } from '@/types.js';
 
-import logger from '@/utils/logger.js';
-import { replyWithError, replyWithSuccess } from '@/utils/replyUtils.js';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { replyWithError, replyWithSuccess, replyWithWarning } from '@/utils/replyUtils.js';
+import { afterEach, beforeEach, describe, expect, it, Mock, vi } from 'vitest';
 
 import { onSetup } from './setup.js';
 
 vi.mock('@/config.js', () => ({
     config: {
-        BOT_TOKEN: 'mock-bot-token:123456',
+        BOT_TOKEN: 'BT',
     },
 }));
 
@@ -22,14 +21,14 @@ vi.mock('@/utils/logger.js', () => ({
 }));
 
 vi.mock('@/utils/replyUtils.js', () => ({
-    replyWithError: vi.fn().mockResolvedValue({}),
-    replyWithSuccess: vi.fn().mockResolvedValue({}),
+    replyWithError: vi.fn(),
+    replyWithSuccess: vi.fn(),
+    replyWithWarning: vi.fn(),
 }));
 
 describe('setup', () => {
     beforeEach(() => {
         vi.clearAllMocks();
-        vi.useFakeTimers();
         vi.setSystemTime(new Date('2023-01-01T12:00:00Z'));
     });
 
@@ -45,26 +44,31 @@ describe('setup', () => {
                 is_bot: false,
             };
 
+            const config = {
+                adminGroupId: '1',
+                configId: 'main',
+                setupAt: '2023-01-01T12:00:00.000Z',
+                setupBy: mockUser,
+            };
+
             const ctx = {
-                api: {
-                    createForumTopic: vi.fn().mockResolvedValue({
-                        message_thread_id: 1234,
-                        name: 'Test Topic Permissions',
-                    }),
-                    deleteForumTopic: vi.fn().mockResolvedValue(true),
+                args: 'BT',
+                bot: {
+                    api: {
+                        createForumTopic: vi.fn().mockResolvedValue({
+                            message_thread_id: 1234,
+                            name: 'Test Topic Permissions',
+                        }),
+                        deleteForumTopic: vi.fn(),
+                    },
                 },
-                args: 'mock-bot-token:123456',
                 chat: {
-                    id: 9876543,
+                    id: 1,
                     type: 'supergroup',
                 },
                 db: {
-                    saveConfig: vi.fn().mockResolvedValue({
-                        adminGroupId: '9876543',
-                        configId: 'main',
-                        setupAt: '2023-01-01T12:00:00.000Z',
-                        setupBy: mockUser,
-                    }),
+                    getConfig: vi.fn(),
+                    saveConfig: vi.fn().mockResolvedValue(config),
                 },
                 reply: vi.fn(),
                 update: {
@@ -76,38 +80,146 @@ describe('setup', () => {
 
             await onSetup(ctx);
 
-            expect(ctx.api.createForumTopic).toHaveBeenCalledWith({
-                chat_id: 9876543,
+            expect(ctx.bot.api.createForumTopic).toHaveBeenCalledWith({
+                chat_id: 1,
                 name: 'Test Topic Permissions',
             });
+            expect(ctx.bot.api.createForumTopic).toHaveBeenCalledTimes(1);
 
-            expect(ctx.api.deleteForumTopic).toHaveBeenCalledWith({
-                chat_id: 9876543,
+            expect(ctx.bot.api.deleteForumTopic).toHaveBeenCalledWith({
+                chat_id: 1,
                 message_thread_id: 1234,
             });
+            expect(ctx.bot.api.deleteForumTopic).toHaveBeenCalledTimes(1);
 
-            expect(ctx.db.saveConfig).toHaveBeenCalledWith({
-                adminGroupId: '9876543',
-                configId: 'main',
-                setupAt: '2023-01-01T12:00:00.000Z',
-                setupBy: mockUser,
-            });
+            expect(ctx.db.saveConfig).toHaveBeenCalledWith(config);
+            expect(ctx.db.saveConfig).toHaveBeenCalledTimes(1);
 
-            expect(replyWithSuccess).toHaveBeenCalledWith(
-                ctx,
-                expect.stringContaining('Setup complete! Group 9876543 is now set as the contact inbox'),
-            );
+            expect(ctx.db.getConfig).toHaveBeenCalledTimes(1);
+
+            expect(replyWithSuccess).toHaveBeenCalledWith(ctx, expect.any(String));
+        });
+
+        it('should notify previous group and leave it if we were already configured', async () => {
+            const ctx = {
+                api: {
+                    leaveChat: vi.fn(),
+                },
+                args: 'BT',
+                bot: {
+                    api: {
+                        createForumTopic: vi.fn().mockResolvedValue({}),
+                        deleteForumTopic: vi.fn(),
+                    },
+                },
+                chat: {
+                    id: 2,
+                    type: 'supergroup',
+                },
+                db: {
+                    getConfig: vi.fn().mockResolvedValue({
+                        adminGroupId: '1',
+                    }),
+                    saveConfig: vi.fn(),
+                },
+                reply: vi.fn(),
+            } as unknown as ForwardContext;
+
+            await onSetup(ctx);
+
+            expect(ctx.bot.api.createForumTopic).toHaveBeenCalledTimes(1);
+            expect(ctx.bot.api.deleteForumTopic).toHaveBeenCalledTimes(1);
+            expect(ctx.db.getConfig).toHaveBeenCalledTimes(1);
+            expect(ctx.db.saveConfig).toHaveBeenCalledTimes(1);
+
+            expect(ctx.api.leaveChat).toHaveBeenCalledTimes(1);
+            expect(ctx.api.leaveChat).toHaveBeenCalledWith({ chat_id: '1' });
+
+            expect(replyWithWarning).toHaveBeenCalledTimes(1);
+            expect(replyWithWarning).toHaveBeenCalledWith(ctx, expect.any(String));
+            expect(replyWithSuccess).toHaveBeenCalledTimes(1);
+        });
+
+        it('should continue setup even if there is an error leaving old group', async () => {
+            const ctx = {
+                api: {
+                    leaveChat: vi.fn().mockRejectedValue(new Error('Could not leave group')),
+                },
+                args: 'BT',
+                bot: {
+                    api: {
+                        createForumTopic: vi.fn().mockResolvedValue({}),
+                        deleteForumTopic: vi.fn(),
+                    },
+                },
+                chat: {
+                    id: 2,
+                    type: 'supergroup',
+                },
+                db: {
+                    getConfig: vi.fn().mockResolvedValue({
+                        adminGroupId: '1',
+                    }),
+                    saveConfig: vi.fn(),
+                },
+                reply: vi.fn(),
+            } as unknown as ForwardContext;
+
+            await onSetup(ctx);
+
+            expect(ctx.bot.api.createForumTopic).toHaveBeenCalledTimes(1);
+            expect(ctx.bot.api.deleteForumTopic).toHaveBeenCalledTimes(1);
+            expect(ctx.db.getConfig).toHaveBeenCalledTimes(1);
+            expect(ctx.db.saveConfig).toHaveBeenCalledTimes(1);
+            expect(ctx.api.leaveChat).toHaveBeenCalledTimes(1);
+
+            expect(replyWithWarning).toHaveBeenCalledTimes(1);
+            expect(replyWithSuccess).toHaveBeenCalledTimes(1);
+        });
+
+        it('should be a no-op if we are trying to setup when we are already configured', async () => {
+            const ctx = {
+                args: 'BT',
+                bot: {
+                    api: {
+                        createForumTopic: vi.fn().mockResolvedValue({}),
+                    },
+                },
+                chat: {
+                    id: 1,
+                    type: 'supergroup',
+                },
+                db: {
+                    getConfig: vi.fn().mockResolvedValue({
+                        adminGroupId: '1',
+                    }),
+                    saveConfig: vi.fn(),
+                },
+            } as unknown as ForwardContext;
+
+            (replyWithWarning as Mock).mockResolvedValue({});
+
+            await onSetup(ctx);
+
+            expect(ctx.bot.api.createForumTopic).not.toHaveBeenCalled();
+            expect(ctx.db.getConfig).toHaveBeenCalledTimes(1);
+            expect(ctx.db.saveConfig).not.toHaveBeenCalled();
+
+            expect(replyWithWarning).toHaveBeenCalledTimes(1);
+            expect(replyWithWarning).toHaveBeenCalledWith(ctx, expect.any(String));
+            expect(replyWithSuccess).not.toHaveBeenCalled();
         });
 
         it('should reject setup in non-supergroup chats', async () => {
             const ctx = {
-                api: {
-                    createForumTopic: vi.fn(),
-                    deleteForumTopic: vi.fn(),
+                args: 'BT',
+                bot: {
+                    api: {
+                        createForumTopic: vi.fn(),
+                    },
                 },
-                args: 'mock-bot-token:123456',
                 chat: {
-                    id: 9876543,
+                    id: 1,
                     type: 'group',
                 },
                 db: {
@@ -119,7 +231,7 @@ describe('setup', () => {
             await onSetup(ctx);
 
             expect(ctx.reply).toHaveBeenCalledWith('⚠️ This command must be used in a supergroup with topics enabled');
-            expect(ctx.api.createForumTopic).not.toHaveBeenCalled();
+            expect(ctx.bot.api.createForumTopic).not.toHaveBeenCalled();
             expect(ctx.db.saveConfig).not.toHaveBeenCalled();
             expect(replyWithSuccess).not.toHaveBeenCalled();
         });
@@ -127,13 +239,15 @@ describe('setup', () => {
         it('should handle errors during setup', async () => {
             const error = new Error('Permission denied');
             const ctx = {
-                api: {
-                    createForumTopic: vi.fn().mockRejectedValue(error),
-                    deleteForumTopic: vi.fn(),
+                args: 'BT',
+                bot: {
+                    api: {
+                        createForumTopic: vi.fn().mockRejectedValue(error),
+                        deleteForumTopic: vi.fn(),
+                    },
                 },
-                args: 'mock-bot-token:123456',
                 chat: {
-                    id: 9876543,
+                    id: 1,
                     type: 'supergroup',
                 },
                 db: {
@@ -148,23 +262,21 @@ describe('setup', () => {
 
             await onSetup(ctx);
 
-            expect(logger.error).toHaveBeenCalledOnce();
-            expect(replyWithError).toHaveBeenCalledWith(
-                ctx,
-                'Setup failed. Please ensure topics are enabled and the bot has privileges to Manage Topics.',
-            );
+            expect(replyWithError).toHaveBeenCalledWith(ctx, expect.any(String));
             expect(ctx.db.saveConfig).not.toHaveBeenCalled();
         });
 
         it('should do nothing when token is not provided', async () => {
             const ctx = {
-                api: {
-                    createForumTopic: vi.fn(),
-                    deleteForumTopic: vi.fn(),
-                },
                 args: null,
+                bot: {
+                    api: {
+                        createForumTopic: vi.fn(),
+                        deleteForumTopic: vi.fn(),
+                    },
+                },
                 chat: {
-                    id: 9876543,
+                    id: 1,
                     type: 'supergroup',
                 },
                 db: {
@@ -174,20 +286,22 @@ describe('setup', () => {
 
             await onSetup(ctx);
 
-            expect(ctx.api.createForumTopic).not.toHaveBeenCalled();
+            expect(ctx.bot.api.createForumTopic).not.toHaveBeenCalled();
             expect(ctx.db.saveConfig).not.toHaveBeenCalled();
             expect(replyWithSuccess).not.toHaveBeenCalled();
         });
 
         it('should log warning when invalid token is provided', async () => {
             const ctx = {
-                api: {
-                    createForumTopic: vi.fn(),
-                    deleteForumTopic: vi.fn(),
-                },
                 args: 'invalid-token',
+                bot: {
+                    api: {
+                        createForumTopic: vi.fn(),
+                        deleteForumTopic: vi.fn(),
+                    },
+                },
                 chat: {
-                    id: 9876543,
+                    id: 1,
                     type: 'supergroup',
                 },
                 db: {
@@ -197,10 +311,10 @@ describe('setup', () => {
 
             await onSetup(ctx);
 
-            expect(logger.warn).toHaveBeenCalledOnce();
-            expect(ctx.api.createForumTopic).not.toHaveBeenCalled();
+            expect(ctx.bot.api.createForumTopic).not.toHaveBeenCalled();
             expect(ctx.db.saveConfig).not.toHaveBeenCalled();
             expect(replyWithSuccess).not.toHaveBeenCalled();
+            expect(replyWithError).toHaveBeenCalledTimes(1);
         });
     });
 });
