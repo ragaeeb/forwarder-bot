@@ -17,6 +17,7 @@ export type ForwardContext = MessageContext<Bot<Record<string, never>, DeriveDef
     args: null | string;
     bot: Bot;
     db: DataService;
+    me: TelegramUser;
     settings: BotSettings;
 };
 

@@ -1,5 +1,5 @@
 import type { DataService } from '@/services/types.js';
-import type { Bot, ContextType, DeriveDefinitions, Handler } from 'gramio';
+import type { Bot, Context, ContextType, DeriveDefinitions, Handler } from 'gramio';
 
 import { onSetup } from '@/commands/setup.js';
 import { onStart } from '@/commands/start.js';
@@ -7,6 +7,7 @@ import logger from '@/utils/logger.js';
 
 import { onGenericMessage } from './genericMessage.js';
 import { handleEditedMessage } from './handleEditedMessage.js';
+import { ignoreSelfMessages } from './middlewares.js';
 
 /**
  * Type for handling bot commands with context
@@ -18,6 +19,12 @@ type CommandHandler = (
             args: null | string;
         },
 ) => unknown;
+
+/**
+ * Middleware for processing requests
+ *
+ */
+type Middleware = Handler<Context<Bot> & DeriveDefinitions['global']>;
 
 /**
  * Handler for processing updates
@@ -35,12 +42,17 @@ export const registerHandlers = async (bot: Bot, db: DataService) => {
     const settings = await db.getSettings();
 
     bot.derive(async () => {
+        const me = await bot.api.getMe();
+
         return {
             bot,
             db,
+            me,
             settings,
         };
     });
+
+    bot.use(ignoreSelfMessages as Middleware);
 
     logger.info(`Registering commands`);
 

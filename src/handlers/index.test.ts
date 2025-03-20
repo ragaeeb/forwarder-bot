@@ -39,6 +39,7 @@ describe('registerHandlers', () => {
             command: vi.fn(),
             derive: vi.fn().mockReturnThis(),
             on: vi.fn(),
+            use: vi.fn(),
         };
 
         const mockDB = {
@@ -60,6 +61,7 @@ describe('registerHandlers', () => {
             command: vi.fn(),
             derive: vi.fn().mockReturnThis(),
             on: vi.fn(),
+            use: vi.fn(),
         };
 
         const mockSettings = { adminGroupId: '123456' };
@@ -81,10 +83,14 @@ describe('registerHandlers', () => {
     });
 
     it('should pass settings to context derivation', async () => {
+        const me = { first_name: 'Bot' };
+
         const mockBot = {
+            api: { getMe: vi.fn().mockResolvedValue(me) },
             command: vi.fn(),
             derive: vi.fn().mockReturnThis(),
             on: vi.fn(),
+            use: vi.fn(),
         };
 
         const mockSettings = { adminGroupId: '123456' };
@@ -105,6 +111,7 @@ describe('registerHandlers', () => {
         expect(derivedContext).toEqual({
             bot: mockBot,
             db: mockDB,
+            me,
             settings: mockSettings,
         });
     });

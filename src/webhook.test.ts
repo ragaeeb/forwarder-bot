@@ -38,7 +38,7 @@ vi.mock('@/utils/logger.js', () => ({
     },
 }));
 
-describe('webhook handler', () => {
+describe('webhook', () => {
     let mockEvent: APIGatewayProxyEvent;
 
     beforeEach(() => {
@@ -70,88 +70,90 @@ describe('webhook handler', () => {
         };
     });
 
-    it('should successfully process a webhook event with valid secret token', async () => {
-        const result = await handler(mockEvent);
+    describe('handler', () => {
+        it('should successfully process a webhook event with valid secret token', async () => {
+            const result = await handler(mockEvent);
 
-        expect(Bot).toHaveBeenCalledWith('test-token');
-        expect(DynamoDBService).toHaveBeenCalled();
-        expect(registerHandlers).toHaveBeenCalled();
+            expect(Bot).toHaveBeenCalledWith('test-token');
+            expect(DynamoDBService).toHaveBeenCalled();
+            expect(registerHandlers).toHaveBeenCalled();
 
-        const botInstance = (Bot as any).mock.results[0].value;
-        expect(botInstance.updates.handleUpdate).toHaveBeenCalledWith({
-            message: {
-                chat: { id: 12345, type: 'private' },
-                date: 1645564800,
-                message_id: 123,
-                text: 'Hello, bot!',
-            },
-            update_id: 123456789,
+            const botInstance = (Bot as any).mock.results[0].value;
+            expect(botInstance.updates.handleUpdate).toHaveBeenCalledWith({
+                message: {
+                    chat: { id: 12345, type: 'private' },
+                    date: 1645564800,
+                    message_id: 123,
+                    text: 'Hello, bot!',
+                },
+                update_id: 123456789,
+            });
+
+            expect(result).toEqual({
+                body: JSON.stringify({ ok: true }),
+                statusCode: 200,
+            });
         });
 
-        expect(result).toEqual({
-            body: JSON.stringify({ ok: true }),
-            statusCode: 200,
-        });
-    });
+        it.each([
+            { scenario: 'invalid token', token: 'invalid-token' },
+            { scenario: 'missing token', token: undefined },
+        ])('should reject requests with $scenario', async ({ token }) => {
+            mockEvent.headers['x-telegram-bot-api-secret-token'] = token;
 
-    it.each([
-        { scenario: 'invalid token', token: 'invalid-token' },
-        { scenario: 'missing token', token: undefined },
-    ])('should reject requests with $scenario', async ({ token }) => {
-        mockEvent.headers['x-telegram-bot-api-secret-token'] = token;
+            const result = await handler(mockEvent);
 
-        const result = await handler(mockEvent);
+            expect(Bot).not.toHaveBeenCalled();
+            expect(DynamoDBService).not.toHaveBeenCalled();
+            expect(registerHandlers).not.toHaveBeenCalled();
 
-        expect(Bot).not.toHaveBeenCalled();
-        expect(DynamoDBService).not.toHaveBeenCalled();
-        expect(registerHandlers).not.toHaveBeenCalled();
-
-        expect(result).toEqual({
-            body: JSON.stringify({ error: 'Unauthorized', ok: false }),
-            statusCode: 403,
-        });
-    });
-
-    it('should handle missing body properly', async () => {
-        mockEvent.body = null;
-
-        const result = await handler(mockEvent);
-
-        expect(result).toEqual({
-            body: expect.any(String),
-            statusCode: 200,
+            expect(result).toEqual({
+                body: JSON.stringify({ error: 'Unauthorized', ok: false }),
+                statusCode: 403,
+            });
         });
 
-        const responseBody = JSON.parse(result.body);
-        expect(responseBody.ok).toBe(true);
-        expect(responseBody.error).toBeUndefined();
-    });
+        it('should handle missing body properly', async () => {
+            mockEvent.body = null;
 
-    it('should handle invalid JSON in body', async () => {
-        mockEvent.body = '{ invalid json';
+            const result = await handler(mockEvent);
 
-        const result = await handler(mockEvent);
+            expect(result).toEqual({
+                body: expect.any(String),
+                statusCode: 200,
+            });
 
-        expect(result.statusCode).toBe(200);
-        expect(JSON.parse(result.body).ok).toBe(false);
-    });
-
-    it('should handle bot.updates.handleUpdate throwing an error', async () => {
-        const mockError = new Error('Bot update handling failed');
-        const mockBot = {
-            init: vi.fn(),
-            updates: {
-                handleUpdate: vi.fn().mockRejectedValue(mockError),
-            },
-        };
-        (Bot as any).mockImplementation(() => mockBot);
-
-        const result = await handler(mockEvent);
-
-        expect(result).toEqual({
-            body: expect.stringContaining('Bot update handling failed'),
-            statusCode: 200,
+            const responseBody = JSON.parse(result.body);
+            expect(responseBody.ok).toBe(true);
+            expect(responseBody.error).toBeUndefined();
         });
-        expect(JSON.parse(result.body).ok).toBe(false);
+
+        it('should handle invalid JSON in body', async () => {
+            mockEvent.body = '{ invalid json';
+
+            const result = await handler(mockEvent);
+
+            expect(result.statusCode).toBe(200);
+            expect(JSON.parse(result.body).ok).toBe(false);
+        });
+
+        it('should handle bot.updates.handleUpdate throwing an error', async () => {
+            const mockError = new Error('Bot update handling failed');
+            const mockBot = {
+                init: vi.fn(),
+                updates: {
+                    handleUpdate: vi.fn().mockRejectedValue(mockError),
+                },
+            };
+            (Bot as any).mockImplementation(() => mockBot);
+
+            const result = await handler(mockEvent);
+
+            expect(result).toEqual({
+                body: expect.stringContaining('Bot update handling failed'),
+                statusCode: 200,
+            });
+            expect(JSON.parse(result.body).ok).toBe(false);
+        });
     });
 });
