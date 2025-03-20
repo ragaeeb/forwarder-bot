@@ -1,7 +1,7 @@
 import type { ForwardContext } from '@/types.js';
 import type { TelegramForumTopic, TelegramUser } from 'gramio';
 
-import { config } from '@/config.js';
+import { config as appConfig } from '@/config.js';
 import logger from '@/utils/logger.js';
 import { replyWithError, replyWithSuccess, replyWithWarning } from '@/utils/replyUtils.js';
 import { hashToken } from '@/utils/security.js';
@@ -81,7 +81,7 @@ export const onSetup = async (ctx: ForwardContext) => {
         return;
     }
 
-    if (providedToken !== hashToken(config.BOT_TOKEN)) {
+    if (providedToken !== hashToken(appConfig.BOT_TOKEN)) {
         logger.warn(`Invalid token provided`);
         return;
     }

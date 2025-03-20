@@ -64,6 +64,7 @@ describe('setup', () => {
                             name: 'Test Topic Permissions',
                         }),
                         deleteForumTopic: vi.fn(),
+                        getChatMember: vi.fn().mockResolvedValue({ status: 'administrator' }),
                     },
                 },
                 chat: {
@@ -74,6 +75,7 @@ describe('setup', () => {
                     getConfig: vi.fn(),
                     saveConfig: vi.fn().mockResolvedValue(config),
                 },
+                from: { id: 123456 },
                 reply: vi.fn(),
                 update: {
                     message: {
@@ -96,6 +98,11 @@ describe('setup', () => {
             });
             expect(ctx.bot.api.deleteForumTopic).toHaveBeenCalledOnce();
 
+            expect(ctx.bot.api.getChatMember).toHaveBeenCalledExactlyOnceWith({
+                chat_id: 1,
+                user_id: 123456,
+            });
+
             expect(ctx.db.saveConfig).toHaveBeenCalledWith(config);
             expect(ctx.db.saveConfig).toHaveBeenCalledOnce();
 
@@ -114,6 +121,7 @@ describe('setup', () => {
                     api: {
                         createForumTopic: vi.fn().mockResolvedValue({}),
                         deleteForumTopic: vi.fn(),
+                        getChatMember: vi.fn().mockResolvedValue({ status: 'creator' }),
                     },
                 },
                 chat: {
@@ -154,6 +162,7 @@ describe('setup', () => {
                     api: {
                         createForumTopic: vi.fn().mockResolvedValue({}),
                         deleteForumTopic: vi.fn(),
+                        getChatMember: vi.fn().mockResolvedValue({ status: 'administrator' }),
                     },
                 },
                 chat: {
@@ -181,12 +190,45 @@ describe('setup', () => {
             expect(replyWithSuccess).toHaveBeenCalledOnce();
         });
 
+        it('should reject setup from non-admins', async () => {
+            const ctx = {
+                args: 'HBT',
+                bot: {
+                    api: {
+                        createForumTopic: vi.fn().mockResolvedValue({}),
+                        getChatMember: vi.fn().mockResolvedValue({ status: 'member' }),
+                    },
+                },
+                chat: {
+                    id: 2,
+                    type: 'supergroup',
+                },
+                db: {
+                    getConfig: vi.fn().mockResolvedValue({
+                        adminGroupId: '1',
+                    }),
+                    saveConfig: vi.fn(),
+                },
+                reply: vi.fn(),
+            } as unknown as ForwardContext;
+
+            await onSetup(ctx);
+
+            expect(ctx.bot.api.createForumTopic).not.toHaveBeenCalled();
+            expect(ctx.db.getConfig).not.toHaveBeenCalled();
+            expect(ctx.db.saveConfig).not.toHaveBeenCalled();
+
+            expect(replyWithWarning).toHaveBeenCalledOnce();
+            expect(replyWithSuccess).not.toHaveBeenCalledOnce();
+        });
+
         it('should be a no-op if we are trying to setup when we are already configured', async () => {
             const ctx = {
                 args: 'HBT',
                 bot: {
                     api: {
                         createForumTopic: vi.fn().mockResolvedValue({}),
+                        getChatMember: vi.fn().mockResolvedValue({ status: 'administrator' }),
                     },
                 },
                 chat: {
@@ -209,8 +251,7 @@ describe('setup', () => {
             expect(ctx.db.getConfig).toHaveBeenCalledOnce();
             expect(ctx.db.saveConfig).not.toHaveBeenCalled();
 
-            expect(replyWithWarning).toHaveBeenCalledOnce();
-            expect(replyWithWarning).toHaveBeenCalledWith(ctx, expect.any(String));
+            expect(replyWithWarning).toHaveBeenCalledExactlyOnceWith(ctx, expect.any(String));
             expect(replyWithSuccess).not.toHaveBeenCalled();
         });
 
@@ -234,7 +275,10 @@ describe('setup', () => {
 
             await onSetup(ctx);
 
-            expect(ctx.reply).toHaveBeenCalledWith('⚠️ This command must be used in a supergroup with topics enabled');
+            expect(replyWithWarning).toHaveBeenCalledExactlyOnceWith(
+                ctx,
+                'This command must be used in a supergroup with topics enabled',
+            );
             expect(ctx.bot.api.createForumTopic).not.toHaveBeenCalled();
             expect(ctx.db.saveConfig).not.toHaveBeenCalled();
             expect(replyWithSuccess).not.toHaveBeenCalled();
@@ -295,7 +339,7 @@ describe('setup', () => {
             expect(replyWithSuccess).not.toHaveBeenCalled();
         });
 
-        it('should log warning when invalid token is provided', async () => {
+        it('should just log when an invalid token is provided', async () => {
             const ctx = {
                 args: 'invalid-token',
                 bot: {
