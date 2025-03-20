@@ -1,6 +1,5 @@
 import type { DataService } from '@/services/types.js';
-import type { ForwardContext } from '@/types.js';
-import type { Bot, Context, ContextType, DeriveDefinitions, Handler } from 'gramio';
+import type { Bot, ContextType, DeriveDefinitions, Handler } from 'gramio';
 
 import { onSetup } from '@/commands/setup.js';
 import { onStart } from '@/commands/start.js';

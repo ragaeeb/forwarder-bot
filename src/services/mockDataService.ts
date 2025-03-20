@@ -17,20 +17,20 @@ export class MockDataService implements DataService {
     }
 
     /**
-     * Retrieves the bot configuration from the database
-     * @returns {Promise<BotSettings | null>} The bot configuration or null if not found or on error
-     */
-    async getSettings(): Promise<BotSettings | undefined> {
-        return this.botConfig;
-    }
-
-    /**
      * Retrieves messages for a specific user
      * @param {string} userId - The user ID to fetch messages for
      * @returns {Promise<SavedMessage[]>} Array of messages or empty array if none found or on error
      */
     async getMessagesByUserId(userId: string): Promise<SavedMessage[]> {
         return this.messages.filter((m) => m.from.userId === userId);
+    }
+
+    /**
+     * Retrieves the bot configuration from the database
+     * @returns {Promise<BotSettings | null>} The bot configuration or null if not found or on error
+     */
+    async getSettings(): Promise<BotSettings | undefined> {
+        return this.botConfig;
     }
 
     /**
@@ -52,17 +52,6 @@ export class MockDataService implements DataService {
     }
 
     /**
-     * Saves the bot configuration to the database
-     * @param {BotSettings} config - The configuration to save
-     * @returns {Promise<BotSettings>} The saved configuration
-     * @throws Will throw an error if the save operation fails
-     */
-    async saveSettings(botConfig: BotSettings): Promise<BotSettings> {
-        this.botConfig = botConfig;
-        return botConfig;
-    }
-
-    /**
      * Saves a message to the database
      * Messages are stored with a composite key of userId#messages to group them by user
      * @param {SavedMessage} message - The message to save
@@ -72,6 +61,17 @@ export class MockDataService implements DataService {
     async saveMessage(message: SavedMessage): Promise<SavedMessage> {
         this.messages.push(message);
         return message;
+    }
+
+    /**
+     * Saves the bot configuration to the database
+     * @param {BotSettings} config - The configuration to save
+     * @returns {Promise<BotSettings>} The saved configuration
+     * @throws Will throw an error if the save operation fails
+     */
+    async saveSettings(botConfig: BotSettings): Promise<BotSettings> {
+        this.botConfig = botConfig;
+        return botConfig;
     }
 
     /**

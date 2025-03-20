@@ -31,26 +31,6 @@ export class DynamoDBService implements DataService {
      * @returns {Promise<BotSettings | null>} The bot configuration or null if not found or on error
      */
 
-    async getSettings(): Promise<BotSettings | undefined> {
-        try {
-            logger.info(`getSettings()`);
-
-            const response = await this.client.send(
-                new GetCommand({
-                    Key: { userId: 'config' },
-                    TableName: this.tableName,
-                }),
-            );
-
-            logger.info(`getSettings() result: ${Boolean(response.Item)}`);
-
-            return response.Item as BotSettings;
-        } catch (error) {
-            logger.error(error, 'Error getting bot config');
-            throw error;
-        }
-    }
-
     /**
      * Retrieves messages for a specific user
      * @param {string} userId - The user ID to fetch messages for
@@ -76,6 +56,26 @@ export class DynamoDBService implements DataService {
             return (response.Items || []) as SavedMessage[];
         } catch (error) {
             logger.error({ error, userId }, 'Error getting messages by user ID');
+            throw error;
+        }
+    }
+
+    async getSettings(): Promise<BotSettings | undefined> {
+        try {
+            logger.info(`getSettings()`);
+
+            const response = await this.client.send(
+                new GetCommand({
+                    Key: { userId: 'config' },
+                    TableName: this.tableName,
+                }),
+            );
+
+            logger.info(`getSettings() result: ${Boolean(response.Item)}`);
+
+            return response.Item as BotSettings;
+        } catch (error) {
+            logger.error(error, 'Error getting bot config');
             throw error;
         }
     }
@@ -135,33 +135,6 @@ export class DynamoDBService implements DataService {
     }
 
     /**
-     * Saves the bot configuration to the database
-     * @param {BotSettings} config - The configuration to save
-     * @returns {Promise<BotSettings>} The saved configuration
-     * @throws Will throw an error if the save operation fails
-     */
-    async saveSettings(config: BotSettings): Promise<BotSettings> {
-        try {
-            logger.info(config, `saveSettings`);
-
-            await this.client.send(
-                new PutCommand({
-                    Item: {
-                        userId: 'config',
-                        ...config,
-                    },
-                    TableName: this.tableName,
-                }),
-            );
-
-            return config;
-        } catch (error) {
-            logger.error({ config, error }, 'Error saving bot config');
-            throw error;
-        }
-    }
-
-    /**
      * Saves a message to the database
      * Messages are stored with a composite key of userId#messages to group them by user
      * @param {SavedMessage} message - The message to save
@@ -187,6 +160,33 @@ export class DynamoDBService implements DataService {
             return message;
         } catch (error) {
             logger.error({ error, message }, 'Error saving message');
+            throw error;
+        }
+    }
+
+    /**
+     * Saves the bot configuration to the database
+     * @param {BotSettings} config - The configuration to save
+     * @returns {Promise<BotSettings>} The saved configuration
+     * @throws Will throw an error if the save operation fails
+     */
+    async saveSettings(config: BotSettings): Promise<BotSettings> {
+        try {
+            logger.info(config, `saveSettings`);
+
+            await this.client.send(
+                new PutCommand({
+                    Item: {
+                        userId: 'config',
+                        ...config,
+                    },
+                    TableName: this.tableName,
+                }),
+            );
+
+            return config;
+        } catch (error) {
+            logger.error({ config, error }, 'Error saving bot config');
             throw error;
         }
     }

@@ -1,6 +1,6 @@
 import { ForwardContext } from '@/types.js';
 import { mapTelegramMessageToSavedMessage } from '@/utils/messageUtils.js';
-import { replyWithError, replyWithSuccess } from '@/utils/replyUtils.js';
+import { replyWithSuccess } from '@/utils/replyUtils.js';
 import { createNewThread, getUpsertedThread } from '@/utils/threadUtils.js';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
