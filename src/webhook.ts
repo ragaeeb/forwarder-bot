@@ -57,3 +57,21 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         };
     }
 };
+
+export const initWebhook = async (apiUrl: string) => {
+    const bot = new Bot(config.BOT_TOKEN);
+
+    return bot.api.setWebhook({
+        drop_pending_updates: true,
+        secret_token: config.SECRET_TOKEN,
+        url: `${apiUrl}/${config.BOT_TOKEN}`,
+    });
+};
+
+export const resetHook = async () => {
+    const bot = new Bot(config.BOT_TOKEN);
+
+    return bot.api.deleteWebhook({
+        drop_pending_updates: true,
+    });
+};

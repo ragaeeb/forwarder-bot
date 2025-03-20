@@ -94,23 +94,11 @@ describe('webhook handler', () => {
         });
     });
 
-    it('should reject requests with invalid secret token', async () => {
-        mockEvent.headers['x-telegram-bot-api-secret-token'] = 'invalid-token';
-
-        const result = await handler(mockEvent);
-
-        expect(Bot).not.toHaveBeenCalled();
-        expect(DynamoDBService).not.toHaveBeenCalled();
-        expect(registerHandlers).not.toHaveBeenCalled();
-
-        expect(result).toEqual({
-            body: JSON.stringify({ error: 'Unauthorized', ok: false }),
-            statusCode: 403,
-        });
-    });
-
-    it('should reject requests with missing secret token', async () => {
-        delete mockEvent.headers['x-telegram-bot-api-secret-token'];
+    it.each([
+        { scenario: 'invalid token', token: 'invalid-token' },
+        { scenario: 'missing token', token: undefined },
+    ])('should reject requests with $scenario', async ({ token }) => {
+        mockEvent.headers['x-telegram-bot-api-secret-token'] = token;
 
         const result = await handler(mockEvent);
 

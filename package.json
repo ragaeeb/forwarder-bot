@@ -7,8 +7,9 @@
         "build": "bun build src/webhook.ts --outdir=dist --target=node --sourcemap",
         "deploy": "bun run build && serverless deploy",
         "dev": "bun --watch src/index.ts",
-        "reset": "bun scripts/resetHook.ts",
-        "register": "bun scripts/registerHook.ts",
+        "reset": "bun scripts/manageHook.ts --reset",
+        "register": "bun scripts/manageHook.ts --setup",
+        "reveal": "bun scripts/manageHook.ts --reveal",
         "lint": "bun x eslint src --ext .ts",
         "test": "vitest run --coverage"
     },
@@ -35,7 +36,7 @@
         "prettier": "^3.5.3",
         "serverless": "^4.9.0",
         "typescript": "^5.8.2",
-        "typescript-eslint": "^8.26.1",
+        "typescript-eslint": "^8.27.0",
         "vitest": "^3.0.9"
     },
     "engines": {
