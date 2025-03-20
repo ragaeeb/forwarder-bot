@@ -1,4 +1,4 @@
-import type { DynamoDBService } from '@/services/dynamodb.js';
+import type { DataService } from '@/services/types.js';
 import type { Bot } from 'gramio';
 
 import { onSetup } from '@/commands/setup.js';
@@ -34,119 +34,78 @@ vi.mock('@/utils/logger.js', () => ({
 }));
 
 describe('registerHandlers', () => {
-    it('should register all middleware and handlers correctly', () => {
+    it('should register only setup handler when bot is not configured', async () => {
         const mockBot = {
             command: vi.fn(),
+            derive: vi.fn().mockReturnThis(),
             on: vi.fn(),
-            use: vi.fn(),
         };
 
-        const mockDB: Partial<DynamoDBService> = {};
+        const mockDB = {
+            getSettings: vi.fn().mockResolvedValue(null),
+        };
 
-        registerHandlers(mockBot as unknown as Bot, mockDB as DynamoDBService);
+        await registerHandlers(mockBot as unknown as Bot, mockDB as unknown as DataService);
 
-        expect(mockBot.use).toHaveBeenCalledTimes(3);
-        expect(mockBot.command).toHaveBeenCalledTimes(2);
-        expect(mockBot.on).toHaveBeenCalledTimes(2);
+        expect(mockBot.derive).toHaveBeenCalledTimes(1);
 
-        expect(mockBot.command).toHaveBeenCalledWith('start', onStart);
+        expect(mockBot.command).toHaveBeenCalledTimes(1);
         expect(mockBot.command).toHaveBeenCalledWith('setup', onSetup);
+
+        expect(mockBot.on).not.toHaveBeenCalled();
+    });
+
+    it('should register all handlers when bot is configured', async () => {
+        const mockBot = {
+            command: vi.fn(),
+            derive: vi.fn().mockReturnThis(),
+            on: vi.fn(),
+        };
+
+        const mockSettings = { adminGroupId: '123456' };
+        const mockDB = {
+            getSettings: vi.fn().mockResolvedValue(mockSettings),
+        };
+
+        await registerHandlers(mockBot as unknown as Bot, mockDB as unknown as DataService);
+
+        expect(mockBot.derive).toHaveBeenCalledTimes(1);
+
+        expect(mockBot.command).toHaveBeenCalledTimes(2);
+        expect(mockBot.command).toHaveBeenCalledWith('setup', onSetup);
+        expect(mockBot.command).toHaveBeenCalledWith('start', onStart);
+
+        expect(mockBot.on).toHaveBeenCalledTimes(2);
         expect(mockBot.on).toHaveBeenNthCalledWith(1, 'message', onGenericMessage);
         expect(mockBot.on).toHaveBeenNthCalledWith(2, 'edited_message', handleEditedMessage);
     });
-});
 
-describe('middleware functions', () => {
-    it('withBot middleware should call next() if the message is not from the bot', async () => {
+    it('should pass settings to context derivation', async () => {
         const mockBot = {
             command: vi.fn(),
+            derive: vi.fn().mockReturnThis(),
             on: vi.fn(),
-            use: vi.fn((middleware) => {
-                middlewares.push(middleware);
-            }),
         };
 
-        const middlewares: Array<any> = [];
-        const mockDB = {} as Partial<DynamoDBService>;
-
-        registerHandlers(mockBot as unknown as Bot, mockDB as DynamoDBService);
-
-        const withBotMiddleware = middlewares[0];
-
-        const mockCtx = {
-            api: {
-                getMe: vi.fn().mockResolvedValue({ first_name: 'Bot', id: 123 }),
-            },
-            from: {
-                id: 456,
-            },
-            me: undefined,
+        const mockSettings = { adminGroupId: '123456' };
+        const mockDB = {
+            getSettings: vi.fn().mockResolvedValue(mockSettings),
         };
 
-        const mockNext = vi.fn().mockResolvedValue(undefined);
+        await registerHandlers(mockBot as unknown as Bot, mockDB as unknown as DataService);
 
-        await withBotMiddleware(mockCtx, mockNext);
+        // Verify derive callback includes settings
+        const deriveCallback = mockBot.derive.mock.calls[0][0];
+        expect(typeof deriveCallback).toBe('function');
 
-        expect(mockCtx.me).toEqual({ first_name: 'Bot', id: 123 });
-        expect(mockNext).toHaveBeenCalled();
-    });
+        // Execute the derive callback
+        const derivedContext = await deriveCallback();
 
-    it('withBot middleware should not call next() if the message is from the bot', async () => {
-        const mockBot = {
-            command: vi.fn(),
-            on: vi.fn(),
-            use: vi.fn((middleware) => {
-                middlewares.push(middleware);
-            }),
-        };
-
-        const middlewares: Array<any> = [];
-        const mockDB = {} as DynamoDBService;
-
-        registerHandlers(mockBot as any, mockDB);
-
-        const withBotMiddleware = middlewares[0];
-
-        const mockCtx = {
-            api: {
-                getMe: vi.fn().mockResolvedValue({ first_name: 'Bot', id: 123 }),
-            },
-            from: {
-                id: 123,
-            },
-            me: undefined,
-        };
-
-        const mockNext = vi.fn().mockResolvedValue(undefined);
-
-        await withBotMiddleware(mockCtx, mockNext);
-
-        expect(mockCtx.me).toEqual({ first_name: 'Bot', id: 123 });
-        expect(mockNext).not.toHaveBeenCalled();
-    });
-
-    it('withDB middleware should add db to context and call next()', async () => {
-        const mockBot = {
-            command: vi.fn(),
-            on: vi.fn(),
-            use: vi.fn((middleware) => {
-                middlewares.push(middleware);
-            }),
-        };
-
-        const middlewares: Array<any> = [];
-        const mockDB = { test: 'db instance' } as any;
-
-        registerHandlers(mockBot as any, mockDB);
-
-        const withDBMiddleware = middlewares[1];
-
-        const mockCtx = {};
-        const mockNext = vi.fn().mockResolvedValue(undefined);
-
-        await withDBMiddleware(mockCtx, mockNext);
-
-        expect(mockCtx).toHaveProperty('db', mockDB);
-        expect(mockNext).toHaveBeenCalled();
+        // Check the derived context
+        expect(derivedContext).toEqual({
+            bot: mockBot,
+            db: mockDB,
+            settings: mockSettings,
+        });
     });
 });

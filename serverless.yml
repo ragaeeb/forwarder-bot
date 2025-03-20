@@ -1,11 +1,13 @@
-# "org" ensures this Service is used with the correct Serverless Framework Access Key.
-org: ilmtest
-# "app" enables Serverless Framework Dashboard features and sharing them with other Services.
-app: ilmtest-serverless
-# "service" is the name of this project. This will also be added to your AWS resource names.
-service: telegram-forwarder-bot
+# serverless.yml
+org: ${env:SERVERLESS_ORG, ''}
+app: ${env:SERVERLESS_APP, ''}
+service: ${env:SERVERLESS_SERVICE, 'telegram-forwarder-bot'}
 
 frameworkVersion: '4'
+
+# Define variables section to centralize configuration
+custom:
+    tableName: ${env:TABLE_NAME, '${self:service}-table'}
 
 provider:
     name: aws
@@ -13,7 +15,8 @@ provider:
     architecture: arm64
     environment:
         BOT_TOKEN: ${env:BOT_TOKEN}
-        TABLE_NAME: telegram-forwarder-bot-table
+        SECRET_TOKEN: ${env:SECRET_TOKEN, ''}
+        TABLE_NAME: ${self:custom.tableName}
     iam:
         role:
             statements:
@@ -42,7 +45,7 @@ resources:
         ThreadsTable:
             Type: AWS::DynamoDB::Table
             Properties:
-                TableName: telegram-forwarder-bot-table
+                TableName: ${self:custom.tableName}
                 BillingMode: PAY_PER_REQUEST
                 AttributeDefinitions:
                     - AttributeName: userId

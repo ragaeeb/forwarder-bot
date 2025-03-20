@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { BotConfig, SavedMessage, ThreadData } from '../types.js';
+import type { BotSettings, SavedMessage, ThreadData } from '../types.js';
 
 import { MockDataService } from './mockDataService.js';
 
@@ -27,14 +27,14 @@ describe('MockDataService', () => {
         });
     });
 
-    describe('getConfig', () => {
+    describe('getSettings', () => {
         it('should return undefined when no config has been set', async () => {
-            const config = await mockDataService.getConfig();
+            const config = await mockDataService.getSettings();
             expect(config).toBeUndefined();
         });
 
         it('should return the saved config when it exists', async () => {
-            const botConfig: BotConfig = {
+            const botConfig: BotSettings = {
                 adminGroupId: '12345',
                 configId: 'test-config',
                 setupAt: '2023-01-01T00:00:00Z',
@@ -45,8 +45,8 @@ describe('MockDataService', () => {
                 },
             };
 
-            await mockDataService.saveConfig(botConfig);
-            const config = await mockDataService.getConfig();
+            await mockDataService.saveSettings(botConfig);
+            const config = await mockDataService.getSettings();
 
             expect(config).toEqual(botConfig);
         });
@@ -174,9 +174,9 @@ describe('MockDataService', () => {
         });
     });
 
-    describe('saveConfig', () => {
+    describe('saveSettings', () => {
         it('should save and return the provided config', async () => {
-            const botConfig: BotConfig = {
+            const botConfig: BotSettings = {
                 adminGroupId: '12345',
                 configId: 'test-config',
                 setupAt: '2023-01-01T00:00:00Z',
@@ -187,14 +187,14 @@ describe('MockDataService', () => {
                 },
             };
 
-            const savedConfig = await mockDataService.saveConfig(botConfig);
+            const savedConfig = await mockDataService.saveSettings(botConfig);
 
             expect(savedConfig).toEqual(botConfig);
             expect(mockDataService['botConfig']).toEqual(botConfig);
         });
 
         it('should overwrite previous config when saving a new one', async () => {
-            const initialConfig: BotConfig = {
+            const initialConfig: BotSettings = {
                 adminGroupId: '12345',
                 configId: 'initial-config',
                 setupAt: '2023-01-01T00:00:00Z',
@@ -205,7 +205,7 @@ describe('MockDataService', () => {
                 },
             };
 
-            const updatedConfig: BotConfig = {
+            const updatedConfig: BotSettings = {
                 adminGroupId: '98765',
                 configId: 'updated-config',
                 setupAt: '2023-01-02T00:00:00Z',
@@ -216,10 +216,10 @@ describe('MockDataService', () => {
                 },
             };
 
-            await mockDataService.saveConfig(initialConfig);
-            await mockDataService.saveConfig(updatedConfig);
+            await mockDataService.saveSettings(initialConfig);
+            await mockDataService.saveSettings(updatedConfig);
 
-            const config = await mockDataService.getConfig();
+            const config = await mockDataService.getSettings();
             expect(config).toEqual(updatedConfig);
         });
     });

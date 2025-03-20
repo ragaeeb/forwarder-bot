@@ -47,7 +47,6 @@ describe('handleEditedMessage', () => {
             },
             chatId: '123',
             db: {
-                getConfig: vi.fn(),
                 getThreadByUserId: vi.fn(),
                 saveMessage: vi.fn(),
             },
@@ -56,6 +55,7 @@ describe('handleEditedMessage', () => {
                 id: 456,
                 is_bot: false,
             },
+            settings: { adminGroupId: '789' },
             update: {
                 edited_message: {
                     chat: {
@@ -82,19 +82,6 @@ describe('handleEditedMessage', () => {
 
             await handleEditedMessage(mockCtx);
 
-            expect(mockCtx.db.getConfig).not.toHaveBeenCalled();
-            expect(mockCtx.db.getThreadByUserId).not.toHaveBeenCalled();
-            expect(mockCtx.bot.api.sendMessage).not.toHaveBeenCalled();
-            expect(mockCtx.bot.api.forwardMessage).not.toHaveBeenCalled();
-            expect(mockCtx.db.saveMessage).not.toHaveBeenCalled();
-        });
-
-        it('should abort if admin group ID is not configured', async () => {
-            (mockCtx.db.getConfig as Mock).mockResolvedValue(null);
-
-            await handleEditedMessage(mockCtx);
-
-            expect(mockCtx.db.getConfig).toHaveBeenCalled();
             expect(mockCtx.db.getThreadByUserId).not.toHaveBeenCalled();
             expect(mockCtx.bot.api.sendMessage).not.toHaveBeenCalled();
             expect(mockCtx.bot.api.forwardMessage).not.toHaveBeenCalled();
@@ -102,12 +89,10 @@ describe('handleEditedMessage', () => {
         });
 
         it('should abort if thread for user is not found', async () => {
-            (mockCtx.db.getConfig as Mock).mockResolvedValue({ adminGroupId: '789' });
             (mockCtx.db.getThreadByUserId as Mock).mockResolvedValue(null);
 
             await handleEditedMessage(mockCtx);
 
-            expect(mockCtx.db.getConfig).toHaveBeenCalled();
             expect(mockCtx.db.getThreadByUserId).toHaveBeenCalledWith('456');
             expect(mockCtx.bot.api.sendMessage).not.toHaveBeenCalled();
             expect(mockCtx.bot.api.forwardMessage).not.toHaveBeenCalled();
@@ -138,13 +123,11 @@ describe('handleEditedMessage', () => {
                 type: 'user',
             };
 
-            (mockCtx.db.getConfig as Mock).mockResolvedValue({ adminGroupId: '789' });
             (mockCtx.db.getThreadByUserId as Mock).mockResolvedValue(threadData);
             (mockCtx.db.saveMessage as Mock).mockResolvedValue({ ...savedMessage, id: savedMessage.id });
 
             await handleEditedMessage(mockCtx);
 
-            expect(mockCtx.db.getConfig).toHaveBeenCalled();
             expect(mockCtx.db.getThreadByUserId).toHaveBeenCalledWith('456');
 
             expect(mockCtx.bot.api.sendMessage).toHaveBeenCalledWith({
@@ -170,11 +153,11 @@ describe('handleEditedMessage', () => {
 
         it('should handle errors gracefully', async () => {
             const error = new Error('Test error');
-            (mockCtx.db.getConfig as Mock).mockRejectedValue(error);
+            (mockCtx.db.getThreadByUserId as Mock).mockRejectedValue(error);
 
             await handleEditedMessage(mockCtx);
 
-            expect(mockCtx.db.getConfig).toHaveBeenCalled();
+            expect(mockCtx.db.getThreadByUserId).toHaveBeenCalled();
         });
 
         it('should use parseInt to convert threadId from string to number', async () => {
@@ -188,7 +171,6 @@ describe('handleEditedMessage', () => {
                 userId: '456',
             };
 
-            (mockCtx.db.getConfig as Mock).mockResolvedValue({ adminGroupId: '789' });
             (mockCtx.db.getThreadByUserId as Mock).mockResolvedValue(threadData);
 
             await handleEditedMessage(mockCtx);

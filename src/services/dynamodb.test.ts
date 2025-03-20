@@ -1,7 +1,7 @@
 import { DynamoDBDocumentClient, GetCommand, PutCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { BotConfig, SavedMessage, ThreadData } from '../types.js';
+import type { BotSettings, SavedMessage, ThreadData } from '../types.js';
 
 import { DynamoDBService } from './dynamodb.js';
 
@@ -50,9 +50,9 @@ describe('DynamoDBService', () => {
         dynamoDBService = new DynamoDBService();
     });
 
-    describe('getConfig', () => {
+    describe('getSettings', () => {
         it('should return the bot config when found', async () => {
-            const mockConfig: BotConfig = {
+            const mockConfig: BotSettings = {
                 adminGroupId: 'admin-123',
                 configId: 'config-123',
                 setupAt: '2023-01-01T00:00:00Z',
@@ -63,7 +63,7 @@ describe('DynamoDBService', () => {
                 Item: mockConfig,
             });
 
-            const result = await dynamoDBService.getConfig();
+            const result = await dynamoDBService.getSettings();
 
             expect(GetCommand).toHaveBeenCalledWith({
                 Key: { userId: 'config' },
@@ -75,7 +75,7 @@ describe('DynamoDBService', () => {
         it('should return undefined when config not found', async () => {
             mockClient.send.mockResolvedValueOnce({});
 
-            const result = await dynamoDBService.getConfig();
+            const result = await dynamoDBService.getSettings();
 
             expect(result).toBeUndefined();
         });
@@ -84,7 +84,7 @@ describe('DynamoDBService', () => {
             const error = new Error('DynamoDB error');
             mockClient.send.mockRejectedValueOnce(error);
 
-            await expect(dynamoDBService.getConfig()).rejects.toThrow(expect.any(Error));
+            await expect(dynamoDBService.getSettings()).rejects.toThrow(expect.any(Error));
         });
     });
 
@@ -227,9 +227,9 @@ describe('DynamoDBService', () => {
         });
     });
 
-    describe('saveConfig', () => {
+    describe('saveSettings', () => {
         it('should save the config and return it', async () => {
-            const mockConfig: BotConfig = {
+            const mockConfig: BotSettings = {
                 adminGroupId: 'admin-123',
                 configId: 'config-123',
                 setupAt: '2023-01-01T00:00:00Z',
@@ -238,7 +238,7 @@ describe('DynamoDBService', () => {
 
             mockClient.send.mockResolvedValueOnce({});
 
-            const result = await dynamoDBService.saveConfig(mockConfig);
+            const result = await dynamoDBService.saveSettings(mockConfig);
 
             expect(PutCommand).toHaveBeenCalledWith({
                 Item: {
@@ -251,7 +251,7 @@ describe('DynamoDBService', () => {
         });
 
         it('should throw error when save fails', async () => {
-            const mockConfig: BotConfig = {
+            const mockConfig: BotSettings = {
                 adminGroupId: 'admin-123',
                 configId: 'config-123',
                 setupAt: '2023-01-01T00:00:00Z',
@@ -261,7 +261,7 @@ describe('DynamoDBService', () => {
             const error = new Error('DynamoDB error');
             mockClient.send.mockRejectedValueOnce(error);
 
-            await expect(dynamoDBService.saveConfig(mockConfig)).rejects.toThrow(error);
+            await expect(dynamoDBService.saveSettings(mockConfig)).rejects.toThrow(error);
         });
     });
 

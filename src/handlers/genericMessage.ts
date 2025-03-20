@@ -9,13 +9,6 @@ import { handleDirectMessage } from './handleDirectMessage.js';
 export const onGenericMessage = async (ctx: ForwardContext) => {
     logger.info(ctx.update, `onGenericMessage`);
 
-    const adminGroupId = (await ctx.db.getConfig())?.adminGroupId;
-
-    if (!adminGroupId) {
-        logger.warn(`Bot is not configured. Aborting.`);
-        return;
-    }
-
     const message = ctx.update?.message;
 
     if (!message) {
@@ -23,8 +16,11 @@ export const onGenericMessage = async (ctx: ForwardContext) => {
         return;
     }
 
+    const { adminGroupId } = ctx.settings;
+    const chatId = ctx.chat?.id.toString();
+
     const isAdminReply =
-        ctx.chat.id.toString() === adminGroupId &&
+        chatId === adminGroupId &&
         ctx.chat.type === 'supergroup' &&
         message.reply_to_message &&
         message.message_thread_id;
@@ -38,7 +34,7 @@ export const onGenericMessage = async (ctx: ForwardContext) => {
         }
     }
 
-    const isDirectMessage = ctx.chat.type === 'private' && ctx.chat?.id.toString() !== adminGroupId;
+    const isDirectMessage = ctx.chat.type === 'private' && chatId !== adminGroupId;
 
     // Handle direct messages (if not from the contact group)
     if (isDirectMessage) {

@@ -2,7 +2,7 @@ import logger from '@/utils/logger.js';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, GetCommand, PutCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
 
-import type { BotConfig, SavedMessage, ThreadData } from '../types.js';
+import type { BotSettings, SavedMessage, ThreadData } from '../types.js';
 import type { DataService } from './types.js';
 
 import { config } from '../config.js';
@@ -28,12 +28,12 @@ export class DynamoDBService implements DataService {
 
     /**
      * Retrieves the bot configuration from the database
-     * @returns {Promise<BotConfig | null>} The bot configuration or null if not found or on error
+     * @returns {Promise<BotSettings | null>} The bot configuration or null if not found or on error
      */
 
-    async getConfig(): Promise<BotConfig | undefined> {
+    async getSettings(): Promise<BotSettings | undefined> {
         try {
-            logger.info(`getConfig()`);
+            logger.info(`getSettings()`);
 
             const response = await this.client.send(
                 new GetCommand({
@@ -42,9 +42,9 @@ export class DynamoDBService implements DataService {
                 }),
             );
 
-            logger.info(`getConfig() result: ${Boolean(response.Item)}`);
+            logger.info(`getSettings() result: ${Boolean(response.Item)}`);
 
-            return response.Item as BotConfig;
+            return response.Item as BotSettings;
         } catch (error) {
             logger.error(error, 'Error getting bot config');
             throw error;
@@ -136,13 +136,13 @@ export class DynamoDBService implements DataService {
 
     /**
      * Saves the bot configuration to the database
-     * @param {BotConfig} config - The configuration to save
-     * @returns {Promise<BotConfig>} The saved configuration
+     * @param {BotSettings} config - The configuration to save
+     * @returns {Promise<BotSettings>} The saved configuration
      * @throws Will throw an error if the save operation fails
      */
-    async saveConfig(config: BotConfig): Promise<BotConfig> {
+    async saveSettings(config: BotSettings): Promise<BotSettings> {
         try {
-            logger.info(config, `saveConfig`);
+            logger.info(config, `saveSettings`);
 
             await this.client.send(
                 new PutCommand({

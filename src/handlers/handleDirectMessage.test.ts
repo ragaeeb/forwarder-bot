@@ -1,6 +1,6 @@
 import { ForwardContext } from '@/types.js';
 import { mapTelegramMessageToSavedMessage } from '@/utils/messageUtils.js';
-import { replyWithSuccess } from '@/utils/replyUtils.js';
+import { replyWithError, replyWithSuccess } from '@/utils/replyUtils.js';
 import { createNewThread, getUpsertedThread } from '@/utils/threadUtils.js';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -20,6 +20,7 @@ vi.mock('@/utils/messageUtils.js', () => ({
 }));
 
 vi.mock('@/utils/replyUtils.js', () => ({
+    replyWithError: vi.fn(),
     replyWithSuccess: vi.fn().mockResolvedValue({}),
 }));
 
@@ -41,6 +42,7 @@ describe('handleDirectMessage', () => {
             db: { saveMessage: vi.fn().mockResolvedValue({}) },
             from: { id: 123 },
             id: 789,
+            settings: {},
             update: { message: { message_id: 789, text: 'Hello admin' } },
         } as unknown as ForwardContext;
 
@@ -59,10 +61,7 @@ describe('handleDirectMessage', () => {
             message_thread_id: 456,
         });
 
-        expect(replyWithSuccess).toHaveBeenCalledWith(
-            ctx,
-            `Message delivered, our team will get back to you in shāʾ Allah.`,
-        );
+        expect(replyWithSuccess).toHaveBeenCalledWith(ctx, expect.any(String));
 
         expect(result).toBeDefined();
     });
@@ -142,6 +141,7 @@ describe('handleDirectMessage', () => {
             db: { saveMessage: vi.fn().mockResolvedValue({}) },
             from: { id: 123 },
             id: 789,
+            settings: {},
             update: { message: { message_id: 789 } },
         } as unknown as ForwardContext;
 
@@ -180,6 +180,7 @@ describe('handleDirectMessage', () => {
             db: { saveMessage: vi.fn().mockResolvedValue({}) },
             from: { id: 123 },
             id: 789,
+            settings: {},
             update: { message: { message_id: 789 } },
         } as unknown as ForwardContext;
 
@@ -205,6 +206,7 @@ describe('handleDirectMessage', () => {
             db: { saveMessage: vi.fn().mockResolvedValue({}) },
             from: { id: 123 },
             id: 789,
+            settings: {},
             update: { message: { message_id: 789 } },
         } as unknown as ForwardContext;
 

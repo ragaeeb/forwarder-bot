@@ -1,11 +1,11 @@
-import { BotConfig, SavedMessage, ThreadData } from '@/types.js';
+import { BotSettings, SavedMessage, ThreadData } from '@/types.js';
 
 export interface DataService {
-    getConfig(): Promise<BotConfig | undefined>;
     getMessagesByUserId(userId: string): Promise<SavedMessage[]>;
+    getSettings(): Promise<BotSettings | undefined>;
     getThreadById(threadId: string): Promise<ThreadData | undefined>;
     getThreadByUserId(userId: string): Promise<ThreadData | undefined>;
-    saveConfig(config: BotConfig): Promise<BotConfig>;
     saveMessage(message: SavedMessage): Promise<SavedMessage>;
+    saveSettings(config: BotSettings): Promise<BotSettings>;
     saveThread(thread: ThreadData): Promise<ThreadData>;
 }

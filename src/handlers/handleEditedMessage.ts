@@ -13,25 +13,22 @@ export const handleEditedMessage = async (ctx: ForwardContext) => {
     }
 
     try {
-        const adminGroupId = (await ctx.db.getConfig())?.adminGroupId;
+        const userId = ctx.from?.id.toString() as string;
 
-        if (!adminGroupId) {
-            logger.warn(`Bot is not configured. Aborting.`);
-            return;
-        }
-
-        logger.info(`Looking up thread for user=${ctx.from?.id}`);
-        const threadData = await ctx.db.getThreadByUserId(ctx.from?.id.toString() as string);
-        logger.info(threadData, `Thread for user ${ctx.from?.id}`);
+        logger.info(`Looking up thread for user=${userId}`);
+        const threadData = await ctx.db.getThreadByUserId(userId);
+        logger.info(threadData, `Thread for user ${userId}`);
 
         if (!threadData) {
-            logger.warn(`Received edited message but no thread exists for user ${ctx.from?.id}`);
+            logger.warn(`Received edited message but no thread exists for user ${userId}`);
             return;
         }
 
         const threadId = parseInt(threadData.threadId);
 
         logger.info(`Notifying of edited message to group`);
+
+        const { adminGroupId } = ctx.settings;
 
         await ctx.bot.api.sendMessage({
             chat_id: adminGroupId,

@@ -61,7 +61,7 @@ if (process.argv[2] === '--reset') {
     }
 } else if (process.argv[2] === '--setup') {
     console.log('Setting webhook...');
-    setupWebhook();
+    await setupWebhook();
 } else if (process.argv[2] === '--reveal') {
     console.log(getHashedToken());
 }

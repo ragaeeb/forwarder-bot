@@ -2,9 +2,12 @@ import type { Bot, DeriveDefinitions, MessageContext, TelegramMessageOrigin, Tel
 
 import type { DataService } from './services/types.js';
 
-export interface BotConfig {
+export interface BotSettings {
+    ack?: string;
     adminGroupId: string;
     configId: string;
+    failure?: string;
+    greeting?: string;
     setupAt: string;
     setupBy: TelegramUser;
 }
@@ -14,7 +17,7 @@ export type ForwardContext = MessageContext<Bot<Record<string, never>, DeriveDef
     args: null | string;
     bot: Bot;
     db: DataService;
-    me: TelegramUser;
+    settings: BotSettings;
 };
 
 export interface SavedMessage {

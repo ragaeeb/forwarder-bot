@@ -21,6 +21,12 @@
         "pino": "^9.6.0",
         "pino-pretty": "^13.0.0"
     },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/ragaeeb/forwarder-bot.git"
+    },
+    "author": "Ragaeeb Haq",
+    "license": "MIT",
     "description": "Telegram bot that forwards messages between users and a group with topics",
     "devDependencies": {
         "@eslint/js": "^9.22.0",
@@ -40,7 +46,7 @@
         "vitest": "^3.0.9"
     },
     "engines": {
-        "bun": ">=1.0.40"
+        "bun": ">=1.2.5"
     },
     "type": "module"
 }

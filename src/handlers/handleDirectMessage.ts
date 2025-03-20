@@ -3,7 +3,7 @@ import type { TelegramMessage } from 'gramio';
 
 import logger from '@/utils/logger.js';
 import { mapTelegramMessageToSavedMessage } from '@/utils/messageUtils.js';
-import { replyWithSuccess } from '@/utils/replyUtils.js';
+import { replyWithError, replyWithSuccess } from '@/utils/replyUtils.js';
 import { createNewThread, getUpsertedThread } from '@/utils/threadUtils.js';
 
 const forwardMessageToGroup = async (ctx: ForwardContext, groupId: string, threadId: string) => {
@@ -19,7 +19,7 @@ const forwardMessageToGroup = async (ctx: ForwardContext, groupId: string, threa
 
     logger.info(`Replying 200 to user for successful forwarding.`);
 
-    return replyWithSuccess(ctx, `Message delivered, our team will get back to you in shāʾ Allah.`);
+    return replyWithSuccess(ctx, ctx.settings.ack || 'Message delivered, our team will get back to you.');
 };
 
 const retryFailedForward = async (ctx: ForwardContext, adminGroupId: string) => {
@@ -33,6 +33,7 @@ const retryFailedForward = async (ctx: ForwardContext, adminGroupId: string) => 
         }
     } catch (retryError) {
         logger.error({ error: retryError, userId: ctx.from?.id }, 'Failed to forward message after retry');
+        return replyWithError(ctx, ctx.settings.failure || 'Could not deliver message, please try again later.');
     }
 };
 

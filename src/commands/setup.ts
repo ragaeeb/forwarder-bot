@@ -28,7 +28,7 @@ const executeSetup = async (ctx: ForwardContext, chatId: number) => {
     logger.info(`Saving config`);
 
     // Store group as the forwarding destination
-    await ctx.db.saveConfig({
+    await ctx.db.saveSettings({
         adminGroupId: chatId.toString(),
         configId: 'main',
         setupAt: new Date().toISOString(),
@@ -44,12 +44,12 @@ const executeSetup = async (ctx: ForwardContext, chatId: number) => {
 };
 
 const validatePreconfig = async (ctx: ForwardContext, chatId: number) => {
-    const existingConfig = await ctx.db.getConfig();
+    if (ctx.settings) {
+        const { adminGroupId } = ctx.settings;
 
-    if (existingConfig) {
-        logger.info(`Bot was already configured to chatId=${existingConfig.adminGroupId}`);
+        logger.info(`Bot was already configured to chatId=${adminGroupId}`);
 
-        if (existingConfig.adminGroupId === chatId.toString()) {
+        if (adminGroupId === chatId.toString()) {
             logger.info(`We were already set up with ${chatId.toString()}`);
             return replyWithWarning(ctx, `Setup was already completed for this group.`);
         }
@@ -59,8 +59,8 @@ const validatePreconfig = async (ctx: ForwardContext, chatId: number) => {
             logger.info(`Sending a notification to previous group of deactivation`);
             await replyWithWarning(ctx, `Bot is being reconfigured, deactivating forwards to this group.`);
 
-            logger.info(`Leaving chat=${existingConfig.adminGroupId}`);
-            await ctx.api.leaveChat({ chat_id: existingConfig.adminGroupId });
+            logger.info(`Leaving chat=${adminGroupId}`);
+            await ctx.api.leaveChat({ chat_id: adminGroupId });
 
             logger.info(`Left old group`);
         } catch (err) {

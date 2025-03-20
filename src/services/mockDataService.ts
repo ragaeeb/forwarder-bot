@@ -1,11 +1,11 @@
 import logger from '@/utils/logger.js';
 
-import type { BotConfig, SavedMessage, ThreadData } from '../types.js';
+import type { BotSettings, SavedMessage, ThreadData } from '../types.js';
 
 import { DataService } from './types.js';
 
 export class MockDataService implements DataService {
-    private botConfig?: BotConfig;
+    private botConfig?: BotSettings;
     private messages: SavedMessage[];
     private threads: ThreadData[];
 
@@ -18,9 +18,9 @@ export class MockDataService implements DataService {
 
     /**
      * Retrieves the bot configuration from the database
-     * @returns {Promise<BotConfig | null>} The bot configuration or null if not found or on error
+     * @returns {Promise<BotSettings | null>} The bot configuration or null if not found or on error
      */
-    async getConfig(): Promise<BotConfig | undefined> {
+    async getSettings(): Promise<BotSettings | undefined> {
         return this.botConfig;
     }
 
@@ -53,11 +53,11 @@ export class MockDataService implements DataService {
 
     /**
      * Saves the bot configuration to the database
-     * @param {BotConfig} config - The configuration to save
-     * @returns {Promise<BotConfig>} The saved configuration
+     * @param {BotSettings} config - The configuration to save
+     * @returns {Promise<BotSettings>} The saved configuration
      * @throws Will throw an error if the save operation fails
      */
-    async saveConfig(botConfig: BotConfig): Promise<BotConfig> {
+    async saveSettings(botConfig: BotSettings): Promise<BotSettings> {
         this.botConfig = botConfig;
         return botConfig;
     }

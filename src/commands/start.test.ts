@@ -12,9 +12,9 @@ vi.mock('@/utils/logger.js', () => ({
 describe('start', () => {
     describe('onStart', () => {
         it('should reply to the message', async () => {
-            const ctx: Partial<ForwardContext> = { reply: vi.fn() };
+            const ctx = { reply: vi.fn(), settings: {} };
 
-            await onStart(ctx as ForwardContext);
+            await onStart(ctx as unknown as ForwardContext);
 
             expect(ctx.reply).toHaveBeenCalledOnce();
             expect(ctx.reply).toHaveBeenCalledWith(expect.any(String));

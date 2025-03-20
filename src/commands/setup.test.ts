@@ -72,8 +72,7 @@ describe('setup', () => {
                     type: 'supergroup',
                 },
                 db: {
-                    getConfig: vi.fn(),
-                    saveConfig: vi.fn().mockResolvedValue(config),
+                    saveSettings: vi.fn().mockResolvedValue(config),
                 },
                 from: { id: 123456 },
                 reply: vi.fn(),
@@ -103,10 +102,8 @@ describe('setup', () => {
                 user_id: 123456,
             });
 
-            expect(ctx.db.saveConfig).toHaveBeenCalledWith(config);
-            expect(ctx.db.saveConfig).toHaveBeenCalledOnce();
-
-            expect(ctx.db.getConfig).toHaveBeenCalledOnce();
+            expect(ctx.db.saveSettings).toHaveBeenCalledWith(config);
+            expect(ctx.db.saveSettings).toHaveBeenCalledOnce();
 
             expect(replyWithSuccess).toHaveBeenCalledWith(ctx, expect.any(String));
         });
@@ -129,20 +126,19 @@ describe('setup', () => {
                     type: 'supergroup',
                 },
                 db: {
-                    getConfig: vi.fn().mockResolvedValue({
-                        adminGroupId: '1',
-                    }),
-                    saveConfig: vi.fn(),
+                    saveSettings: vi.fn(),
                 },
                 reply: vi.fn(),
+                settings: {
+                    adminGroupId: '1',
+                },
             } as unknown as ForwardContext;
 
             await onSetup(ctx);
 
             expect(ctx.bot.api.createForumTopic).toHaveBeenCalledOnce();
             expect(ctx.bot.api.deleteForumTopic).toHaveBeenCalledOnce();
-            expect(ctx.db.getConfig).toHaveBeenCalledOnce();
-            expect(ctx.db.saveConfig).toHaveBeenCalledOnce();
+            expect(ctx.db.saveSettings).toHaveBeenCalledOnce();
 
             expect(ctx.api.leaveChat).toHaveBeenCalledOnce();
             expect(ctx.api.leaveChat).toHaveBeenCalledWith({ chat_id: '1' });
@@ -170,20 +166,19 @@ describe('setup', () => {
                     type: 'supergroup',
                 },
                 db: {
-                    getConfig: vi.fn().mockResolvedValue({
-                        adminGroupId: '1',
-                    }),
-                    saveConfig: vi.fn(),
+                    saveSettings: vi.fn(),
                 },
                 reply: vi.fn(),
+                settings: {
+                    adminGroupId: '1',
+                },
             } as unknown as ForwardContext;
 
             await onSetup(ctx);
 
             expect(ctx.bot.api.createForumTopic).toHaveBeenCalledOnce();
             expect(ctx.bot.api.deleteForumTopic).toHaveBeenCalledOnce();
-            expect(ctx.db.getConfig).toHaveBeenCalledOnce();
-            expect(ctx.db.saveConfig).toHaveBeenCalledOnce();
+            expect(ctx.db.saveSettings).toHaveBeenCalledOnce();
             expect(ctx.api.leaveChat).toHaveBeenCalledOnce();
 
             expect(replyWithWarning).toHaveBeenCalledOnce();
@@ -204,19 +199,18 @@ describe('setup', () => {
                     type: 'supergroup',
                 },
                 db: {
-                    getConfig: vi.fn().mockResolvedValue({
-                        adminGroupId: '1',
-                    }),
-                    saveConfig: vi.fn(),
+                    saveSettings: vi.fn(),
                 },
                 reply: vi.fn(),
+                settings: {
+                    adminGroupId: '1',
+                },
             } as unknown as ForwardContext;
 
             await onSetup(ctx);
 
             expect(ctx.bot.api.createForumTopic).not.toHaveBeenCalled();
-            expect(ctx.db.getConfig).not.toHaveBeenCalled();
-            expect(ctx.db.saveConfig).not.toHaveBeenCalled();
+            expect(ctx.db.saveSettings).not.toHaveBeenCalled();
 
             expect(replyWithWarning).toHaveBeenCalledOnce();
             expect(replyWithSuccess).not.toHaveBeenCalledOnce();
@@ -236,10 +230,10 @@ describe('setup', () => {
                     type: 'supergroup',
                 },
                 db: {
-                    getConfig: vi.fn().mockResolvedValue({
-                        adminGroupId: '1',
-                    }),
-                    saveConfig: vi.fn(),
+                    saveSettings: vi.fn(),
+                },
+                settings: {
+                    adminGroupId: '1',
                 },
             } as unknown as ForwardContext;
 
@@ -248,8 +242,7 @@ describe('setup', () => {
             await onSetup(ctx);
 
             expect(ctx.bot.api.createForumTopic).not.toHaveBeenCalled();
-            expect(ctx.db.getConfig).toHaveBeenCalledOnce();
-            expect(ctx.db.saveConfig).not.toHaveBeenCalled();
+            expect(ctx.db.saveSettings).not.toHaveBeenCalled();
 
             expect(replyWithWarning).toHaveBeenCalledExactlyOnceWith(ctx, expect.any(String));
             expect(replyWithSuccess).not.toHaveBeenCalled();
@@ -268,7 +261,7 @@ describe('setup', () => {
                     type: 'group',
                 },
                 db: {
-                    saveConfig: vi.fn(),
+                    saveSettings: vi.fn(),
                 },
                 reply: vi.fn().mockResolvedValue({}),
             } as unknown as ForwardContext;
@@ -280,7 +273,7 @@ describe('setup', () => {
                 'This command must be used in a supergroup with topics enabled',
             );
             expect(ctx.bot.api.createForumTopic).not.toHaveBeenCalled();
-            expect(ctx.db.saveConfig).not.toHaveBeenCalled();
+            expect(ctx.db.saveSettings).not.toHaveBeenCalled();
             expect(replyWithSuccess).not.toHaveBeenCalled();
         });
 
@@ -299,7 +292,7 @@ describe('setup', () => {
                     type: 'supergroup',
                 },
                 db: {
-                    saveConfig: vi.fn(),
+                    saveSettings: vi.fn(),
                 },
                 update: {
                     message: {
@@ -311,7 +304,7 @@ describe('setup', () => {
             await onSetup(ctx);
 
             expect(replyWithError).toHaveBeenCalledWith(ctx, expect.any(String));
-            expect(ctx.db.saveConfig).not.toHaveBeenCalled();
+            expect(ctx.db.saveSettings).not.toHaveBeenCalled();
         });
 
         it('should do nothing when token is not provided', async () => {
@@ -328,14 +321,14 @@ describe('setup', () => {
                     type: 'supergroup',
                 },
                 db: {
-                    saveConfig: vi.fn(),
+                    saveSettings: vi.fn(),
                 },
             } as unknown as ForwardContext;
 
             await onSetup(ctx);
 
             expect(ctx.bot.api.createForumTopic).not.toHaveBeenCalled();
-            expect(ctx.db.saveConfig).not.toHaveBeenCalled();
+            expect(ctx.db.saveSettings).not.toHaveBeenCalled();
             expect(replyWithSuccess).not.toHaveBeenCalled();
         });
 
@@ -353,14 +346,14 @@ describe('setup', () => {
                     type: 'supergroup',
                 },
                 db: {
-                    saveConfig: vi.fn(),
+                    saveSettings: vi.fn(),
                 },
             } as unknown as ForwardContext;
 
             await onSetup(ctx);
 
             expect(ctx.bot.api.createForumTopic).not.toHaveBeenCalled();
-            expect(ctx.db.saveConfig).not.toHaveBeenCalled();
+            expect(ctx.db.saveSettings).not.toHaveBeenCalled();
             expect(replyWithSuccess).not.toHaveBeenCalled();
             expect(replyWithError).not.toHaveBeenCalled();
         });

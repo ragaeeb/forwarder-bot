@@ -34,17 +34,8 @@ describe('genericMessage', () => {
     });
 
     describe('onGenericMessage', () => {
-        it('should abort if the setup phase was not completed', async () => {
-            const ctx = { db: { getConfig: vi.fn().mockResolvedValue({}) } };
-
-            await onGenericMessage(ctx as unknown as ForwardContext);
-
-            expect(handleAdminReplyToCustomer).not.toHaveBeenCalled();
-            expect(handleDirectMessage).not.toHaveBeenCalled();
-        });
-
         it('should ignore non-message calls', async () => {
-            const ctx = { db: { getConfig: vi.fn().mockResolvedValue({ adminGroupId: 1 }) } };
+            const ctx = { settings: { adminGroupId: '1' } };
 
             await onGenericMessage(ctx as unknown as ForwardContext);
 
@@ -54,7 +45,7 @@ describe('genericMessage', () => {
         it('should handle when an admin replies to a message in the group but it results in an error', async () => {
             const ctx = {
                 chat: { id: 1, type: 'supergroup' },
-                db: { getConfig: vi.fn().mockResolvedValue({ adminGroupId: '1' }) },
+                settings: { adminGroupId: '1' },
                 update: { message: { message_thread_id: 1, reply_to_message: {} } },
             };
 
@@ -69,7 +60,7 @@ describe('genericMessage', () => {
         it('should handle DMs that result in an error', async () => {
             const ctx = {
                 chat: { id: 1, type: 'private' },
-                db: { getConfig: vi.fn().mockResolvedValue({ adminGroupId: '2' }) },
+                settings: { adminGroupId: '2' },
                 update: { message: { message_thread_id: 1, reply_to_message: {} } },
             };
 
@@ -83,7 +74,7 @@ describe('genericMessage', () => {
         it('should handle DMs that are successful', async () => {
             const ctx = {
                 chat: { id: 1, type: 'private' },
-                db: { getConfig: vi.fn().mockResolvedValue({ adminGroupId: '2' }) },
+                settings: { adminGroupId: '2' },
                 update: { message: { message_thread_id: 1, reply_to_message: {} } },
             };
 
@@ -98,7 +89,7 @@ describe('genericMessage', () => {
         it('should handle when an admin replies to a message in the group and it is successful', async () => {
             const ctx = {
                 chat: { id: 1, type: 'supergroup' },
-                db: { getConfig: vi.fn().mockResolvedValue({ adminGroupId: '1' }) },
+                settings: { adminGroupId: '1' },
                 update: { message: { message_thread_id: 1, reply_to_message: {} } },
             };
 
@@ -114,7 +105,7 @@ describe('genericMessage', () => {
         it('should skip messages that do not match the group in the config', async () => {
             const ctx = {
                 chat: { id: 2, type: 'supergroup' },
-                db: { getConfig: vi.fn().mockResolvedValue({ adminGroupId: '1' }) },
+                settings: { adminGroupId: '1' },
                 update: { message: { message_thread_id: 1, reply_to_message: {} } },
             };
 
@@ -127,7 +118,7 @@ describe('genericMessage', () => {
         it('should skip messages that are not part of a supergroup', async () => {
             const ctx = {
                 chat: { id: 2, type: 'group' },
-                db: { getConfig: vi.fn().mockResolvedValue({ adminGroupId: '1' }) },
+                settings: { adminGroupId: '1' },
                 update: { message: { message_thread_id: 1, reply_to_message: {} } },
             };
 

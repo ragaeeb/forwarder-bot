@@ -56,10 +56,6 @@ describe('threadUtils', () => {
                     lastName: 'Doe',
                     username: 'johndoe',
                 },
-                me: {
-                    firstName: 'Bot',
-                    id: 9876,
-                },
                 update: {
                     message: {
                         chat: { id: 54321, type: 'private' },
