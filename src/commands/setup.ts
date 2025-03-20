@@ -75,32 +75,48 @@ export const onSetup = async (ctx: ForwardContext) => {
     // Extract token from command, e.g. /setup abcd1341
     const { args: providedToken } = ctx;
 
-    if (providedToken === hashToken(config.BOT_TOKEN)) {
-        if (ctx.chat?.type !== 'supergroup') {
+    if (!providedToken) {
+        // don't send any reply for security purposes, we don't want them to know the structure of the setup
+        logger.warn(`No token provided.`);
+        return;
+    }
+
+    if (providedToken !== hashToken(config.BOT_TOKEN)) {
+        logger.warn(`Invalid token provided`);
+        return;
+    }
+
+    try {
+        const { id: chatId, type } = ctx.chat;
+
+        if (type !== 'supergroup') {
             logger.info(`Attempted to setup in ${ctx.chat?.type}`);
-            await ctx.reply('⚠️ This command must be used in a supergroup with topics enabled');
+            await replyWithWarning(ctx, 'This command must be used in a supergroup with topics enabled');
             return;
         }
 
-        try {
-            const { id: chatId } = ctx.chat;
-            const alreadyConfigured = await validatePreconfig(ctx, chatId);
+        const chatMember = await ctx.bot.api.getChatMember({
+            chat_id: chatId,
+            user_id: ctx.from?.id as number,
+        });
 
-            if (!alreadyConfigured) {
-                await executeSetup(ctx, chatId);
-            }
-        } catch (error) {
-            logger.error(error, `Setup failed`);
-
-            await replyWithError(
-                ctx,
-                'Setup failed. Please ensure topics are enabled and the bot has privileges to Manage Topics.',
-            );
+        if (!['administrator', 'creator'].includes(chatMember.status)) {
+            logger.warn(`Unauthorized setup attempt by user ${ctx.from?.id}`);
+            await replyWithWarning(ctx, 'Only group administrators can configure the bot');
+            return;
         }
-    } else if (providedToken) {
-        logger.warn(`Invalid token ${providedToken}`);
-    } else {
-        // don't send any reply for security purposes, we don't want them to know the structure of the setup
-        logger.warn(`No token provided.`);
+
+        const alreadyConfigured = await validatePreconfig(ctx, chatId);
+
+        if (!alreadyConfigured) {
+            await executeSetup(ctx, chatId);
+        }
+    } catch (error) {
+        logger.error(error, `Setup failed`);
+
+        await replyWithError(
+            ctx,
+            'Setup failed. Please ensure topics are enabled and the bot has privileges to Manage Topics.',
+        );
     }
 };

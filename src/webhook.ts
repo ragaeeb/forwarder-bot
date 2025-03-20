@@ -14,7 +14,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     });
 
     try {
-        logger.info(`Webhook called: method=${JSON.stringify(event)}`);
+        logger.info(`Webhook called: body=${event.body}`);
 
         if (event.headers['x-telegram-bot-api-secret-token'] !== config.SECRET_TOKEN) {
             logger.warn('Invalid secret token in webhook request');
