@@ -4,10 +4,9 @@ import type { TelegramForumTopic, TelegramUser } from 'gramio';
 import { config } from '@/config.js';
 import logger from '@/utils/logger.js';
 import { replyWithError, replyWithSuccess, replyWithWarning } from '@/utils/replyUtils.js';
+import { hashToken } from '@/utils/security.js';
 
-const testPermissionsAndFinishSetup = async (ctx: ForwardContext) => {
-    const { id: chatId } = ctx.chat;
-
+const validatePermissions = async (ctx: ForwardContext, chatId: number) => {
     logger.info(`Testing create thread for chat=${chatId}`);
 
     const testTopic = (await ctx.bot.api.createForumTopic({
@@ -21,6 +20,10 @@ const testPermissionsAndFinishSetup = async (ctx: ForwardContext) => {
         chat_id: chatId,
         message_thread_id: testTopic.message_thread_id,
     });
+};
+
+const executeSetup = async (ctx: ForwardContext, chatId: number) => {
+    await validatePermissions(ctx, chatId);
 
     logger.info(`Saving config`);
 
@@ -40,8 +43,7 @@ const testPermissionsAndFinishSetup = async (ctx: ForwardContext) => {
     );
 };
 
-const validatePreconfig = async (ctx: ForwardContext) => {
-    const { id: chatId } = ctx.chat;
+const validatePreconfig = async (ctx: ForwardContext, chatId: number) => {
     const existingConfig = await ctx.db.getConfig();
 
     if (existingConfig) {
@@ -70,10 +72,10 @@ const validatePreconfig = async (ctx: ForwardContext) => {
 export const onSetup = async (ctx: ForwardContext) => {
     logger.info(ctx.chat, `onSetup`);
 
-    // Extract token from command, e.g. /setup 123456:ABC-DEF1234
+    // Extract token from command, e.g. /setup abcd1341
     const { args: providedToken } = ctx;
 
-    if (providedToken === config.BOT_TOKEN) {
+    if (providedToken === hashToken(config.BOT_TOKEN)) {
         if (ctx.chat?.type !== 'supergroup') {
             logger.info(`Attempted to setup in ${ctx.chat?.type}`);
             await ctx.reply('⚠️ This command must be used in a supergroup with topics enabled');
@@ -81,10 +83,11 @@ export const onSetup = async (ctx: ForwardContext) => {
         }
 
         try {
-            const alreadyConfigured = await validatePreconfig(ctx);
+            const { id: chatId } = ctx.chat;
+            const alreadyConfigured = await validatePreconfig(ctx, chatId);
 
             if (!alreadyConfigured) {
-                await testPermissionsAndFinishSetup(ctx);
+                await executeSetup(ctx, chatId);
             }
         } catch (error) {
             logger.error(error, `Setup failed`);
@@ -96,8 +99,6 @@ export const onSetup = async (ctx: ForwardContext) => {
         }
     } else if (providedToken) {
         logger.warn(`Invalid token ${providedToken}`);
-
-        await replyWithError(ctx, 'Invalid token provided.');
     } else {
         // don't send any reply for security purposes, we don't want them to know the structure of the setup
         logger.warn(`No token provided.`);

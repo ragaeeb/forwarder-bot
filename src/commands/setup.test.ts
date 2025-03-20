@@ -26,6 +26,10 @@ vi.mock('@/utils/replyUtils.js', () => ({
     replyWithWarning: vi.fn(),
 }));
 
+vi.mock('@/utils/security.js', () => ({
+    hashToken: vi.fn().mockReturnValue('HBT'),
+}));
+
 describe('setup', () => {
     beforeEach(() => {
         vi.clearAllMocks();
@@ -52,7 +56,7 @@ describe('setup', () => {
             };
 
             const ctx = {
-                args: 'BT',
+                args: 'HBT',
                 bot: {
                     api: {
                         createForumTopic: vi.fn().mockResolvedValue({
@@ -84,18 +88,18 @@ describe('setup', () => {
                 chat_id: 1,
                 name: 'Test Topic Permissions',
             });
-            expect(ctx.bot.api.createForumTopic).toHaveBeenCalledTimes(1);
+            expect(ctx.bot.api.createForumTopic).toHaveBeenCalledOnce();
 
             expect(ctx.bot.api.deleteForumTopic).toHaveBeenCalledWith({
                 chat_id: 1,
                 message_thread_id: 1234,
             });
-            expect(ctx.bot.api.deleteForumTopic).toHaveBeenCalledTimes(1);
+            expect(ctx.bot.api.deleteForumTopic).toHaveBeenCalledOnce();
 
             expect(ctx.db.saveConfig).toHaveBeenCalledWith(config);
-            expect(ctx.db.saveConfig).toHaveBeenCalledTimes(1);
+            expect(ctx.db.saveConfig).toHaveBeenCalledOnce();
 
-            expect(ctx.db.getConfig).toHaveBeenCalledTimes(1);
+            expect(ctx.db.getConfig).toHaveBeenCalledOnce();
 
             expect(replyWithSuccess).toHaveBeenCalledWith(ctx, expect.any(String));
         });
@@ -105,7 +109,7 @@ describe('setup', () => {
                 api: {
                     leaveChat: vi.fn(),
                 },
-                args: 'BT',
+                args: 'HBT',
                 bot: {
                     api: {
                         createForumTopic: vi.fn().mockResolvedValue({}),
@@ -127,17 +131,17 @@ describe('setup', () => {
 
             await onSetup(ctx);
 
-            expect(ctx.bot.api.createForumTopic).toHaveBeenCalledTimes(1);
-            expect(ctx.bot.api.deleteForumTopic).toHaveBeenCalledTimes(1);
-            expect(ctx.db.getConfig).toHaveBeenCalledTimes(1);
-            expect(ctx.db.saveConfig).toHaveBeenCalledTimes(1);
+            expect(ctx.bot.api.createForumTopic).toHaveBeenCalledOnce();
+            expect(ctx.bot.api.deleteForumTopic).toHaveBeenCalledOnce();
+            expect(ctx.db.getConfig).toHaveBeenCalledOnce();
+            expect(ctx.db.saveConfig).toHaveBeenCalledOnce();
 
-            expect(ctx.api.leaveChat).toHaveBeenCalledTimes(1);
+            expect(ctx.api.leaveChat).toHaveBeenCalledOnce();
             expect(ctx.api.leaveChat).toHaveBeenCalledWith({ chat_id: '1' });
 
-            expect(replyWithWarning).toHaveBeenCalledTimes(1);
+            expect(replyWithWarning).toHaveBeenCalledOnce();
             expect(replyWithWarning).toHaveBeenCalledWith(ctx, expect.any(String));
-            expect(replyWithSuccess).toHaveBeenCalledTimes(1);
+            expect(replyWithSuccess).toHaveBeenCalledOnce();
         });
 
         it('should continue setup even if there is an error leaving old group', async () => {
@@ -145,7 +149,7 @@ describe('setup', () => {
                 api: {
                     leaveChat: vi.fn().mockRejectedValue(new Error('Could not leave group')),
                 },
-                args: 'BT',
+                args: 'HBT',
                 bot: {
                     api: {
                         createForumTopic: vi.fn().mockResolvedValue({}),
@@ -167,19 +171,19 @@ describe('setup', () => {
 
             await onSetup(ctx);
 
-            expect(ctx.bot.api.createForumTopic).toHaveBeenCalledTimes(1);
-            expect(ctx.bot.api.deleteForumTopic).toHaveBeenCalledTimes(1);
-            expect(ctx.db.getConfig).toHaveBeenCalledTimes(1);
-            expect(ctx.db.saveConfig).toHaveBeenCalledTimes(1);
-            expect(ctx.api.leaveChat).toHaveBeenCalledTimes(1);
+            expect(ctx.bot.api.createForumTopic).toHaveBeenCalledOnce();
+            expect(ctx.bot.api.deleteForumTopic).toHaveBeenCalledOnce();
+            expect(ctx.db.getConfig).toHaveBeenCalledOnce();
+            expect(ctx.db.saveConfig).toHaveBeenCalledOnce();
+            expect(ctx.api.leaveChat).toHaveBeenCalledOnce();
 
-            expect(replyWithWarning).toHaveBeenCalledTimes(1);
-            expect(replyWithSuccess).toHaveBeenCalledTimes(1);
+            expect(replyWithWarning).toHaveBeenCalledOnce();
+            expect(replyWithSuccess).toHaveBeenCalledOnce();
         });
 
         it('should be a no-op if we are trying to setup when we are already configured', async () => {
             const ctx = {
-                args: 'BT',
+                args: 'HBT',
                 bot: {
                     api: {
                         createForumTopic: vi.fn().mockResolvedValue({}),
@@ -202,17 +206,17 @@ describe('setup', () => {
             await onSetup(ctx);
 
             expect(ctx.bot.api.createForumTopic).not.toHaveBeenCalled();
-            expect(ctx.db.getConfig).toHaveBeenCalledTimes(1);
+            expect(ctx.db.getConfig).toHaveBeenCalledOnce();
             expect(ctx.db.saveConfig).not.toHaveBeenCalled();
 
-            expect(replyWithWarning).toHaveBeenCalledTimes(1);
+            expect(replyWithWarning).toHaveBeenCalledOnce();
             expect(replyWithWarning).toHaveBeenCalledWith(ctx, expect.any(String));
             expect(replyWithSuccess).not.toHaveBeenCalled();
         });
 
         it('should reject setup in non-supergroup chats', async () => {
             const ctx = {
-                args: 'BT',
+                args: 'HBT',
                 bot: {
                     api: {
                         createForumTopic: vi.fn(),
@@ -239,7 +243,7 @@ describe('setup', () => {
         it('should handle errors during setup', async () => {
             const error = new Error('Permission denied');
             const ctx = {
-                args: 'BT',
+                args: 'HBT',
                 bot: {
                     api: {
                         createForumTopic: vi.fn().mockRejectedValue(error),
@@ -314,7 +318,7 @@ describe('setup', () => {
             expect(ctx.bot.api.createForumTopic).not.toHaveBeenCalled();
             expect(ctx.db.saveConfig).not.toHaveBeenCalled();
             expect(replyWithSuccess).not.toHaveBeenCalled();
-            expect(replyWithError).toHaveBeenCalledTimes(1);
+            expect(replyWithError).not.toHaveBeenCalled();
         });
     });
 });
