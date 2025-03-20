@@ -5,6 +5,7 @@ import { config as appConfig } from '@/config.js';
 import logger from '@/utils/logger.js';
 import { replyWithError, replyWithSuccess, replyWithWarning } from '@/utils/replyUtils.js';
 import { hashToken } from '@/utils/security.js';
+import { isSenderGroupAdmin } from '@/utils/validation.js';
 
 const validatePermissions = async (ctx: ForwardContext, chatId: number) => {
     logger.info(`Testing create thread for chat=${chatId}`);
@@ -87,28 +88,17 @@ export const onSetup = async (ctx: ForwardContext) => {
     }
 
     try {
-        const { id: chatId, type } = ctx.chat;
+        const { id: chatId } = ctx.chat;
 
-        if (type !== 'supergroup') {
-            logger.info(`Attempted to setup in ${ctx.chat?.type}`);
-            await replyWithWarning(ctx, 'This command must be used in a supergroup with topics enabled');
+        const isAdmin = await isSenderGroupAdmin(ctx);
+
+        if (!isAdmin) {
             return;
         }
 
-        const chatMember = await ctx.bot.api.getChatMember({
-            chat_id: chatId,
-            user_id: ctx.from?.id as number,
-        });
+        const isAlreadyConfigured = await validatePreconfig(ctx, chatId);
 
-        if (!['administrator', 'creator'].includes(chatMember.status)) {
-            logger.warn(`Unauthorized setup attempt by user ${ctx.from?.id}`);
-            await replyWithWarning(ctx, 'Only group administrators can configure the bot');
-            return;
-        }
-
-        const alreadyConfigured = await validatePreconfig(ctx, chatId);
-
-        if (!alreadyConfigured) {
+        if (!isAlreadyConfigured) {
             await executeSetup(ctx, chatId);
         }
     } catch (error) {

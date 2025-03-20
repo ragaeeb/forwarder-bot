@@ -1,6 +1,7 @@
 import type { ForwardContext } from '@/types.js';
 
 import { replyWithError, replyWithSuccess, replyWithWarning } from '@/utils/replyUtils.js';
+import { isSenderGroupAdmin } from '@/utils/validation.js';
 import { afterEach, beforeEach, describe, expect, it, Mock, vi } from 'vitest';
 
 import { onSetup } from './setup.js';
@@ -28,6 +29,10 @@ vi.mock('@/utils/replyUtils.js', () => ({
 
 vi.mock('@/utils/security.js', () => ({
     hashToken: vi.fn().mockReturnValue('HBT'),
+}));
+
+vi.mock('@/utils/validation.js', () => ({
+    isSenderGroupAdmin: vi.fn(),
 }));
 
 describe('setup', () => {
@@ -64,18 +69,15 @@ describe('setup', () => {
                             name: 'Test Topic Permissions',
                         }),
                         deleteForumTopic: vi.fn(),
-                        getChatMember: vi.fn().mockResolvedValue({ status: 'administrator' }),
                     },
                 },
                 chat: {
                     id: 1,
-                    type: 'supergroup',
                 },
                 db: {
                     saveSettings: vi.fn().mockResolvedValue(config),
                 },
                 from: { id: 123456 },
-                reply: vi.fn(),
                 update: {
                     message: {
                         from: mockUser,
@@ -83,7 +85,11 @@ describe('setup', () => {
                 },
             } as unknown as ForwardContext;
 
+            (isSenderGroupAdmin as Mock).mockResolvedValue(true);
+
             await onSetup(ctx);
+
+            expect(isSenderGroupAdmin).toHaveBeenCalledExactlyOnceWith(ctx);
 
             expect(ctx.bot.api.createForumTopic).toHaveBeenCalledWith({
                 chat_id: 1,
@@ -96,11 +102,6 @@ describe('setup', () => {
                 message_thread_id: 1234,
             });
             expect(ctx.bot.api.deleteForumTopic).toHaveBeenCalledOnce();
-
-            expect(ctx.bot.api.getChatMember).toHaveBeenCalledExactlyOnceWith({
-                chat_id: 1,
-                user_id: 123456,
-            });
 
             expect(ctx.db.saveSettings).toHaveBeenCalledWith(config);
             expect(ctx.db.saveSettings).toHaveBeenCalledOnce();
@@ -118,21 +119,20 @@ describe('setup', () => {
                     api: {
                         createForumTopic: vi.fn().mockResolvedValue({}),
                         deleteForumTopic: vi.fn(),
-                        getChatMember: vi.fn().mockResolvedValue({ status: 'creator' }),
                     },
                 },
                 chat: {
                     id: 2,
-                    type: 'supergroup',
                 },
                 db: {
                     saveSettings: vi.fn(),
                 },
-                reply: vi.fn(),
                 settings: {
                     adminGroupId: '1',
                 },
             } as unknown as ForwardContext;
+
+            (isSenderGroupAdmin as Mock).mockResolvedValue(true);
 
             await onSetup(ctx);
 
@@ -158,21 +158,20 @@ describe('setup', () => {
                     api: {
                         createForumTopic: vi.fn().mockResolvedValue({}),
                         deleteForumTopic: vi.fn(),
-                        getChatMember: vi.fn().mockResolvedValue({ status: 'administrator' }),
                     },
                 },
                 chat: {
                     id: 2,
-                    type: 'supergroup',
                 },
                 db: {
                     saveSettings: vi.fn(),
                 },
-                reply: vi.fn(),
                 settings: {
                     adminGroupId: '1',
                 },
             } as unknown as ForwardContext;
+
+            (isSenderGroupAdmin as Mock).mockResolvedValue(true);
 
             await onSetup(ctx);
 
@@ -191,28 +190,25 @@ describe('setup', () => {
                 bot: {
                     api: {
                         createForumTopic: vi.fn().mockResolvedValue({}),
-                        getChatMember: vi.fn().mockResolvedValue({ status: 'member' }),
                     },
                 },
                 chat: {
                     id: 2,
-                    type: 'supergroup',
                 },
                 db: {
                     saveSettings: vi.fn(),
                 },
-                reply: vi.fn(),
                 settings: {
                     adminGroupId: '1',
                 },
             } as unknown as ForwardContext;
 
+            (isSenderGroupAdmin as Mock).mockResolvedValue(false);
+
             await onSetup(ctx);
 
             expect(ctx.bot.api.createForumTopic).not.toHaveBeenCalled();
             expect(ctx.db.saveSettings).not.toHaveBeenCalled();
-
-            expect(replyWithWarning).toHaveBeenCalledOnce();
             expect(replyWithSuccess).not.toHaveBeenCalledOnce();
         });
 
@@ -222,12 +218,10 @@ describe('setup', () => {
                 bot: {
                     api: {
                         createForumTopic: vi.fn().mockResolvedValue({}),
-                        getChatMember: vi.fn().mockResolvedValue({ status: 'administrator' }),
                     },
                 },
                 chat: {
                     id: 1,
-                    type: 'supergroup',
                 },
                 db: {
                     saveSettings: vi.fn(),
@@ -238,6 +232,7 @@ describe('setup', () => {
             } as unknown as ForwardContext;
 
             (replyWithWarning as Mock).mockResolvedValue({});
+            (isSenderGroupAdmin as Mock).mockResolvedValue(true);
 
             await onSetup(ctx);
 
@@ -245,35 +240,6 @@ describe('setup', () => {
             expect(ctx.db.saveSettings).not.toHaveBeenCalled();
 
             expect(replyWithWarning).toHaveBeenCalledExactlyOnceWith(ctx, expect.any(String));
-            expect(replyWithSuccess).not.toHaveBeenCalled();
-        });
-
-        it('should reject setup in non-supergroup chats', async () => {
-            const ctx = {
-                args: 'HBT',
-                bot: {
-                    api: {
-                        createForumTopic: vi.fn(),
-                    },
-                },
-                chat: {
-                    id: 1,
-                    type: 'group',
-                },
-                db: {
-                    saveSettings: vi.fn(),
-                },
-                reply: vi.fn().mockResolvedValue({}),
-            } as unknown as ForwardContext;
-
-            await onSetup(ctx);
-
-            expect(replyWithWarning).toHaveBeenCalledExactlyOnceWith(
-                ctx,
-                'This command must be used in a supergroup with topics enabled',
-            );
-            expect(ctx.bot.api.createForumTopic).not.toHaveBeenCalled();
-            expect(ctx.db.saveSettings).not.toHaveBeenCalled();
             expect(replyWithSuccess).not.toHaveBeenCalled();
         });
 
@@ -289,7 +255,6 @@ describe('setup', () => {
                 },
                 chat: {
                     id: 1,
-                    type: 'supergroup',
                 },
                 db: {
                     saveSettings: vi.fn(),
@@ -318,7 +283,6 @@ describe('setup', () => {
                 },
                 chat: {
                     id: 1,
-                    type: 'supergroup',
                 },
                 db: {
                     saveSettings: vi.fn(),
@@ -343,7 +307,6 @@ describe('setup', () => {
                 },
                 chat: {
                     id: 1,
-                    type: 'supergroup',
                 },
                 db: {
                     saveSettings: vi.fn(),
