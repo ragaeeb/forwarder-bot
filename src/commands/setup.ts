@@ -7,6 +7,15 @@ import { replyWithError, replyWithSuccess, replyWithWarning } from '@/utils/repl
 import { hashToken } from '@/utils/security.js';
 import { isSenderGroupAdmin } from '@/utils/validation.js';
 
+/**
+ * Validates that the bot has the necessary permissions in the chat.
+ * Tests creating and deleting a topic to ensure the bot has admin rights.
+ *
+ * @param {ForwardContext} ctx - The context object containing chat information
+ * @param {number} chatId - The chat ID to check permissions in
+ * @returns {Promise<void>}
+ * @throws Will throw an error if permissions validation fails
+ */
 const validatePermissions = async (ctx: ForwardContext, chatId: number) => {
     logger.info(`Testing create thread for chat=${chatId}`);
 
@@ -23,6 +32,14 @@ const validatePermissions = async (ctx: ForwardContext, chatId: number) => {
     });
 };
 
+/**
+ * Executes the setup process after validation is complete.
+ * Saves the admin group configuration to the database.
+ *
+ * @param {ForwardContext} ctx - The context object containing chat information
+ * @param {number} chatId - The chat ID to set as the admin group
+ * @returns {Promise<any>} The result of the reply operation
+ */
 const executeSetup = async (ctx: ForwardContext, chatId: number) => {
     await validatePermissions(ctx, chatId);
 
@@ -44,6 +61,14 @@ const executeSetup = async (ctx: ForwardContext, chatId: number) => {
     );
 };
 
+/**
+ * Validates and handles pre-configuration work for the setup command.
+ * Checks if the bot was already configured and handles changing the admin group.
+ *
+ * @param {ForwardContext} ctx - The context object containing chat information
+ * @param {number} chatId - The chat ID to set as the admin group
+ * @returns {Promise<any|undefined>} The result of the warning reply or undefined
+ */
 const validatePreconfig = async (ctx: ForwardContext, chatId: number) => {
     if (ctx.settings) {
         const { adminGroupId } = ctx.settings;
@@ -70,6 +95,13 @@ const validatePreconfig = async (ctx: ForwardContext, chatId: number) => {
     }
 };
 
+/**
+ * Handles the /setup command to configure the bot with an admin group.
+ * Verifies the setup token, checks permissions, and saves configuration.
+ *
+ * @param {ForwardContext} ctx - The context object containing command information
+ * @returns {Promise<void>}
+ */
 export const onSetup = async (ctx: ForwardContext) => {
     logger.info(ctx.chat, `onSetup`);
 

@@ -2,6 +2,13 @@ import type { ForwardContext } from '@/types.js';
 
 import logger from '@/utils/logger.js';
 
+/**
+ * Handles the /start command when a user first interacts with the bot.
+ * Sends a welcome message to the user, either custom or default.
+ *
+ * @param {ForwardContext} ctx - The context object containing command information
+ * @returns {Promise<void>}
+ */
 export const onStart = async (ctx: ForwardContext) => {
     logger.info(ctx.chat, `onStart`);
 

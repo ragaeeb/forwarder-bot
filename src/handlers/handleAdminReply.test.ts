@@ -81,6 +81,7 @@ describe('handleAdminReply', () => {
 
             expect(ctx.bot.api.sendMessage).toHaveBeenCalledWith({
                 chat_id: '456',
+                protect_content: true,
                 text: 'Hello user',
             });
 
@@ -125,6 +126,7 @@ describe('handleAdminReply', () => {
                 caption: 'Photo caption',
                 chat_id: '456',
                 photo: 'large_id',
+                protect_content: true,
             });
 
             expect(ctx.db.saveMessage).toHaveBeenCalledTimes(1);
@@ -168,6 +170,93 @@ describe('handleAdminReply', () => {
                 caption: 'Document caption',
                 chat_id: '456',
                 document: 'doc_id',
+                protect_content: true,
+            });
+
+            expect(ctx.db.saveMessage).toHaveBeenCalledTimes(1);
+            expect(mapTelegramMessageToSavedMessage).toHaveBeenCalledTimes(1);
+            expect(updateThreadByMessage).toHaveBeenCalledTimes(1);
+            expect(replyWithSuccess).toHaveBeenCalledWith(ctx, 'Reply sent to user');
+            expect(result).toBeDefined();
+        });
+
+        it('should successfully forward voice note to user', async () => {
+            const ctx = {
+                bot: {
+                    api: {
+                        sendVoice: vi.fn().mockResolvedValue({
+                            message_id: 789,
+                        }),
+                    },
+                },
+                db: {
+                    getThreadById: vi.fn().mockResolvedValue({
+                        chatId: '456',
+                        threadId: 123,
+                    }),
+                    saveMessage: vi.fn().mockResolvedValue({}),
+                },
+                update: {
+                    message: {
+                        caption: 'VN caption',
+                        message_thread_id: 123,
+                        voice: {
+                            file_id: 'voice_id',
+                        },
+                    },
+                },
+            } as unknown as ForwardContext;
+
+            const result = await handleAdminReplyToCustomer(ctx);
+
+            expect(ctx.bot.api.sendVoice).toHaveBeenCalledWith({
+                caption: 'VN caption',
+                chat_id: '456',
+                protect_content: true,
+                voice: 'voice_id',
+            });
+
+            expect(ctx.db.saveMessage).toHaveBeenCalledTimes(1);
+            expect(mapTelegramMessageToSavedMessage).toHaveBeenCalledTimes(1);
+            expect(updateThreadByMessage).toHaveBeenCalledTimes(1);
+            expect(replyWithSuccess).toHaveBeenCalledWith(ctx, 'Reply sent to user');
+            expect(result).toBeDefined();
+        });
+
+        it('should successfully forward video to user', async () => {
+            const ctx = {
+                bot: {
+                    api: {
+                        sendVideo: vi.fn().mockResolvedValue({
+                            message_id: 789,
+                        }),
+                    },
+                },
+                db: {
+                    getThreadById: vi.fn().mockResolvedValue({
+                        chatId: '456',
+                        threadId: 123,
+                    }),
+                    saveMessage: vi.fn().mockResolvedValue({}),
+                },
+                update: {
+                    message: {
+                        caption: 'Video caption',
+                        message_thread_id: 123,
+                        video: {
+                            file_id: 'vid_id',
+                        },
+                    },
+                },
+            } as unknown as ForwardContext;
+
+            const result = await handleAdminReplyToCustomer(ctx);
+
+            expect(ctx.bot.api.sendVideo).toHaveBeenCalledWith({
+                caption: 'Video caption',
+                chat_id: '456',
+                protect_content: true,
+                video: 'vid_id',
             });
 
             expect(ctx.db.saveMessage).toHaveBeenCalledTimes(1);

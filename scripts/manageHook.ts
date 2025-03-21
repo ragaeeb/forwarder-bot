@@ -6,6 +6,11 @@ import { config } from '../src/config.js';
 import { hashToken } from '../src/utils/security.js';
 import { initWebhook, resetHook } from '../src/webhook.js';
 
+/**
+ * Retrieves the API URL from the Serverless deployment metadata file.
+ *
+ * @returns {Promise<string|undefined>} The API URL or undefined if not found
+ */
 const getApiUrl = async () => {
     type Meta = { serviceProviderAwsCfStackOutputs: { OutputKey: string; OutputValue: string }[] };
 
@@ -21,8 +26,19 @@ const getApiUrl = async () => {
     return apiUrl;
 };
 
+/**
+ * Gets the hashed bot token for setup verification.
+ *
+ * @returns {string} Hashed bot token
+ */
 const getHashedToken = () => hashToken(config.BOT_TOKEN);
 
+/**
+ * Sets up the webhook for the Telegram bot.
+ * Configures the webhook URL and displays setup instructions.
+ *
+ * @returns {Promise<void>}
+ */
 const setupWebhook = async () => {
     if (!config.SECRET_TOKEN) {
         console.error(

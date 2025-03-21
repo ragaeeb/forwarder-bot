@@ -6,14 +6,14 @@ import { mapTelegramMessageToSavedMessage } from '@/utils/messageUtils.js';
 import { replyWithError, replyWithSuccess } from '@/utils/replyUtils.js';
 import { updateThreadByMessage } from '@/utils/threadUtils.js';
 
-/*
+/**
  * Forwards a message from an admin to a user based on the message type.
  * Currently supports text, photo, and document message types.
  *
- * @param api - The Telegram API methods to use for sending
- * @param chatId - The destination chat ID to send to
- * @param message - The Telegram message to forward
- * @returns The sent message response or null/undefined for unsupported types
+ * @param {SuppressedAPIMethods<keyof APIMethods>} api - The Telegram API methods to use for sending
+ * @param {string} chatId - The destination chat ID to send to
+ * @param {TelegramMessage} message - The Telegram message to forward
+ * @returns {Promise<TelegramMessage|undefined>} The sent message response or undefined for unsupported types
  */
 const forwardMessageToUser = async (
     api: SuppressedAPIMethods<keyof APIMethods>,
@@ -24,6 +24,7 @@ const forwardMessageToUser = async (
         logger.info(`Forwarding text message for chat=${chatId}`);
         return api.sendMessage({
             chat_id: chatId,
+            protect_content: true,
             text: message.text,
         });
     }
@@ -36,6 +37,7 @@ const forwardMessageToUser = async (
             caption: message.caption,
             chat_id: chatId,
             photo: photo.file_id,
+            protect_content: true,
         });
     }
 
@@ -46,10 +48,40 @@ const forwardMessageToUser = async (
             caption: message.caption,
             chat_id: chatId,
             document: message.document.file_id,
+            protect_content: true,
+        });
+    }
+
+    if (message.voice) {
+        logger.info(`Forwarding voice note for chat=${chatId}`);
+
+        return api.sendVoice({
+            caption: message.caption,
+            chat_id: chatId,
+            protect_content: true,
+            voice: message.voice.file_id,
+        });
+    }
+
+    if (message.video) {
+        logger.info(`Forwarding video for chat=${chatId}`);
+
+        return api.sendVideo({
+            caption: message.caption,
+            chat_id: chatId,
+            protect_content: true,
+            video: message.video.file_id,
         });
     }
 };
 
+/**
+ * Handles an admin's reply to a customer message.
+ * Identifies the thread, forwards the response, and updates the database.
+ *
+ * @param {ForwardContext} ctx - The context object containing admin reply information
+ * @returns {Promise<any>} The result of the operation
+ */
 export const handleAdminReplyToCustomer = async (ctx: ForwardContext) => {
     const threadId = ctx.update?.message?.message_thread_id?.toString() as string;
     logger.info(`handleAdminReplyToCustomer: ${threadId}`);

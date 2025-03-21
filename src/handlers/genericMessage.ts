@@ -6,6 +6,13 @@ import { replyWithError } from '@/utils/replyUtils.js';
 import { handleAdminReplyToCustomer } from './handleAdminReply.js';
 import { handleDirectMessage } from './handleDirectMessage.js';
 
+/**
+ * Handles generic message events from both users and admins.
+ * Routes messages to appropriate handlers based on source and context.
+ *
+ * @param {ForwardContext} ctx - The context object containing message information
+ * @returns {Promise<void>}
+ */
 export const onGenericMessage = async (ctx: ForwardContext) => {
     logger.info(ctx.update, `onGenericMessage`);
 

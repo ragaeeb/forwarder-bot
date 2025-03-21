@@ -6,6 +6,15 @@ import { mapTelegramMessageToSavedMessage } from '@/utils/messageUtils.js';
 import { replyWithError, replyWithSuccess } from '@/utils/replyUtils.js';
 import { createNewThread, getUpsertedThread } from '@/utils/threadUtils.js';
 
+/**
+ * Forwards a user's message to the admin group in the appropriate thread.
+ * Sends acknowledgment message to the user upon successful forwarding.
+ *
+ * @param {ForwardContext} ctx - The context object containing user message information
+ * @param {string} groupId - The admin group ID to forward the message to
+ * @param {string} threadId - The topic thread ID to use in the admin group
+ * @returns {Promise<any>} The result of the acknowledgment operation
+ */
 const forwardMessageToGroup = async (ctx: ForwardContext, groupId: string, threadId: string) => {
     logger.info(
         `forwardMessageToGroup threadId=${threadId}, chatId=${groupId} from=${ctx.chatId}, messageId=${ctx.id}`,
@@ -22,6 +31,14 @@ const forwardMessageToGroup = async (ctx: ForwardContext, groupId: string, threa
     return replyWithSuccess(ctx, ctx.settings.ack || 'Message delivered, our team will get back to you.');
 };
 
+/**
+ * Attempts to retry forwarding a message by creating a new thread.
+ * Used when the original thread is not found or has been deleted.
+ *
+ * @param {ForwardContext} ctx - The context object containing user message information
+ * @param {string} adminGroupId - The admin group ID to forward the message to
+ * @returns {Promise<any>} The result of the retry operation
+ */
 const retryFailedForward = async (ctx: ForwardContext, adminGroupId: string) => {
     try {
         logger.info(`retryFailedForward: ${adminGroupId}, creating a new thread.`);
@@ -37,6 +54,14 @@ const retryFailedForward = async (ctx: ForwardContext, adminGroupId: string) => 
     }
 };
 
+/**
+ * Handles a direct message from a user to the bot.
+ * Gets or creates a thread for the user and forwards the message to the admin group.
+ *
+ * @param {ForwardContext} ctx - The context object containing user message information
+ * @param {string} adminGroupId - The admin group ID to forward the message to
+ * @returns {Promise<any|undefined>} The result of the forwarding operation or undefined
+ */
 export const handleDirectMessage = async (ctx: ForwardContext, adminGroupId: string) => {
     logger.info(`handleDirectMessage`);
 

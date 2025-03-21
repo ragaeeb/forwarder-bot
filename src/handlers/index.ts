@@ -23,7 +23,6 @@ type CommandHandler = (
 
 /**
  * Middleware for processing requests
- *
  */
 type Middleware = Handler<Context<Bot> & DeriveDefinitions['global']>;
 
@@ -33,9 +32,13 @@ type Middleware = Handler<Context<Bot> & DeriveDefinitions['global']>;
 type UpdateHandler = Handler<ContextType<Bot, any> & DeriveDefinitions & DeriveDefinitions['global']>;
 
 /**
- * Register handlers and middleware for the bot
- * @param bot - Bot instance
- * @param db - DynamoDB service instance
+ * Register handlers and middleware for the bot.
+ * Sets up command handlers, message handlers, and middleware
+ * based on the bot's configuration state.
+ *
+ * @param {Bot} bot - Bot instance
+ * @param {DataService} db - Database service instance
+ * @returns {Promise<void>}
  */
 export const registerHandlers = async (bot: Bot, db: DataService) => {
     logger.info(`registerHandlers`);

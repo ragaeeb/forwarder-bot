@@ -10,10 +10,24 @@ import { DataService } from './services/types.js';
 
 let mockDatabase: DataService | undefined;
 
+/**
+ * Sets a mock database for testing purposes.
+ * This allows injecting a test database implementation during testing.
+ *
+ * @param {DataService} db - The mock database service to use
+ */
 export const setMockDatabase = (db: DataService) => {
     mockDatabase = db;
 };
 
+/**
+ * AWS Lambda handler function for processing Telegram webhook events.
+ * This is the main entry point for the serverless function that processes
+ * Telegram bot updates via webhooks.
+ *
+ * @param {APIGatewayProxyEvent} event - The API Gateway event containing the webhook data
+ * @returns {Promise<APIGatewayProxyResult>} The API Gateway response
+ */
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
     process.on('uncaughtException', (err) => {
         logger.error(err, 'Uncaught Exception:');
@@ -70,6 +84,13 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     }
 };
 
+/**
+ * Initializes a webhook for the Telegram bot.
+ * Sets up the webhook URL and configures the secret token for secure communications.
+ *
+ * @param {string} apiUrl - The base URL of the API Gateway endpoint
+ * @returns {Promise<boolean>} True if the webhook was set successfully, false otherwise
+ */
 export const initWebhook = async (apiUrl: string) => {
     const bot = new Bot(config.BOT_TOKEN);
 
@@ -80,6 +101,12 @@ export const initWebhook = async (apiUrl: string) => {
     });
 };
 
+/**
+ * Deletes the webhook configuration for the Telegram bot.
+ * This stops the bot from receiving updates via webhooks.
+ *
+ * @returns {Promise<boolean>} True if the webhook was deleted successfully, false otherwise
+ */
 export const resetHook = async () => {
     const bot = new Bot(config.BOT_TOKEN);
 

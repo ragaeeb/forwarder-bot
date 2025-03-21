@@ -49,6 +49,7 @@ describe('genericMessage', () => {
                 update: { message: { message_thread_id: 1, reply_to_message: {} } },
             };
 
+            (handleAdminReplyToCustomer as Mock).mockResolvedValue(false);
             await onGenericMessage(ctx as unknown as ForwardContext);
 
             expect(handleAdminReplyToCustomer).toHaveBeenCalledExactlyOnceWith(ctx);
@@ -62,6 +63,7 @@ describe('genericMessage', () => {
                 update: { message: { message_thread_id: 1, reply_to_message: {} } },
             };
 
+            (handleDirectMessage as Mock).mockResolvedValue(false);
             await onGenericMessage(ctx as unknown as ForwardContext);
 
             expect(handleAdminReplyToCustomer).not.toHaveBeenCalled();
@@ -79,6 +81,7 @@ describe('genericMessage', () => {
 
             await onGenericMessage(ctx as unknown as ForwardContext);
 
+            expect(handleDirectMessage).toHaveBeenCalledExactlyOnceWith(ctx, '2');
             expect(handleAdminReplyToCustomer).not.toHaveBeenCalled();
             expect(replyWithError).not.toHaveBeenCalled();
         });

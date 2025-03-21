@@ -8,16 +8,18 @@ import type { DataService } from './types.js';
 import { config } from '../config.js';
 
 /**
- * Service class for interacting with DynamoDB
- * Handles all database operations for the bot
+ * Service class for interacting with DynamoDB.
+ * Implements the DataService interface for database operations.
+ * Handles all database operations for the bot including storing and retrieving
+ * messages, threads, and bot settings.
  */
 export class DynamoDBService implements DataService {
     private client: DynamoDBDocumentClient;
     private tableName: string;
 
     /**
-     * Creates a new DynamoDBService instance
-     * Initializes the DynamoDB client and sets the table name from config
+     * Creates a new DynamoDBService instance.
+     * Initializes the DynamoDB client and sets the table name from config.
      */
     constructor() {
         const dbClient = new DynamoDBClient({});
@@ -27,14 +29,11 @@ export class DynamoDBService implements DataService {
     }
 
     /**
-     * Retrieves the bot configuration from the database
-     * @returns {Promise<BotSettings | null>} The bot configuration or null if not found or on error
-     */
-
-    /**
-     * Retrieves messages for a specific user
+     * Retrieves messages for a specific user.
+     *
      * @param {string} userId - The user ID to fetch messages for
-     * @returns {Promise<SavedMessage[]>} Array of messages or empty array if none found or on error
+     * @returns {Promise<SavedMessage[]>} Array of messages or empty array if none found
+     * @throws Will throw an error if the database operation fails
      */
     async getMessagesByUserId(userId: string): Promise<SavedMessage[]> {
         try {
@@ -60,6 +59,12 @@ export class DynamoDBService implements DataService {
         }
     }
 
+    /**
+     * Retrieves the bot configuration from the database.
+     *
+     * @returns {Promise<BotSettings | undefined>} The bot settings or undefined if not found
+     * @throws Will throw an error if the database operation fails
+     */
     async getSettings(): Promise<BotSettings | undefined> {
         try {
             logger.info(`getSettings()`);
@@ -81,9 +86,12 @@ export class DynamoDBService implements DataService {
     }
 
     /**
-     * Retrieves a thread by its ID
+     * Retrieves a thread by its ID.
+     * Uses a global secondary index to look up threads by thread ID.
+     *
      * @param {string} threadId - The thread ID to look up
-     * @returns {Promise<ThreadData | undefined>} The thread data or undefined if not found or on error
+     * @returns {Promise<ThreadData | undefined>} The thread data or undefined if not found
+     * @throws Will throw an error if the database operation fails
      */
     async getThreadById(threadId: string): Promise<ThreadData | undefined> {
         try {
@@ -112,9 +120,11 @@ export class DynamoDBService implements DataService {
     }
 
     /**
-     * Retrieves a thread by the user ID it's associated with
+     * Retrieves a thread by the user ID it's associated with.
+     *
      * @param {string} userId - The user ID to look up the thread for
-     * @returns {Promise<ThreadData | undefined>} The thread data or undefined if not found or on error
+     * @returns {Promise<ThreadData | undefined>} The thread data or undefined if not found
+     * @throws Will throw an error if the database operation fails
      */
     async getThreadByUserId(userId: string): Promise<ThreadData | undefined> {
         try {
@@ -135,11 +145,12 @@ export class DynamoDBService implements DataService {
     }
 
     /**
-     * Saves a message to the database
-     * Messages are stored with a composite key of userId#messages to group them by user
+     * Saves a message to the database.
+     * Messages are stored with a composite key of userId#messages to group them by user.
+     *
      * @param {SavedMessage} message - The message to save
      * @returns {Promise<SavedMessage>} The saved message
-     * @throws Will throw an error if the save operation fails
+     * @throws Will throw an error if the database operation fails
      */
     async saveMessage(message: SavedMessage): Promise<SavedMessage> {
         try {
@@ -165,10 +176,11 @@ export class DynamoDBService implements DataService {
     }
 
     /**
-     * Saves the bot configuration to the database
+     * Saves the bot configuration to the database.
+     *
      * @param {BotSettings} config - The configuration to save
      * @returns {Promise<BotSettings>} The saved configuration
-     * @throws Will throw an error if the save operation fails
+     * @throws Will throw an error if the database operation fails
      */
     async saveSettings(config: BotSettings): Promise<BotSettings> {
         try {
@@ -192,10 +204,11 @@ export class DynamoDBService implements DataService {
     }
 
     /**
-     * Saves a thread to the database
+     * Saves a thread to the database.
+     *
      * @param {ThreadData} thread - The thread data to save
      * @returns {Promise<ThreadData>} The saved thread data
-     * @throws Will throw an error if the save operation fails
+     * @throws Will throw an error if the database operation fails
      */
     async saveThread(thread: ThreadData): Promise<ThreadData> {
         try {

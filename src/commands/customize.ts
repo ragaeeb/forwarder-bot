@@ -3,8 +3,18 @@ import type { BotSettings, ForwardContext } from '@/types.js';
 import logger from '@/utils/logger.js';
 import { replyWithError, replyWithSuccess } from '@/utils/replyUtils.js';
 
+/**
+ * List of available customization commands that can be used to modify the bot's responses.
+ */
 export const CUSTOMIZE_COMMANDS = ['ack', 'failure', 'greeting'];
 
+/**
+ * Handles customization commands from administrators.
+ * Allows changing the bot's greeting, acknowledgement, and failure messages.
+ *
+ * @param {ForwardContext} ctx - The context object containing information about the command
+ * @returns {Promise<void>}
+ */
 export const onCustomize = async (ctx: ForwardContext) => {
     const [command, ...tokens] = ctx.text?.slice(1).split(' ') || [];
 

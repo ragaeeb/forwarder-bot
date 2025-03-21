@@ -4,6 +4,13 @@ import logger from '@/utils/logger.js';
 import { mapTelegramMessageToSavedMessage } from '@/utils/messageUtils.js';
 import { TelegramMessage } from 'gramio';
 
+/**
+ * Handles when a user edits a message they previously sent to the bot.
+ * Forwards the edited message to the admin group and saves the update.
+ *
+ * @param {ForwardContext} ctx - The context object containing edited message information
+ * @returns {Promise<void>}
+ */
 export const handleEditedMessage = async (ctx: ForwardContext) => {
     logger.info(ctx.chat, `handleEditedMessage`);
 
