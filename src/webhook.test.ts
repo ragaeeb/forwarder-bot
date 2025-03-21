@@ -9,6 +9,7 @@ import { handler } from './webhook.js';
 vi.mock('gramio', () => ({
     Bot: vi.fn().mockImplementation(() => ({
         init: vi.fn(),
+        stop: vi.fn(),
         updates: {
             handleUpdate: vi.fn().mockResolvedValue(undefined),
         },
@@ -141,6 +142,7 @@ describe('webhook', () => {
             const mockError = new Error('Bot update handling failed');
             const mockBot = {
                 init: vi.fn(),
+                stop: vi.fn(),
                 updates: {
                     handleUpdate: vi.fn().mockRejectedValue(mockError),
                 },
@@ -154,6 +156,7 @@ describe('webhook', () => {
                 statusCode: 200,
             });
             expect(JSON.parse(result.body).ok).toBe(false);
+            expect(mockBot.stop).toHaveBeenCalledExactlyOnceWith();
         });
     });
 });

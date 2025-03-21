@@ -13,6 +13,8 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         logger.error(err.stack, 'Stack trace:');
     });
 
+    let bot;
+
     try {
         logger.info(`Webhook called: body=${event.body}`);
 
@@ -25,13 +27,13 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             };
         }
 
-        const bot = new Bot(config.BOT_TOKEN);
+        bot = new Bot(config.BOT_TOKEN);
 
         logger.info(`Starting dynamodb service`);
         const db = new DynamoDBService();
 
         logger.info(`register handlers`);
-        registerHandlers(bot, db);
+        await registerHandlers(bot, db);
 
         logger.info(`Init bot`);
 
@@ -55,6 +57,9 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             body: JSON.stringify({ error: String(error), ok: false }),
             statusCode: 200, // Always return 200 to Telegram
         };
+    } finally {
+        logger.info(`Shutting down gracefully...`);
+        await bot?.stop();
     }
 };
 

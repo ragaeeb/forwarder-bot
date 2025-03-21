@@ -11,7 +11,7 @@ logger.info(`index.ts dev entry point`);
 const bot = new Bot(config.BOT_TOKEN);
 const db = new MockDataService();
 
-registerHandlers(bot, db);
+await registerHandlers(bot, db);
 
 try {
     const user = await bot.start();
