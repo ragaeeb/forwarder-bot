@@ -1,6 +1,6 @@
 import { ForwardContext } from '@/types.js';
 import logger from '@/utils/logger.js';
-import { replyWithUnknownError } from '@/utils/replyUtils.js';
+import { replyWithError } from '@/utils/replyUtils.js';
 import { beforeEach, describe, expect, it, Mock, vi } from 'vitest';
 
 import { onGenericMessage } from './genericMessage.js';
@@ -17,7 +17,7 @@ vi.mock('@/utils/logger.js', () => ({
 }));
 
 vi.mock('@/utils/replyUtils.js', () => ({
-    replyWithUnknownError: vi.fn(),
+    replyWithError: vi.fn(),
 }));
 
 vi.mock('./handleAdminReply', () => ({
@@ -51,10 +51,8 @@ describe('genericMessage', () => {
 
             await onGenericMessage(ctx as unknown as ForwardContext);
 
-            expect(handleAdminReplyToCustomer).toHaveBeenCalledOnce();
-            expect(handleAdminReplyToCustomer).toHaveBeenCalledWith(ctx);
-            expect(replyWithUnknownError).toHaveBeenCalledOnce();
-            expect(replyWithUnknownError).toHaveBeenCalledWith(ctx);
+            expect(handleAdminReplyToCustomer).toHaveBeenCalledExactlyOnceWith(ctx);
+            expect(replyWithError).toHaveBeenCalledExactlyOnceWith(ctx, expect.any(String));
         });
 
         it('should handle DMs that result in an error', async () => {
@@ -67,8 +65,7 @@ describe('genericMessage', () => {
             await onGenericMessage(ctx as unknown as ForwardContext);
 
             expect(handleAdminReplyToCustomer).not.toHaveBeenCalled();
-            expect(replyWithUnknownError).toHaveBeenCalledOnce();
-            expect(replyWithUnknownError).toHaveBeenCalledWith(ctx);
+            expect(replyWithError).toHaveBeenCalledExactlyOnceWith(ctx, expect.any(String));
         });
 
         it('should handle DMs that are successful', async () => {
@@ -83,7 +80,7 @@ describe('genericMessage', () => {
             await onGenericMessage(ctx as unknown as ForwardContext);
 
             expect(handleAdminReplyToCustomer).not.toHaveBeenCalled();
-            expect(replyWithUnknownError).not.toHaveBeenCalled();
+            expect(replyWithError).not.toHaveBeenCalled();
         });
 
         it('should handle when an admin replies to a message in the group and it is successful', async () => {
@@ -97,9 +94,8 @@ describe('genericMessage', () => {
 
             await onGenericMessage(ctx as unknown as ForwardContext);
 
-            expect(handleAdminReplyToCustomer).toHaveBeenCalledOnce();
-            expect(handleAdminReplyToCustomer).toHaveBeenCalledWith(ctx);
-            expect(replyWithUnknownError).not.toHaveBeenCalled();
+            expect(handleAdminReplyToCustomer).toHaveBeenCalledExactlyOnceWith(ctx);
+            expect(replyWithError).not.toHaveBeenCalled();
         });
 
         it('should skip messages that do not match the group in the config', async () => {
@@ -126,7 +122,7 @@ describe('genericMessage', () => {
 
             expect(handleAdminReplyToCustomer).not.toHaveBeenCalled();
             expect(handleDirectMessage).not.toHaveBeenCalled();
-            expect(replyWithUnknownError).not.toHaveBeenCalled();
+            expect(replyWithError).not.toHaveBeenCalled();
         });
     });
 });

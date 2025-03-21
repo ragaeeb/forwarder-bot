@@ -2,7 +2,7 @@ import type { ForwardContext } from '@/types.js';
 
 import { describe, expect, it, vi } from 'vitest';
 
-import { replyWithError, replyWithSuccess, replyWithUnknownError, replyWithWarning } from './replyUtils.js';
+import { replyWithError, replyWithSuccess, replyWithWarning } from './replyUtils.js';
 
 describe('replyUtils', () => {
     const createMockContext = (overrides = {}) =>
@@ -41,16 +41,6 @@ describe('replyUtils', () => {
             const result = await replyWithSuccess(ctx, 'Test message');
 
             expect(result).toBe(mockReplyResult);
-        });
-    });
-
-    describe('replyWithUnknownError', () => {
-        it('should reply with generic error message', async () => {
-            const ctx = createMockContext();
-
-            await replyWithUnknownError(ctx);
-
-            expect(ctx.reply).toHaveBeenCalledWith('❌ Failed to deliver your message. Please try again later.');
         });
     });
 

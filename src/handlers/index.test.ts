@@ -1,6 +1,7 @@
 import type { DataService } from '@/services/types.js';
 import type { Bot } from 'gramio';
 
+import { onCustomize } from '@/commands/customize.js';
 import { onSetup } from '@/commands/setup.js';
 import { onStart } from '@/commands/start.js';
 import { describe, expect, it, vi } from 'vitest';
@@ -11,6 +12,11 @@ import { registerHandlers } from './index.js';
 
 vi.mock('@/commands/start.js', () => ({
     onStart: vi.fn(),
+}));
+
+vi.mock('@/commands/customize.js', () => ({
+    CUSTOMIZE_COMMANDS: ['ack', 'failure'],
+    onCustomize: vi.fn(),
 }));
 
 vi.mock('@/commands/setup.js', () => ({
@@ -73,9 +79,11 @@ describe('registerHandlers', () => {
 
         expect(mockBot.derive).toHaveBeenCalledTimes(1);
 
-        expect(mockBot.command).toHaveBeenCalledTimes(2);
+        expect(mockBot.command).toHaveBeenCalledTimes(4);
         expect(mockBot.command).toHaveBeenCalledWith('setup', onSetup);
         expect(mockBot.command).toHaveBeenCalledWith('start', onStart);
+        expect(mockBot.command).toHaveBeenCalledWith('ack', onCustomize);
+        expect(mockBot.command).toHaveBeenCalledWith('failure', onCustomize);
 
         expect(mockBot.on).toHaveBeenCalledTimes(2);
         expect(mockBot.on).toHaveBeenNthCalledWith(1, 'message', onGenericMessage);
@@ -100,14 +108,11 @@ describe('registerHandlers', () => {
 
         await registerHandlers(mockBot as unknown as Bot, mockDB as unknown as DataService);
 
-        // Verify derive callback includes settings
         const deriveCallback = mockBot.derive.mock.calls[0][0];
         expect(typeof deriveCallback).toBe('function');
 
-        // Execute the derive callback
         const derivedContext = await deriveCallback();
 
-        // Check the derived context
         expect(derivedContext).toEqual({
             bot: mockBot,
             db: mockDB,

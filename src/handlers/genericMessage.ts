@@ -1,7 +1,7 @@
 import type { ForwardContext } from '@/types.js';
 
 import logger from '@/utils/logger.js';
-import { replyWithUnknownError } from '@/utils/replyUtils.js';
+import { replyWithError } from '@/utils/replyUtils.js';
 
 import { handleAdminReplyToCustomer } from './handleAdminReply.js';
 import { handleDirectMessage } from './handleDirectMessage.js';
@@ -30,7 +30,7 @@ export const onGenericMessage = async (ctx: ForwardContext) => {
         const result = await handleAdminReplyToCustomer(ctx);
 
         if (!result) {
-            await replyWithUnknownError(ctx);
+            await replyWithError(ctx, 'Unable to send message, please try again.');
         }
     }
 
@@ -42,7 +42,7 @@ export const onGenericMessage = async (ctx: ForwardContext) => {
         const result = await handleDirectMessage(ctx, adminGroupId);
 
         if (!result) {
-            await replyWithUnknownError(ctx);
+            await replyWithError(ctx, ctx.settings.failure || 'Unable to send message, please try again.');
         }
     }
 };

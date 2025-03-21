@@ -1,6 +1,7 @@
 import type { DataService } from '@/services/types.js';
 import type { Bot, Context, ContextType, DeriveDefinitions, Handler } from 'gramio';
 
+import { CUSTOMIZE_COMMANDS, onCustomize } from '@/commands/customize.js';
 import { onSetup } from '@/commands/setup.js';
 import { onStart } from '@/commands/start.js';
 import logger from '@/utils/logger.js';
@@ -60,6 +61,10 @@ export const registerHandlers = async (bot: Bot, db: DataService) => {
 
     if (settings) {
         bot.command('start', onStart as CommandHandler);
+
+        CUSTOMIZE_COMMANDS.forEach((command) => {
+            bot.command(command, onCustomize as CommandHandler);
+        });
 
         logger.info(`Registering message and edit handlers`);
 
