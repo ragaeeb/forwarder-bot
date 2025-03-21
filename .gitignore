@@ -1,0 +1,9 @@
+dist
+node_modules
+.env
+.env.production
+.serverless
+coverage
+
+# macOS
+.DS_Store
