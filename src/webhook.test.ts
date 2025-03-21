@@ -96,6 +96,35 @@ describe('webhook', () => {
             });
         });
 
+        it('should handle uncaught exceptions', async () => {
+            const processSpy = vi.spyOn(process, 'on');
+
+            await handler(mockEvent);
+
+            expect(processSpy).toHaveBeenCalledWith('uncaughtException', expect.any(Function));
+
+            const [, uncaughtHandler = () => {}] =
+                processSpy.mock.calls.find((call) => call[0] === 'uncaughtException') || [];
+            const mockError = new Error('Uncaught test error');
+            uncaughtHandler(mockError);
+
+            const { default: logger } = await import('@/utils/logger.js');
+            expect(logger.error).toHaveBeenCalledWith(mockError, 'Uncaught Exception:');
+            expect(logger.error).toHaveBeenCalledWith(mockError.stack, 'Stack trace:');
+
+            processSpy.mockRestore();
+        });
+
+        it('should use mock database if provided', async () => {
+            const mockDb = { test: 'mock db' };
+            const { setMockDatabase } = await import('./webhook.js');
+
+            setMockDatabase(mockDb as any);
+            await handler(mockEvent);
+
+            expect(DynamoDBService).not.toHaveBeenCalled();
+        });
+
         it.each([
             { scenario: 'invalid token', token: 'invalid-token' },
             { scenario: 'missing token', token: undefined },
@@ -157,6 +186,46 @@ describe('webhook', () => {
             });
             expect(JSON.parse(result.body).ok).toBe(false);
             expect(mockBot.stop).toHaveBeenCalledExactlyOnceWith();
+        });
+    });
+
+    describe('initWebhook', () => {
+        it('should initialize webhook correctly', async () => {
+            const { initWebhook } = await import('./webhook.js');
+            const mockSetWebhook = vi.fn().mockResolvedValue(true);
+            (Bot as any).mockImplementation(() => ({
+                api: {
+                    setWebhook: mockSetWebhook,
+                },
+            }));
+
+            await initWebhook('https://example.com/api');
+
+            expect(Bot).toHaveBeenCalledWith('test-token');
+            expect(mockSetWebhook).toHaveBeenCalledWith({
+                drop_pending_updates: true,
+                secret_token: 'test-secret-token',
+                url: 'https://example.com/api/test-token',
+            });
+        });
+    });
+
+    describe('resetHook', () => {
+        it('should reset webhook correctly', async () => {
+            const { resetHook } = await import('./webhook.js');
+            const mockDeleteWebhook = vi.fn().mockResolvedValue(true);
+            (Bot as any).mockImplementation(() => ({
+                api: {
+                    deleteWebhook: mockDeleteWebhook,
+                },
+            }));
+
+            await resetHook();
+
+            expect(Bot).toHaveBeenCalledWith('test-token');
+            expect(mockDeleteWebhook).toHaveBeenCalledWith({
+                drop_pending_updates: true,
+            });
         });
     });
 });

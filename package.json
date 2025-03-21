@@ -14,8 +14,8 @@
         "test": "vitest run --coverage"
     },
     "dependencies": {
-        "@aws-sdk/client-dynamodb": "^3.767.0",
-        "@aws-sdk/lib-dynamodb": "^3.767.0",
+        "@aws-sdk/client-dynamodb": "^3.772.0",
+        "@aws-sdk/lib-dynamodb": "^3.772.0",
         "env-var": "^7.5.0",
         "gramio": "^0.2.5",
         "pino": "^9.6.0",

@@ -6,6 +6,13 @@ import { Bot } from 'gramio';
 import { config } from './config.js';
 import { registerHandlers } from './handlers/index.js';
 import { DynamoDBService } from './services/dynamodb.js';
+import { DataService } from './services/types.js';
+
+let mockDatabase: DataService | undefined;
+
+export const setMockDatabase = (db: DataService) => {
+    mockDatabase = db;
+};
 
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
     process.on('uncaughtException', (err) => {
@@ -30,7 +37,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         bot = new Bot(config.BOT_TOKEN);
 
         logger.info(`Starting dynamodb service`);
-        const db = new DynamoDBService();
+        const db = mockDatabase || new DynamoDBService();
 
         logger.info(`register handlers`);
         await registerHandlers(bot, db);
