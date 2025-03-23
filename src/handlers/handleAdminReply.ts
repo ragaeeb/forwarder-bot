@@ -16,12 +16,19 @@ import type { TelegramMessage } from '../types/telegram.js';
  * @param {TelegramMessage} message - The Telegram message to forward
  * @returns {Promise<TelegramMessage|undefined>} The sent message response or undefined for unsupported types
  */
-const forwardMessageToUser = async (api: ForwardContext['api'], chatId: string, message: TelegramMessage) => {
+const forwardMessageToUser = async (ctx: ForwardContext) => {
+    const message = ctx.message!;
+    const { chatId } = ctx.thread!;
+
+    const commonMessage = {
+        chat_id: chatId,
+        protect_content: true,
+    };
+
     if (message.text) {
         logger.info(`Forwarding text message for chat=${chatId}`);
-        return api.sendMessage({
-            chat_id: chatId,
-            protect_content: true,
+        return ctx.bot.api.sendMessage({
+            ...commonMessage,
             text: message.text,
         });
     }
@@ -30,32 +37,29 @@ const forwardMessageToUser = async (api: ForwardContext['api'], chatId: string, 
         logger.info(`Forwarding photo for chat=${chatId}`);
         const photo = message.photo[message.photo.length - 1];
 
-        return api.sendPhoto({
+        return ctx.bot.api.sendPhoto({
+            ...commonMessage,
             caption: message.caption,
-            chat_id: chatId,
             photo: photo.file_id,
-            protect_content: true,
         });
     }
 
     if (message.document) {
         logger.info(`Forwarding document for chat=${chatId}`);
 
-        return api.sendDocument({
+        return ctx.bot.api.sendDocument({
+            ...commonMessage,
             caption: message.caption,
-            chat_id: chatId,
             document: message.document.file_id,
-            protect_content: true,
         });
     }
 
     if (message.voice) {
         logger.info(`Forwarding voice note for chat=${chatId}`);
 
-        return api.sendVoice({
+        return ctx.bot.api.sendVoice({
+            ...commonMessage,
             caption: message.caption,
-            chat_id: chatId,
-            protect_content: true,
             voice: message.voice.file_id,
         });
     }
@@ -63,10 +67,9 @@ const forwardMessageToUser = async (api: ForwardContext['api'], chatId: string, 
     if (message.video) {
         logger.info(`Forwarding video for chat=${chatId}`);
 
-        return api.sendVideo({
+        return ctx.bot.api.sendVideo({
+            ...commonMessage,
             caption: message.caption,
-            chat_id: chatId,
-            protect_content: true,
             video: message.video.file_id,
         });
     }
@@ -79,41 +82,37 @@ const forwardMessageToUser = async (api: ForwardContext['api'], chatId: string, 
  * @param {ForwardContext} ctx - The context object containing admin reply information
  * @returns {Promise<any>} The result of the operation
  */
-export const handleAdminReplyToCustomer = async (ctx: ForwardContext) => {
-    const threadId = ctx.message?.message_thread_id?.toString() as string;
-    logger.info(`handleAdminReplyToCustomer: ${threadId}`);
+export const onAdminReply = async (ctx: ForwardContext) => {
+    logger.info(`onAdminReply`);
 
-    const thread = await ctx.db.getThreadById(threadId);
+    try {
+        const sentMessage = await forwardMessageToUser(ctx);
 
-    if (!thread) {
-        logger.warn('Thread data not found', { threadId });
-        return replyWithError(ctx, 'Could not find the thread data for this user.');
+        if (!sentMessage) {
+            logger.warn(ctx.message, 'Unsupported message type');
+            await replyWithError(ctx, 'Unsupported message type. Please send text, photo, voice, video, or document.');
+            return;
+        }
+
+        logger.info(`Saving message ${sentMessage.message_id} to database`);
+
+        await ctx.db.saveMessage(
+            mapTelegramMessageToSavedMessage(
+                {
+                    ...ctx.message,
+                    message_id: sentMessage.message_id,
+                    reply_to_message: sentMessage.reply_to_message,
+                } as TelegramMessage,
+                'admin',
+            ),
+        );
+
+        await updateThreadByMessage(ctx, ctx.thread!, sentMessage);
+
+        logger.info(`Sending success to user`);
+        await replyWithSuccess(ctx, `Reply sent to user`);
+    } catch (err: any) {
+        logger.error(err, 'Error forward message to user.');
+        await replyWithError(ctx, `Could not forward message to user, please try again.`);
     }
-
-    logger.info(`Forwarding message from admin to user`);
-    const sentMessage = await forwardMessageToUser(ctx.api, thread.chatId, ctx.message as TelegramMessage);
-
-    if (!sentMessage) {
-        logger.warn('Unsupported message type', { message: ctx.message });
-        return replyWithError(ctx, 'Unsupported message type. Please send text, photo, or document.');
-    }
-
-    logger.info(`Saving message to database`);
-
-    await ctx.db.saveMessage(
-        mapTelegramMessageToSavedMessage(
-            {
-                ...ctx.message,
-                message_id: sentMessage.message_id,
-                reply_to_message: sentMessage.reply_to_message,
-            } as TelegramMessage,
-            'admin',
-        ),
-    );
-
-    logger.info(`Updating thread associated with message`);
-    await updateThreadByMessage(ctx, thread, sentMessage);
-
-    logger.info(`Sending success to user`);
-    return replyWithSuccess(ctx, `Reply sent to user`);
 };

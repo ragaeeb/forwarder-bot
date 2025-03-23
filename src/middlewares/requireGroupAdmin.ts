@@ -11,7 +11,7 @@ import { replyWithWarning } from '@/utils/replyUtils.js';
  * @returns {Function} Middleware function
  */
 export const requireGroupAdmin = async (ctx: ForwardContext, next: NextFunction) => {
-    const { id: chatId, type } = ctx.chat!;
+    const { id: chatId, type } = ctx.chat;
 
     if (type !== 'supergroup') {
         logger.warn(`Attempted command in ${type}`);
@@ -30,5 +30,5 @@ export const requireGroupAdmin = async (ctx: ForwardContext, next: NextFunction)
         return;
     }
 
-    await next();
+    return next();
 };

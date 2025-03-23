@@ -4,14 +4,22 @@ import type { DataService } from '@/services/types.js';
 import { CUSTOMIZE_COMMANDS, onCustomize } from '@/commands/customize.js';
 import { onSetup } from '@/commands/setup.js';
 import { onStart } from '@/commands/start.js';
-import { injectDependencies, requireParticipant, requirePrivateChat, requireSetup } from '@/middlewares/common.js';
+import {
+    injectDependencies,
+    requireAdminReply,
+    requireParticipant,
+    requirePrivateChat,
+    requireSetup,
+} from '@/middlewares/common.js';
 import { requireGroupAdmin } from '@/middlewares/requireGroupAdmin.js';
 import { requireManageTopicsPermission } from '@/middlewares/requireManageTopicsPermission.js';
+import { requireReferencedThread, requireThreadForUser } from '@/middlewares/requireMessageThread.js';
 import { requireNewSetup } from '@/middlewares/requireNewSetup.js';
 import { requireToken } from '@/middlewares/requireToken.js';
 import logger from '@/utils/logger.js';
 
-import { onGenericMessage } from './genericMessage.js';
+import { onAdminReply } from './handleAdminReply.js';
+import { onDirectMessage } from './handleDirectMessage.js';
 import { onEditedMessage } from './handleEditedMessage.js';
 
 /**
@@ -47,6 +55,19 @@ export const registerHandlers = (bot: Bot, db: DataService) => {
         );
     });
 
-    bot.on('message', requireSetup as Middleware, onGenericMessage as UpdateHandler);
+    bot.on(
+        'message',
+        requireSetup as Middleware,
+        requireAdminReply as Middleware,
+        requireReferencedThread as Middleware,
+        onAdminReply as UpdateHandler,
+    );
+    bot.on(
+        'message',
+        requireSetup as Middleware,
+        requirePrivateChat as Middleware,
+        requireThreadForUser as Middleware,
+        onDirectMessage as UpdateHandler,
+    );
     bot.on('edited_message', requirePrivateChat, requireSetup as Middleware, onEditedMessage as UpdateHandler);
 };

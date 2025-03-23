@@ -34,7 +34,7 @@ export const onEditedMessage = async (ctx: ForwardContext) => {
 
         logger.info(`Forwarding new message from ${ctx.chat.id} to ${adminGroupId}/${threadId}`);
 
-        const originalMessageId = ctx.update.edited_message!.message_id as number;
+        const originalMessageId = ctx.message!.message_id;
 
         await ctx.bot.api.forwardMessage({
             chat_id: adminGroupId,
@@ -46,7 +46,7 @@ export const onEditedMessage = async (ctx: ForwardContext) => {
         logger.info(`Saving edited message to database ${originalMessageId}`);
 
         const result = await ctx.db.saveMessage({
-            ...mapTelegramMessageToSavedMessage(ctx.update.edited_message!, 'user'),
+            ...mapTelegramMessageToSavedMessage(ctx.message!, 'user'),
             id: `${originalMessageId}_edited_${Date.now()}`,
             originalMessageId: originalMessageId.toString(),
         });

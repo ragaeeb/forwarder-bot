@@ -1,11 +1,16 @@
-import type { Context, NextFunction } from '@/bot.js';
+import type { NextFunction } from '@/bot.js';
 import type { ForwardContext } from '@/types.js';
 
 import { DataService } from '@/services/types.js';
-import { replyWithWarning } from '@/utils/replyUtils.js';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { injectDependencies, requireParticipant, requirePrivateChat, requireSetup } from './common.js';
+import {
+    injectDependencies,
+    requireAdminReply,
+    requireParticipant,
+    requirePrivateChat,
+    requireSetup,
+} from './common.js';
 
 describe('common', () => {
     let next: NextFunction;
@@ -111,6 +116,42 @@ describe('common', () => {
             const fn = injectDependencies(db as unknown as DataService);
 
             await fn(ctx, next);
+
+            expect(next).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('requireAdminReply', () => {
+        it('should accept a reply from the admin', () => {
+            const ctx = {
+                chat: { id: 1, type: 'supergroup' },
+                message: { message_thread_id: 1, reply_to_message: {} },
+                settings: { adminGroupId: '1' },
+            } as unknown as ForwardContext;
+
+            requireAdminReply(ctx, next);
+
+            expect(next).toHaveBeenCalledExactlyOnceWith();
+        });
+
+        it('should not accept a DM from the user', () => {
+            const ctx = {
+                chat: { id: 1, type: 'private' },
+                settings: { adminGroupId: '2' },
+            } as unknown as ForwardContext;
+
+            requireAdminReply(ctx, next);
+
+            expect(next).not.toHaveBeenCalled();
+        });
+
+        it('should not proceed if it is an unknown message', () => {
+            const ctx = {
+                chat: { id: 1, type: 'group' },
+                settings: { adminGroupId: '2' },
+            } as unknown as ForwardContext;
+
+            requireAdminReply(ctx, next);
 
             expect(next).not.toHaveBeenCalled();
         });

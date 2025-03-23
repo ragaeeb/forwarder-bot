@@ -47,18 +47,16 @@ describe('onEditedMessage', () => {
                 saveMessage: vi.fn(),
             },
             from: user,
-            settings: { adminGroupId: '789' },
-            update: {
-                edited_message: {
-                    chat: {
-                        id: 123,
-                        type: 'private',
-                    },
-                    from: user,
-                    message_id: 789,
-                    text: 'Edited message',
+            message: {
+                chat: {
+                    id: 123,
+                    type: 'private',
                 },
+                from: user,
+                message_id: 789,
+                text: 'Edited message',
             },
+            settings: { adminGroupId: '789' },
         } as unknown as ForwardContext;
 
         vi.spyOn(Date, 'now').mockImplementation(() => now.getTime());

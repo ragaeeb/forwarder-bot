@@ -17,23 +17,21 @@ describe('requireToken', () => {
         next = vi.fn();
     });
 
-    describe('requireToken', () => {
-        it('should do nothing when token is not provided', () => {
-            requireToken({} as unknown as ForwardContext, next);
+    it('should do nothing when token is not provided', () => {
+        requireToken({} as unknown as ForwardContext, next);
 
-            expect(next).not.toHaveBeenCalled();
-        });
+        expect(next).not.toHaveBeenCalled();
+    });
 
-        it('should do nothing when an invalid token is provided', () => {
-            requireToken({ args: Date.now().toString() } as unknown as ForwardContext, next);
+    it('should do nothing when an invalid token is provided', () => {
+        requireToken({ args: Date.now().toString() } as unknown as ForwardContext, next);
 
-            expect(next).not.toHaveBeenCalled();
-        });
+        expect(next).not.toHaveBeenCalled();
+    });
 
-        it('should pass if correct token is provided', () => {
-            requireToken({ args: 'HBT' } as unknown as ForwardContext, next);
+    it('should pass if correct token is provided', () => {
+        requireToken({ args: 'HBT' } as unknown as ForwardContext, next);
 
-            expect(next).toHaveBeenCalledExactlyOnceWith();
-        });
+        expect(next).toHaveBeenCalledExactlyOnceWith();
     });
 });

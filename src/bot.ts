@@ -19,7 +19,6 @@ export interface Context {
         type: string;
     };
     from: TelegramUser;
-    id?: number;
     me: TelegramUser;
     message?: TelegramMessage;
     reply: (text: string) => Promise<TelegramMessage>;
@@ -45,7 +44,6 @@ export type UpdateHandler = (ctx: Context) => Promise<void> | void;
 export class Bot {
     public api: TelegramAPI;
     private commandHandlers: Map<string, CommandHandler[]> = new Map();
-    private derives: ((ctx: Context) => Promise<Record<string, any>>)[] = [];
     private me?: TelegramUser;
     private middlewares: Middleware[] = [];
     private token: string;
@@ -97,17 +95,6 @@ export class Bot {
     }
 
     /**
-     * Add a derive function to extend context
-     *
-     * @param {Function} derive - Function to derive additional context
-     * @returns {Bot} - The bot instance for chaining
-     */
-    derive(derive: (ctx?: any) => Promise<Record<string, any>>): Bot {
-        this.derives.push(derive);
-        return this;
-    }
-
-    /**
      * Process an update
      *
      * @param {TelegramUpdate} update - The update to process
@@ -145,7 +132,7 @@ export class Bot {
             }
 
             // Create base context
-            const baseContext: Context = {
+            const context: Context = {
                 args,
                 bot: this,
                 chat: message.chat && {
@@ -159,7 +146,6 @@ export class Bot {
                     last_name: message.from?.last_name,
                     username: message.from?.username,
                 } as TelegramUser,
-                id: message.message_id,
                 me: this.me!,
                 message,
                 reply: async (text: string) => {
@@ -172,13 +158,6 @@ export class Bot {
                 text: message.text,
                 update,
             };
-
-            // Apply derives
-            let context = { ...baseContext };
-            for (const derive of this.derives) {
-                const derived = await derive(context);
-                context = { ...context, ...derived };
-            }
 
             // Apply middlewares
             let middlewareIndex = 0;

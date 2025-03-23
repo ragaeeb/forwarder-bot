@@ -16,32 +16,24 @@ describe('requireNewSetup', () => {
         next = vi.fn();
     });
 
-    describe('requireNewSetup', () => {
-        it('should pass if setup was never completed', async () => {
-            await requireNewSetup({} as unknown as ForwardContext, next);
+    it('should pass if setup was never completed', async () => {
+        await requireNewSetup({} as unknown as ForwardContext, next);
 
-            expect(next).toHaveBeenCalledExactlyOnceWith();
-            expect(replyWithWarning).not.toHaveBeenCalled();
-        });
+        expect(next).toHaveBeenCalledExactlyOnceWith();
+        expect(replyWithWarning).not.toHaveBeenCalled();
+    });
 
-        it('should pass if setup was completed with a different group', async () => {
-            await requireNewSetup(
-                { chat: { id: 2 }, settings: { adminGroupId: '1' } } as unknown as ForwardContext,
-                next,
-            );
+    it('should pass if setup was completed with a different group', async () => {
+        await requireNewSetup({ chat: { id: 2 }, settings: { adminGroupId: '1' } } as unknown as ForwardContext, next);
 
-            expect(next).toHaveBeenCalledExactlyOnceWith();
-            expect(replyWithWarning).not.toHaveBeenCalled();
-        });
+        expect(next).toHaveBeenCalledExactlyOnceWith();
+        expect(replyWithWarning).not.toHaveBeenCalled();
+    });
 
-        it('should not pass if setup was completed for the same group', async () => {
-            await requireNewSetup(
-                { chat: { id: 1 }, settings: { adminGroupId: '1' } } as unknown as ForwardContext,
-                next,
-            );
+    it('should not pass if setup was completed for the same group', async () => {
+        await requireNewSetup({ chat: { id: 1 }, settings: { adminGroupId: '1' } } as unknown as ForwardContext, next);
 
-            expect(next).not.toHaveBeenCalled();
-            expect(replyWithWarning).toHaveBeenCalledOnce();
-        });
+        expect(next).not.toHaveBeenCalled();
+        expect(replyWithWarning).toHaveBeenCalledOnce();
     });
 });

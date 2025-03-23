@@ -21,6 +21,7 @@ export interface BotSettings {
 export type ForwardContext = Context & {
     db: DataService;
     settings: BotSettings;
+    thread?: ThreadData;
 };
 
 /**

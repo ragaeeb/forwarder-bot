@@ -66,3 +66,14 @@ export const requirePrivateChat = (ctx: Context, next: NextFunction) => {
 
     logger.info(`Skipping non-DM edited message`);
 };
+
+export const requireAdminReply = (ctx: ForwardContext, next: NextFunction) => {
+    if (
+        ctx.chat.id.toString() === ctx.settings.adminGroupId &&
+        ctx.chat.type === 'supergroup' &&
+        ctx.message!.reply_to_message &&
+        ctx.message!.message_thread_id
+    ) {
+        return next();
+    }
+};

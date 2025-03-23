@@ -44,6 +44,7 @@ const getMediaId = (message: TelegramMessage) => {
  * @returns {SavedMessage} Standardized message object for storage
  */
 export const mapTelegramMessageToSavedMessage = (message: TelegramMessage, type: 'admin' | 'user'): SavedMessage => {
+    console.log('message', message);
     const mediaType = getMediaType(message);
     const mediaId = getMediaId(message);
 

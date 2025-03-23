@@ -4,6 +4,7 @@ import type { DataService } from '@/services/types.js';
 import { onCustomize } from '@/commands/customize.js';
 import { onSetup } from '@/commands/setup.js';
 import { onStart } from '@/commands/start.js';
+import { classifyMessage } from '@/middlewares/requireAcceptableMessage.js';
 import { injectDependencies, requireParticipant, requirePrivateChat, requireSetup } from '@/middlewares/common.js';
 import { requireGroupAdmin } from '@/middlewares/requireGroupAdmin.js';
 import { requireManageTopicsPermission } from '@/middlewares/requireManageTopicsPermission.js';
@@ -23,6 +24,7 @@ vi.mock('@/commands/customize.js', () => ({
 vi.mock('@/commands/start.js');
 vi.mock('@/commands/setup.js');
 vi.mock('@/middlewares/common.js');
+vi.mock('@/middlewares/classifyMessage.js');
 vi.mock('@/middlewares/requireGroupAdmin.js');
 vi.mock('@/middlewares/requireManageTopicsPermission.js');
 vi.mock('@/middlewares/requireNewSetup.js');
@@ -62,7 +64,7 @@ describe('registerHandlers', () => {
         expect(bot.command).toHaveBeenNthCalledWith(4, 'failure', requireSetup, requireGroupAdmin, onCustomize);
 
         expect(bot.on).toHaveBeenCalledTimes(2);
-        expect(bot.on).toHaveBeenNthCalledWith(1, 'message', requireSetup, onGenericMessage);
+        expect(bot.on).toHaveBeenNthCalledWith(1, 'message', requireSetup, classifyMessage, onGenericMessage);
         expect(bot.on).toHaveBeenNthCalledWith(2, 'edited_message', requirePrivateChat, requireSetup, onEditedMessage);
     });
 });

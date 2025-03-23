@@ -1,16 +1,7 @@
 import type { ForwardContext, ThreadData } from '@/types.js';
-
-import type { TelegramMessage } from '../types/telegram.js';
+import type { TelegramMessage, TelegramUser } from '@/types/telegram.js';
 
 import logger from './logger.js';
-
-// Define a simplified User interface for this function
-interface User {
-    firstName?: string;
-    id: number;
-    lastName?: string;
-    username?: string;
-}
 
 /**
  * Generates a human-readable name for a thread based on user information.
@@ -19,9 +10,9 @@ interface User {
  * @param {User} user - Telegram user information
  * @returns {string} A formatted string for the thread name
  */
-const mapUserToThreadName = ({ firstName, id, lastName, username }: User) => {
-    const label = [firstName, lastName, username && `(${username})`].filter(Boolean).join(' ');
-    return [id, label].filter(Boolean).join(': ');
+const mapUserToThreadName = (user: TelegramUser) => {
+    const label = [user.first_name, user.last_name, user.username && `(${user.username})`].filter(Boolean).join(' ');
+    return [user.id, label].filter(Boolean).join(': ');
 };
 
 /**
@@ -32,19 +23,12 @@ const mapUserToThreadName = ({ firstName, id, lastName, username }: User) => {
  * @param {string} groupId - The admin group ID to create the thread in
  * @returns {Promise<ThreadData|undefined>} The created thread data or undefined on error
  */
-export const createNewThread = async (ctx: ForwardContext, groupId: string) => {
+export const createNewThread = async (ctx: ForwardContext) => {
     try {
-        const user = {
-            firstName: ctx.from?.first_name,
-            id: ctx.from?.id as number,
-            lastName: ctx.from?.last_name,
-            username: ctx.from?.username,
-        };
-
-        logger.info(`Creating new thread in ${groupId} with name=${mapUserToThreadName(user)}`);
-        const response = await ctx.api.createForumTopic({
-            chat_id: groupId,
-            name: mapUserToThreadName(user),
+        logger.info(`Creating new thread in ${ctx.settings.adminGroupId} with name=${mapUserToThreadName(ctx.from)}`);
+        const response = await ctx.bot.api.createForumTopic({
+            chat_id: ctx.settings.adminGroupId,
+            name: mapUserToThreadName(ctx.from),
         });
 
         logger.info(response, `Thread created, saving thread`);
@@ -60,6 +44,7 @@ export const createNewThread = async (ctx: ForwardContext, groupId: string) => {
         });
     } catch (error) {
         logger.error(error, 'Failed to create thread');
+        throw error;
     }
 };
 
@@ -73,39 +58,11 @@ export const createNewThread = async (ctx: ForwardContext, groupId: string) => {
  * @returns {Promise<ThreadData>} The updated thread data
  */
 export const updateThreadByMessage = (ctx: ForwardContext, threadData: ThreadData, message: TelegramMessage) => {
+    logger.debug(threadData, `updateThreadByMessage`);
+
     return ctx.db.saveThread({
         ...threadData,
-        lastMessageId: message.message_id.toString() as string,
+        lastMessageId: message.message_id.toString(),
         updatedAt: new Date().toISOString(),
     });
-};
-
-/**
- * Gets an existing thread for a user or creates a new one if none exists.
- * Also updates the thread with the latest message information.
- *
- * @param {ForwardContext} ctx - The context object with user and message information
- * @param {string} adminGroupId - The admin group ID to create a thread in if needed
- * @returns {Promise<ThreadData|undefined>} The thread data or undefined on error
- */
-export const getUpsertedThread = async (ctx: ForwardContext, adminGroupId: string) => {
-    const threadData = await ctx.db.getThreadByUserId(ctx.from?.id.toString() as string);
-    logger.info(`Thread for user ${ctx.from?.id} is ${JSON.stringify(threadData)}`);
-
-    if (threadData) {
-        logger.info(`Update thread with associated message`);
-        const user = {
-            firstName: ctx.from?.first_name,
-            id: ctx.from?.id as number,
-            lastName: ctx.from?.last_name,
-            username: ctx.from?.username,
-        };
-        return updateThreadByMessage(
-            ctx,
-            { ...threadData, name: mapUserToThreadName(user) },
-            ctx.message as TelegramMessage,
-        );
-    }
-
-    return createNewThread(ctx, adminGroupId);
 };
