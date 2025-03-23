@@ -16,7 +16,8 @@ export const CUSTOMIZE_COMMANDS = ['ack', 'failure', 'greeting'];
  * @returns {Promise<void>}
  */
 export const onCustomize = async (ctx: ForwardContext) => {
-    const [command, ...tokens] = ctx.text?.slice(1).split(' ') || [];
+    const { args, text } = ctx;
+    const [command] = text?.slice(1).split(' ') || [];
 
     logger.info(ctx.chat, `onCustomize: ${command}`);
 
@@ -28,8 +29,8 @@ export const onCustomize = async (ctx: ForwardContext) => {
 
     try {
         const customizeCommand = command as keyof BotSettings;
-        const result = await ctx.db.saveSettings({ ...ctx.settings, [customizeCommand]: tokens.join(' ') });
-        await replyWithSuccess(ctx, `Saved ${command}=${result[customizeCommand]}`);
+        const result = await ctx.db.saveSettings({ ...ctx.settings, [customizeCommand]: args });
+        await replyWithSuccess(ctx, `Saved ${command} command to reply with: ${result[customizeCommand]}`);
     } catch (err) {
         logger.error(err, 'Error saving customization setting');
         await replyWithError(ctx, `Error saving customization, please try again.`);

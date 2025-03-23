@@ -2,7 +2,8 @@ import type { ForwardContext } from '@/types.js';
 
 import logger from '@/utils/logger.js';
 import { mapTelegramMessageToSavedMessage } from '@/utils/messageUtils.js';
-import { TelegramMessage } from 'gramio';
+
+import type { TelegramMessage } from '../types/telegram.js';
 
 /**
  * Handles when a user edits a message they previously sent to the bot.
@@ -37,7 +38,7 @@ export const handleEditedMessage = async (ctx: ForwardContext) => {
 
         const { adminGroupId } = ctx.settings;
 
-        await ctx.bot.api.sendMessage({
+        await ctx.api.sendMessage({
             chat_id: adminGroupId,
             message_thread_id: threadId,
             text: `🔄 Message Edit Notification`,
@@ -45,9 +46,9 @@ export const handleEditedMessage = async (ctx: ForwardContext) => {
 
         logger.info(`Forwarding new message`);
 
-        await ctx.bot.api.forwardMessage({
+        await ctx.api.forwardMessage({
             chat_id: adminGroupId,
-            from_chat_id: ctx.chatId,
+            from_chat_id: ctx.chatId as number | string,
             message_id: ctx.update?.edited_message?.message_id as number,
             message_thread_id: threadId,
         });

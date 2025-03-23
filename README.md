@@ -234,7 +234,7 @@ The `serverless.yml` file contains the AWS infrastructure configuration:
 
 ```bash
 # View deployment logs
-bun run serverless logs --function webhook --tail
+bun run logs
 
 # Remove the webhook (stop receiving updates)
 bun run reset

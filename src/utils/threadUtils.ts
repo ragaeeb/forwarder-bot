@@ -1,7 +1,16 @@
 import type { ForwardContext, ThreadData } from '@/types.js';
-import type { TelegramMessage, User } from 'gramio';
+
+import type { TelegramMessage } from '../types/telegram.js';
 
 import logger from './logger.js';
+
+// Define a simplified User interface for this function
+interface User {
+    firstName?: string;
+    id: number;
+    lastName?: string;
+    username?: string;
+}
 
 /**
  * Generates a human-readable name for a thread based on user information.
@@ -25,18 +34,25 @@ const mapUserToThreadName = ({ firstName, id, lastName, username }: User) => {
  */
 export const createNewThread = async (ctx: ForwardContext, groupId: string) => {
     try {
-        logger.info(`Creating new thread in ${groupId} with name=${mapUserToThreadName(ctx.from as User)}`);
-        const response = await ctx.bot.api.createForumTopic({
+        const user = {
+            firstName: ctx.from?.first_name,
+            id: ctx.from?.id as number,
+            lastName: ctx.from?.last_name,
+            username: ctx.from?.username,
+        };
+
+        logger.info(`Creating new thread in ${groupId} with name=${mapUserToThreadName(user)}`);
+        const response = await ctx.api.createForumTopic({
             chat_id: groupId,
-            name: mapUserToThreadName(ctx.from as User),
+            name: mapUserToThreadName(user),
         });
 
         logger.info(response, `Thread created, saving thread`);
 
         return ctx.db.saveThread({
-            chatId: ctx.chat.id.toString(),
-            createdAt: new Date((ctx.update?.message?.date as number) * 1000).toISOString(),
-            lastMessageId: ctx.update?.message?.message_id.toString() as string,
+            chatId: ctx.chat!.id.toString(),
+            createdAt: new Date((ctx.message?.date as number) * 1000).toISOString(),
+            lastMessageId: ctx.message?.message_id.toString() as string,
             name: response.name,
             threadId: response.message_thread_id.toString(),
             updatedAt: new Date().toISOString(),
@@ -78,10 +94,16 @@ export const getUpsertedThread = async (ctx: ForwardContext, adminGroupId: strin
 
     if (threadData) {
         logger.info(`Update thread with associated message`);
+        const user = {
+            firstName: ctx.from?.first_name,
+            id: ctx.from?.id as number,
+            lastName: ctx.from?.last_name,
+            username: ctx.from?.username,
+        };
         return updateThreadByMessage(
             ctx,
-            { ...threadData, name: mapUserToThreadName(ctx.from as User) },
-            ctx.update?.message as TelegramMessage,
+            { ...threadData, name: mapUserToThreadName(user) },
+            ctx.message as TelegramMessage,
         );
     }
 

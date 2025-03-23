@@ -1,5 +1,7 @@
 import type { ForwardContext } from '@/types.js';
 
+import type { TelegramMessage } from '../types/telegram.js';
+
 /**
  * Helper function to send a reply with an emoji prefix.
  * Creates a standardized format for status messages.
@@ -7,9 +9,9 @@ import type { ForwardContext } from '@/types.js';
  * @param {ForwardContext} ctx - The context object to reply to
  * @param {string} emoji - The emoji to prefix the message with
  * @param {string} message - The text message to send
- * @returns {Promise<any>} Result of the reply operation
+ * @returns {Promise<TelegramMessage>} Result of the reply operation
  */
-const replyWithEmoji = async (ctx: ForwardContext, emoji: string, message: string) => {
+const replyWithEmoji = async (ctx: ForwardContext, emoji: string, message: string): Promise<TelegramMessage> => {
     return ctx.reply(`${emoji} ${message}`);
 };
 
@@ -19,7 +21,7 @@ const replyWithEmoji = async (ctx: ForwardContext, emoji: string, message: strin
  *
  * @param {ForwardContext} ctx - The context object to reply to
  * @param {string} message - The error message to send
- * @returns {Promise<any>} Result of the reply operation
+ * @returns {Promise<TelegramMessage>} Result of the reply operation
  */
 export const replyWithError = async (ctx: ForwardContext, message: string) => {
     return replyWithEmoji(ctx, '❌', message);
@@ -31,7 +33,7 @@ export const replyWithError = async (ctx: ForwardContext, message: string) => {
  *
  * @param {ForwardContext} ctx - The context object to reply to
  * @param {string} message - The warning message to send
- * @returns {Promise<any>} Result of the reply operation
+ * @returns {Promise<TelegramMessage>} Result of the reply operation
  */
 export const replyWithWarning = async (ctx: ForwardContext, message: string) => {
     return replyWithEmoji(ctx, '⚠️', message);
@@ -43,7 +45,7 @@ export const replyWithWarning = async (ctx: ForwardContext, message: string) => 
  *
  * @param {ForwardContext} ctx - The context object to reply to
  * @param {string} message - The success message to send
- * @returns {Promise<any>} Result of the reply operation
+ * @returns {Promise<TelegramMessage>} Result of the reply operation
  */
 export const replyWithSuccess = async (ctx: ForwardContext, message: string) => {
     return replyWithEmoji(ctx, '✅', message);

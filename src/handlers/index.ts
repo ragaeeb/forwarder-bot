@@ -1,35 +1,16 @@
 import type { DataService } from '@/services/types.js';
-import type { Bot, Context, ContextType, DeriveDefinitions, Handler } from 'gramio';
 
 import { CUSTOMIZE_COMMANDS, onCustomize } from '@/commands/customize.js';
 import { onSetup } from '@/commands/setup.js';
 import { onStart } from '@/commands/start.js';
+import { ignoreSelfMessages, injectDependencies, requireGroupAdmin, requireSetup } from '@/middlewares/index.js';
 import logger from '@/utils/logger.js';
 
+import type { CommandHandler, UpdateHandler } from '../bot.js';
+
+import { Bot } from '../bot.js';
 import { onGenericMessage } from './genericMessage.js';
 import { handleEditedMessage } from './handleEditedMessage.js';
-import { ignoreSelfMessages } from './middlewares.js';
-
-/**
- * Type for handling bot commands with context
- */
-type CommandHandler = (
-    context: ContextType<Bot, 'message'> &
-        DeriveDefinitions['global'] &
-        DeriveDefinitions['message'] & {
-            args: null | string;
-        },
-) => unknown;
-
-/**
- * Middleware for processing requests
- */
-type Middleware = Handler<Context<Bot> & DeriveDefinitions['global']>;
-
-/**
- * Handler for processing updates
- */
-type UpdateHandler = Handler<ContextType<Bot, any> & DeriveDefinitions & DeriveDefinitions['global']>;
 
 /**
  * Register handlers and middleware for the bot.
@@ -43,40 +24,30 @@ type UpdateHandler = Handler<ContextType<Bot, any> & DeriveDefinitions & DeriveD
 export const registerHandlers = async (bot: Bot, db: DataService) => {
     logger.info(`registerHandlers`);
 
-    const settings = await db.getSettings();
+    // Add dependency injection middleware as the first middleware
+    bot.use(injectDependencies(db));
 
-    bot.derive(async () => {
-        const me = await bot.api.getMe();
-
-        return {
-            bot,
-            db,
-            me,
-            settings,
-        };
-    });
-
-    bot.use(ignoreSelfMessages as Middleware);
+    // Add middleware to ignore self messages
+    bot.use(ignoreSelfMessages);
 
     logger.info(`Registering commands`);
 
-    bot.command('setup', onSetup as CommandHandler); // Handle setup command with token verification
+    // Register setup command with group admin check
+    bot.command('setup', requireGroupAdmin, onSetup as CommandHandler);
 
-    if (settings) {
-        bot.command('start', onStart as CommandHandler);
+    // Register commands that require setup
+    bot.command('start', requireSetup, onStart as CommandHandler);
 
-        CUSTOMIZE_COMMANDS.forEach((command) => {
-            bot.command(command, onCustomize as CommandHandler);
-        });
+    // Register customize commands with admin and setup checks
+    CUSTOMIZE_COMMANDS.forEach((command) => {
+        bot.command(command, requireSetup, requireGroupAdmin, onCustomize as CommandHandler);
+    });
 
-        logger.info(`Registering message and edit handlers`);
+    logger.info(`Registering message and edit handlers`);
 
-        // Handle direct messages from users
-        bot.on('message', onGenericMessage as UpdateHandler);
-        bot.on('edited_message', handleEditedMessage as UpdateHandler);
-    } else {
-        logger.warn('Skipping handlers that require configuration prerequisite');
-    }
+    // Register message handlers with setup check
+    bot.on('message', requireSetup, onGenericMessage as UpdateHandler);
+    bot.on('edited_message', requireSetup, handleEditedMessage as UpdateHandler);
 
     logger.info(`registerHandlers completed`);
 };

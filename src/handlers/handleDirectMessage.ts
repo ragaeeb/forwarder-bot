@@ -1,10 +1,11 @@
 import type { ForwardContext } from '@/types.js';
-import type { TelegramMessage } from 'gramio';
 
 import logger from '@/utils/logger.js';
 import { mapTelegramMessageToSavedMessage } from '@/utils/messageUtils.js';
 import { replyWithError, replyWithSuccess } from '@/utils/replyUtils.js';
 import { createNewThread, getUpsertedThread } from '@/utils/threadUtils.js';
+
+import type { TelegramMessage } from '../types/telegram.js';
 
 /**
  * Forwards a user's message to the admin group in the appropriate thread.
@@ -19,10 +20,10 @@ const forwardMessageToGroup = async (ctx: ForwardContext, groupId: string, threa
     logger.info(
         `forwardMessageToGroup threadId=${threadId}, chatId=${groupId} from=${ctx.chatId}, messageId=${ctx.id}`,
     );
-    await ctx.bot.api.forwardMessage({
+    await ctx.api.forwardMessage({
         chat_id: groupId,
-        from_chat_id: ctx.chatId,
-        message_id: ctx.id,
+        from_chat_id: ctx.chatId as number | string,
+        message_id: ctx.id as number,
         message_thread_id: parseInt(threadId),
     });
 
@@ -69,7 +70,7 @@ export const handleDirectMessage = async (ctx: ForwardContext, adminGroupId: str
 
     if (threadData) {
         logger.info(`Saving message to database`);
-        await ctx.db.saveMessage(mapTelegramMessageToSavedMessage(ctx.update?.message as TelegramMessage, 'user'));
+        await ctx.db.saveMessage(mapTelegramMessageToSavedMessage(ctx.message as TelegramMessage, 'user'));
 
         try {
             logger.info(`Forwarding DM from user to admin group`);

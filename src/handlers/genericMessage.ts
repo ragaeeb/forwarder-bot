@@ -16,7 +16,7 @@ import { handleDirectMessage } from './handleDirectMessage.js';
 export const onGenericMessage = async (ctx: ForwardContext) => {
     logger.info(ctx.update, `onGenericMessage`);
 
-    const message = ctx.update?.message;
+    const message = ctx.message;
 
     if (!message) {
         logger.warn(`No message found.`);
@@ -28,7 +28,7 @@ export const onGenericMessage = async (ctx: ForwardContext) => {
 
     const isAdminReply =
         chatId === adminGroupId &&
-        ctx.chat.type === 'supergroup' &&
+        ctx.chat!.type === 'supergroup' &&
         message.reply_to_message &&
         message.message_thread_id;
 
@@ -41,7 +41,7 @@ export const onGenericMessage = async (ctx: ForwardContext) => {
         }
     }
 
-    const isDirectMessage = ctx.chat.type === 'private' && chatId !== adminGroupId;
+    const isDirectMessage = ctx.chat!.type === 'private' && chatId !== adminGroupId;
 
     // Handle direct messages (if not from the contact group)
     if (isDirectMessage) {

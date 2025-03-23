@@ -1,28 +1,22 @@
+import type { NextFunction } from '@/bot.js';
 import type { ForwardContext } from '@/types.js';
 
+import { replyWithWarning } from '@/utils/replyUtils.js';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { replyWithWarning } from './replyUtils.js';
-import { isSenderGroupAdmin } from './validation.js';
+import { requireGroupAdmin } from './requireGroupAdmin.js';
 
-vi.mock('./logger.js', () => ({
-    default: {
-        error: vi.fn(),
-        warn: vi.fn(),
-    },
-}));
+vi.mock('@/utils/replyUtils.js');
 
-vi.mock('./replyUtils.js', () => ({
-    replyWithError: vi.fn(),
-    replyWithWarning: vi.fn(),
-}));
+describe('requireGroupAdmin', () => {
+    let next: NextFunction;
 
-describe('validation', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        next = vi.fn();
     });
 
-    describe('isSenderGroupAdmin', () => {
+    describe('requireGroupAdmin', () => {
         it('should reject in non-supergroup chats', async () => {
             const ctx = {
                 chat: {
@@ -31,10 +25,10 @@ describe('validation', () => {
                 },
             };
 
-            const result = await isSenderGroupAdmin(ctx as unknown as ForwardContext);
+            await requireGroupAdmin(ctx as unknown as ForwardContext, next);
 
             expect(replyWithWarning).toHaveBeenCalledExactlyOnceWith(ctx, expect.any(String));
-            expect(result).toBe(false);
+            expect(next).not.toHaveBeenCalled();
         });
 
         it('should reject from non-admins', async () => {
@@ -51,11 +45,11 @@ describe('validation', () => {
                 from: { id: 2 },
             };
 
-            const result = await isSenderGroupAdmin(ctx as unknown as ForwardContext);
+            await requireGroupAdmin(ctx as unknown as ForwardContext, next);
 
             expect(replyWithWarning).toHaveBeenCalledExactlyOnceWith(ctx, expect.any(String));
             expect(ctx.bot.api.getChatMember).toHaveBeenCalledExactlyOnceWith({ chat_id: 1, user_id: 2 });
-            expect(result).toBe(false);
+            expect(next).not.toHaveBeenCalled();
         });
 
         it.each(['administrator', 'creator'])('should pass if user is in supergroup and status=%s', async (status) => {
@@ -69,12 +63,13 @@ describe('validation', () => {
                     id: 1,
                     type: 'supergroup',
                 },
+                from: { id: 1 },
             };
 
-            const result = await isSenderGroupAdmin(ctx as unknown as ForwardContext);
+            await requireGroupAdmin(ctx as unknown as ForwardContext, next);
 
             expect(replyWithWarning).not.toHaveBeenCalled();
-            expect(result).toBe(true);
+            expect(next).toHaveBeenCalledExactlyOnceWith();
         });
     });
 });

@@ -1,5 +1,6 @@
 import type { SavedMessage } from '@/types.js';
-import type { TelegramMessage } from 'gramio';
+
+import type { TelegramMessage } from '../types/telegram.js';
 
 /**
  * Determines the media type contained in a message.

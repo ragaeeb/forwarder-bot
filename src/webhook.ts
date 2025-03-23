@@ -1,12 +1,14 @@
 import type { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 
 import logger from '@/utils/logger.js';
-import { Bot } from 'gramio';
 
+import type { DataService } from './services/types.js';
+
+import { Bot } from './bot.js';
 import { config } from './config.js';
 import { registerHandlers } from './handlers/index.js';
 import { DynamoDBService } from './services/dynamodb.js';
-import { DataService } from './services/types.js';
+import { TelegramAPI } from './services/telegramAPI.js';
 
 let mockDatabase: DataService | undefined;
 
@@ -63,7 +65,9 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
         logger.info(`handleUpdate`);
 
-        await bot.updates.handleUpdate(JSON.parse(event.body || '{}'));
+        // Parse update from the webhook request body
+        const update = event.body ? JSON.parse(event.body) : {};
+        await bot.handleUpdate(update);
 
         logger.info(`return 200`);
 
@@ -91,10 +95,10 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
  * @param {string} apiUrl - The base URL of the API Gateway endpoint
  * @returns {Promise<boolean>} True if the webhook was set successfully, false otherwise
  */
-export const initWebhook = async (apiUrl: string) => {
-    const bot = new Bot(config.BOT_TOKEN);
+export const initWebhook = async (apiUrl: string): Promise<boolean> => {
+    const telegramAPI = new TelegramAPI();
 
-    return bot.api.setWebhook({
+    return telegramAPI.setWebhook({
         drop_pending_updates: true,
         secret_token: config.SECRET_TOKEN,
         url: `${apiUrl}/${config.BOT_TOKEN}`,
@@ -107,10 +111,10 @@ export const initWebhook = async (apiUrl: string) => {
  *
  * @returns {Promise<boolean>} True if the webhook was deleted successfully, false otherwise
  */
-export const resetHook = async () => {
-    const bot = new Bot(config.BOT_TOKEN);
+export const resetHook = async (): Promise<boolean> => {
+    const telegramAPI = new TelegramAPI();
 
-    return bot.api.deleteWebhook({
+    return telegramAPI.deleteWebhook({
         drop_pending_updates: true,
     });
 };

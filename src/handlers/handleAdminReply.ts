@@ -1,25 +1,22 @@
 import type { ForwardContext } from '@/types.js';
-import type { APIMethods, SuppressedAPIMethods, TelegramMessage } from 'gramio';
 
 import logger from '@/utils/logger.js';
 import { mapTelegramMessageToSavedMessage } from '@/utils/messageUtils.js';
 import { replyWithError, replyWithSuccess } from '@/utils/replyUtils.js';
 import { updateThreadByMessage } from '@/utils/threadUtils.js';
 
+import type { TelegramMessage } from '../types/telegram.js';
+
 /**
  * Forwards a message from an admin to a user based on the message type.
  * Currently supports text, photo, and document message types.
  *
- * @param {SuppressedAPIMethods<keyof APIMethods>} api - The Telegram API methods to use for sending
+ * @param {TelegramAPI} api - The Telegram API methods to use for sending
  * @param {string} chatId - The destination chat ID to send to
  * @param {TelegramMessage} message - The Telegram message to forward
  * @returns {Promise<TelegramMessage|undefined>} The sent message response or undefined for unsupported types
  */
-const forwardMessageToUser = async (
-    api: SuppressedAPIMethods<keyof APIMethods>,
-    chatId: string,
-    message: TelegramMessage,
-) => {
+const forwardMessageToUser = async (api: ForwardContext['api'], chatId: string, message: TelegramMessage) => {
     if (message.text) {
         logger.info(`Forwarding text message for chat=${chatId}`);
         return api.sendMessage({
@@ -83,7 +80,7 @@ const forwardMessageToUser = async (
  * @returns {Promise<any>} The result of the operation
  */
 export const handleAdminReplyToCustomer = async (ctx: ForwardContext) => {
-    const threadId = ctx.update?.message?.message_thread_id?.toString() as string;
+    const threadId = ctx.message?.message_thread_id?.toString() as string;
     logger.info(`handleAdminReplyToCustomer: ${threadId}`);
 
     const thread = await ctx.db.getThreadById(threadId);
@@ -94,10 +91,10 @@ export const handleAdminReplyToCustomer = async (ctx: ForwardContext) => {
     }
 
     logger.info(`Forwarding message from admin to user`);
-    const sentMessage = await forwardMessageToUser(ctx.bot.api, thread.chatId, ctx.update?.message as TelegramMessage);
+    const sentMessage = await forwardMessageToUser(ctx.api, thread.chatId, ctx.message as TelegramMessage);
 
     if (!sentMessage) {
-        logger.warn('Unsupported message type', { message: ctx.update?.message });
+        logger.warn('Unsupported message type', { message: ctx.message });
         return replyWithError(ctx, 'Unsupported message type. Please send text, photo, or document.');
     }
 
@@ -106,7 +103,7 @@ export const handleAdminReplyToCustomer = async (ctx: ForwardContext) => {
     await ctx.db.saveMessage(
         mapTelegramMessageToSavedMessage(
             {
-                ...ctx.update?.message,
+                ...ctx.message,
                 message_id: sentMessage.message_id,
                 reply_to_message: sentMessage.reply_to_message,
             } as TelegramMessage,
