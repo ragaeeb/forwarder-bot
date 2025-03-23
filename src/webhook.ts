@@ -56,7 +56,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         const db = mockDatabase || new DynamoDBService();
 
         logger.info(`register handlers`);
-        await registerHandlers(bot, db);
+        registerHandlers(bot, db);
 
         logger.info(`Init bot`);
 

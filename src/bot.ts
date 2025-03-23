@@ -1,4 +1,3 @@
-import type { DataService } from './services/types.js';
 import type { TelegramMessage, TelegramUpdate, TelegramUser } from './types/telegram.js';
 
 import { TelegramAPI } from './services/telegramAPI.js';
@@ -13,20 +12,17 @@ export type CommandHandler = (ctx: Context) => Promise<void> | void;
  * Context object for commands and updates
  */
 export interface Context {
-    [key: string]: any;
     args?: string;
     bot: Bot;
     chat: {
         id: number;
         type: string;
     };
-    db: DataService;
     from: TelegramUser;
     id?: number;
     me: TelegramUser;
     message?: TelegramMessage;
     reply: (text: string) => Promise<TelegramMessage>;
-    settings: any;
     text?: string;
     update: TelegramUpdate;
 }
@@ -140,32 +136,29 @@ export class Bot {
 
             // Parse command if present
             let command: null | string = null;
-            let args: null | string = null;
+            let args: string | undefined;
 
             if (message.text && message.text.startsWith('/')) {
                 const parts = message.text.slice(1).split(' ');
                 command = parts[0];
-                args = parts.length > 1 ? parts.slice(1).join(' ') : null;
+                args = parts.length > 1 ? parts.slice(1).join(' ') : undefined;
             }
 
             // Create base context
             const baseContext: Context = {
-                api: this.api,
                 args,
                 bot: this,
                 chat: message.chat && {
                     id: message.chat.id,
                     type: message.chat.type,
                 },
-                chatId: message.chat?.id,
-                db: {} as DataService, // Will be set by middleware or derive
-                from: message.from && {
-                    first_name: message.from.first_name,
-                    id: message.from.id,
-                    is_bot: message.from.is_bot,
-                    last_name: message.from.last_name,
-                    username: message.from.username,
-                },
+                from: {
+                    first_name: message.from?.first_name,
+                    id: message.from?.id,
+                    is_bot: message.from?.is_bot,
+                    last_name: message.from?.last_name,
+                    username: message.from?.username,
+                } as TelegramUser,
                 id: message.message_id,
                 me: this.me!,
                 message,
@@ -176,7 +169,6 @@ export class Bot {
                         text,
                     });
                 },
-                settings: {},
                 text: message.text,
                 update,
             };

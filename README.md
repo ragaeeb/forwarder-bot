@@ -273,6 +273,7 @@ The following features are planned for future releases:
 7. **Multi-admin Analytics**: Track which admin responded to which message
 8. **Advanced Search**: Search functionality within user conversations
 9. **Protection Customization**: Control whether you want to protect your messages from being forwarded or not.
+10. **Quote Original Message**: For edited messages.
 
 ## Contributing
 
