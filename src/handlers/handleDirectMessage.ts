@@ -1,4 +1,4 @@
-import type { ForwardContext } from '@/types.js';
+import type { ForwardContext } from '@/types/app.js';
 
 import logger from '@/utils/logger.js';
 import { mapTelegramMessageToSavedMessage } from '@/utils/messageUtils.js';
@@ -16,10 +16,10 @@ import { createNewThread } from '@/utils/threadUtils.js';
  */
 const forwardMessageToGroup = async (ctx: ForwardContext, threadId: string) => {
     logger.info(
-        `forwardMessageToGroup ${ctx.settings.adminGroupId}/${threadId} from=${ctx.chat.id}/${ctx.message!.message_id}`,
+        `forwardMessageToGroup ${ctx.settings!.adminGroupId}/${threadId} from=${ctx.chat.id}/${ctx.message!.message_id}`,
     );
     const message = await ctx.bot.api.forwardMessage({
-        chat_id: ctx.settings.adminGroupId,
+        chat_id: ctx.settings!.adminGroupId,
         from_chat_id: ctx.chat.id,
         message_id: ctx.message!.message_id,
         message_thread_id: parseInt(threadId),
@@ -27,7 +27,7 @@ const forwardMessageToGroup = async (ctx: ForwardContext, threadId: string) => {
 
     logger.info(`Replying 200 to user for successful forwarding of ${message.message_id}.`);
 
-    await replyWithSuccess(ctx, ctx.settings.ack || 'Message delivered, our team will get back to you.');
+    await replyWithSuccess(ctx, ctx.settings!.ack || 'Message delivered, our team will get back to you.');
 };
 
 /**
@@ -63,6 +63,6 @@ export const onDirectMessage = async (ctx: ForwardContext) => {
         }
     } catch (error: any) {
         logger.error(error, 'Failed to forward message');
-        await replyWithError(ctx, ctx.settings.failure || 'Could not deliver message, please try again later.');
+        await replyWithError(ctx, ctx.settings!.failure || 'Could not deliver message, please try again later.');
     }
 };

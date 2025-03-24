@@ -4,13 +4,7 @@ import type { DataService } from '@/services/types.js';
 import { CUSTOMIZE_COMMANDS, onCustomize } from '@/commands/customize.js';
 import { onSetup } from '@/commands/setup.js';
 import { onStart } from '@/commands/start.js';
-import {
-    injectDependencies,
-    requireAdminReply,
-    requireParticipant,
-    requirePrivateChat,
-    requireSetup,
-} from '@/middlewares/common.js';
+import { injectDependencies, requireAdminReply, requirePrivateChat, requireSetup } from '@/middlewares/common.js';
 import { requireGroupAdmin } from '@/middlewares/requireGroupAdmin.js';
 import { requireManageTopicsPermission } from '@/middlewares/requireManageTopicsPermission.js';
 import { requireReferencedThread, requireThreadForUser } from '@/middlewares/requireMessageThread.js';
@@ -33,7 +27,6 @@ export const registerHandlers = (bot: Bot, db: DataService) => {
     logger.info(`registerHandlers`);
 
     bot.use(injectDependencies(db) as Middleware);
-    bot.use(requireParticipant);
 
     bot.command(
         'setup',

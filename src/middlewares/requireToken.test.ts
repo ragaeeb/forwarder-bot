@@ -1,5 +1,5 @@
 import type { NextFunction } from '@/bot.js';
-import type { ForwardContext } from '@/types.js';
+import type { ForwardContext } from '@/types/app.js';
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 

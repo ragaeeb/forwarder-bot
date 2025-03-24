@@ -1,160 +1,187 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { NextFunction } from '@/bot.js';
+import type { ForwardContext } from '@/types/app.js';
 
-import type { ForwardContext, ThreadData } from '../types.js';
+import { replyWithError } from '@/utils/replyUtils.js';
+import { createNewThread, updateThreadByMessage } from '@/utils/threadUtils.js';
+import { beforeEach, describe, expect, it, type Mock, vi } from 'vitest';
 
-import { createNewThread, getUpsertedThread, updateThreadByMessage } from './threadUtils.js';
+import { requireReferencedThread, requireThreadForUser } from './requireMessageThread.js';
 
-describe('getUpsertedThread', () => {
-    it('should update existing thread when found', async () => {
-        const ctx = {
-            bot: {
-                api: {
-                    createForumTopic: vi.fn(),
-                },
-            },
-            chat: { id: 54321, type: 'private' },
-            db: {
-                getThreadByUserId: vi.fn().mockResolvedValue({
-                    chatId: '54321',
-                    createdAt: '2022-02-20T00:00:00.000Z',
-                    lastMessageId: '67880',
-                    name: '12345: John Doe (johndoe)',
-                    threadId: 99999,
-                    updatedAt: '2022-02-22T00:00:00.000Z',
-                    userId: '12345',
-                }),
-                saveThread: vi.fn().mockResolvedValue({
-                    chatId: '54321',
-                    createdAt: '2022-02-20T00:00:00.000Z',
-                    lastMessageId: '67890',
-                    name: '12345: John Doe (johndoe)',
-                    threadId: 99999,
-                    updatedAt: '2022-02-23T12:00:00.000Z',
-                    userId: '12345',
-                }),
-            },
-            from: {
-                firstName: 'John',
-                id: 12345,
-                lastName: 'Doe',
-                username: 'johndoe',
-            },
-            update: {
-                message: {
-                    chat: { id: 54321, type: 'private' },
-                    date: 1645564800,
-                    message_id: 67890,
-                },
-            },
-        } as unknown as ForwardContext;
+vi.mock('@/utils/threadUtils.js');
+vi.mock('@/utils/replyUtils.js');
 
-        const result = await getUpsertedThread(ctx, 'admin-group-123');
-        const expected = {
-            chatId: '54321',
-            createdAt: '2022-02-20T00:00:00.000Z',
-            lastMessageId: '67890',
-            name: '12345: John Doe (johndoe)',
-            threadId: 99999,
-            updatedAt: '2022-02-23T12:00:00.000Z',
-            userId: '12345',
-        };
+describe('requireMessageThread', () => {
+    let next: NextFunction;
 
-        expect(ctx.db.getThreadByUserId).toHaveBeenCalledWith('12345');
-        expect(ctx.db.saveThread).toHaveBeenCalledWith(expected);
-
-        expect(ctx.bot.api.createForumTopic).not.toHaveBeenCalled();
-        expect(result).toEqual(expected);
+    beforeEach(() => {
+        vi.clearAllMocks();
+        next = vi.fn();
     });
 
-    it('should create new thread when not found', async () => {
-        const ctx = {
-            bot: {
-                api: {
-                    createForumTopic: vi.fn().mockResolvedValue({
-                        message_thread_id: 99999,
-                        name: '12345: John Doe (johndoe)',
-                    }),
+    describe('requireThreadForUser', () => {
+        it('should update existing thread when found', async () => {
+            const thread = {
+                threadId: '99',
+            };
+
+            const ctx = {
+                db: {
+                    getThreadByUserId: vi.fn().mockResolvedValue(thread),
                 },
-            },
-            chat: { id: 54321, type: 'private' },
-            db: {
-                getThreadByUserId: vi.fn().mockResolvedValue(null),
-                saveThread: vi.fn().mockResolvedValue({
-                    chatId: '54321',
-                    createdAt: '2022-02-23T00:00:00.000Z',
-                    lastMessageId: '67890',
-                    name: '12345: John Doe (johndoe)',
-                    threadId: 99999,
-                    updatedAt: '2022-02-23T12:00:00.000Z',
-                    userId: '12345',
-                }),
-            },
-            from: {
-                firstName: 'John',
-                id: 12345,
-                lastName: 'Doe',
-                username: 'johndoe',
-            },
-            update: {
+                from: {
+                    id: 12345,
+                },
                 message: {
-                    chat: { id: 54321, type: 'private' },
-                    date: 1645564800,
-                    message_id: 67890,
+                    message_id: 1,
                 },
-            },
-        } as unknown as ForwardContext;
+            } as unknown as ForwardContext;
 
-        const result = await getUpsertedThread(ctx, 'admin-group-123');
+            (updateThreadByMessage as Mock).mockResolvedValue(thread);
 
-        expect(ctx.db.getThreadByUserId).toHaveBeenCalledWith('12345');
-        expect(ctx.bot.api.createForumTopic).toHaveBeenCalledWith({
-            chat_id: 'admin-group-123',
-            name: '12345: John Doe (johndoe)',
+            await requireThreadForUser(ctx, next);
+
+            expect(ctx.db.getThreadByUserId).toHaveBeenCalledExactlyOnceWith('12345');
+            expect(updateThreadByMessage).toHaveBeenCalledExactlyOnceWith(ctx, thread, ctx.message);
+            expect(next).toHaveBeenCalledExactlyOnceWith();
+            expect(ctx.thread).toEqual(thread);
         });
 
-        expect(result).toEqual({
-            chatId: '54321',
-            createdAt: '2022-02-23T00:00:00.000Z',
-            lastMessageId: '67890',
-            name: '12345: John Doe (johndoe)',
-            threadId: 99999,
-            updatedAt: '2022-02-23T12:00:00.000Z',
-            userId: '12345',
+        it('should create a new thread when an existing thread does not exist for the user', async () => {
+            const ctx = {
+                db: {
+                    getThreadByUserId: vi.fn(),
+                },
+                from: {
+                    id: 12345,
+                },
+                message: {
+                    message_id: 1,
+                },
+            } as unknown as ForwardContext;
+
+            (createNewThread as Mock).mockResolvedValue({
+                threadId: '99',
+            });
+
+            await requireThreadForUser(ctx, next);
+
+            expect(ctx.db.getThreadByUserId).toHaveBeenCalledExactlyOnceWith('12345');
+            expect(createNewThread).toHaveBeenCalledExactlyOnceWith(ctx);
+            expect(next).toHaveBeenCalledExactlyOnceWith();
+            expect(ctx.thread).toEqual({ threadId: '99' });
+        });
+
+        it('should not proceed if there are any errors getting the thread', async () => {
+            const ctx = {
+                db: {
+                    getThreadByUserId: vi.fn().mockRejectedValue(new Error('Error getting thread')),
+                },
+                from: {
+                    id: 12345,
+                },
+                settings: {},
+            } as unknown as ForwardContext;
+
+            await requireThreadForUser(ctx, next);
+
+            expect(createNewThread).not.toHaveBeenCalled();
+            expect(next).not.toHaveBeenCalled();
+            expect(ctx.thread).toBeUndefined();
+            expect(replyWithError).toHaveBeenCalledOnce();
+        });
+
+        it('should not proceed if there are any errors creating a new thread', async () => {
+            const ctx = {
+                db: {
+                    getThreadByUserId: vi.fn(),
+                },
+                from: {
+                    id: 12345,
+                },
+                settings: { failure: 'F' },
+            } as unknown as ForwardContext;
+
+            (createNewThread as Mock).mockRejectedValue(new Error('Cannot create thread'));
+
+            await requireThreadForUser(ctx, next);
+
+            expect(next).not.toHaveBeenCalled();
+            expect(replyWithError).toHaveBeenCalledExactlyOnceWith(ctx, 'F');
+        });
+
+        it('should not proceed if there are any errors updating a thread', async () => {
+            const ctx = {
+                db: {
+                    getThreadByUserId: vi.fn().mockResolvedValue({ threadId: '11' }),
+                },
+                from: {
+                    id: 12345,
+                },
+                settings: {},
+            } as unknown as ForwardContext;
+
+            (updateThreadByMessage as Mock).mockRejectedValue(new Error('Cannot create thread'));
+
+            await requireThreadForUser(ctx, next);
+
+            expect(next).not.toHaveBeenCalled();
+            expect(replyWithError).toHaveBeenCalledOnce();
         });
     });
 
-    it('should handle errors during creation of new thread', async () => {
-        const error = new Error('Failed to create forum topic');
+    describe('requireReferencedThread', () => {
+        it('should successfully set the thread for the message', async () => {
+            const thread = { threadId: '11' };
 
-        const ctx = {
-            bot: {
-                api: {
-                    createForumTopic: vi.fn().mockRejectedValue(error),
+            const ctx = {
+                db: {
+                    getThreadById: vi.fn().mockResolvedValue(thread),
                 },
-            },
-            chat: { id: 54321, type: 'private' },
-            db: {
-                getThreadByUserId: vi.fn().mockResolvedValue(null),
-            },
-            from: {
-                firstName: 'John',
-                id: 12345,
-                lastName: 'Doe',
-                username: 'johndoe',
-            },
-            update: {
                 message: {
-                    chat: { id: 54321, type: 'private' },
-                    date: 1645564800,
-                    message_id: 67890,
+                    message_thread_id: 11,
                 },
-            },
-        } as unknown as ForwardContext;
+            } as unknown as ForwardContext;
 
-        const result = await getUpsertedThread(ctx, 'admin-group-123');
+            await requireReferencedThread(ctx, next);
 
-        expect(ctx.db.getThreadByUserId).toHaveBeenCalledWith('12345');
-        expect(ctx.bot.api.createForumTopic).toHaveBeenCalled();
-        expect(result).toBeUndefined();
+            expect(ctx.thread).toEqual(thread);
+            expect(next).toHaveBeenCalledExactlyOnceWith();
+            expect(replyWithError).not.toHaveBeenCalled();
+            expect(ctx.db.getThreadById).toHaveBeenCalledExactlyOnceWith('11');
+        });
+
+        it('should catch errors if thread cannot be found', async () => {
+            const ctx = {
+                db: {
+                    getThreadById: vi.fn(),
+                },
+                message: {
+                    message_thread_id: 11,
+                },
+            } as unknown as ForwardContext;
+
+            await requireReferencedThread(ctx, next);
+
+            expect(ctx.thread).toBeUndefined();
+            expect(next).not.toHaveBeenCalled();
+            expect(replyWithError).toHaveBeenCalled();
+        });
+
+        it('should catch errors if there are problems getting thread', async () => {
+            const ctx = {
+                db: {
+                    getThreadById: vi.fn().mockRejectedValue(new Error('Cannot get thread')),
+                },
+                message: {
+                    message_thread_id: 11,
+                },
+            } as unknown as ForwardContext;
+
+            await requireReferencedThread(ctx, next);
+
+            expect(ctx.thread).toBeUndefined();
+            expect(next).not.toHaveBeenCalled();
+            expect(replyWithError).toHaveBeenCalled();
+        });
     });
 });

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { BotSettings, SavedMessage, ThreadData } from '../types.js';
+import type { BotSettings, SavedMessage, ThreadData } from '../types/app.js';
 
 import { MockDataService } from './mockDataService.js';
 

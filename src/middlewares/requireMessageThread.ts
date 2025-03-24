@@ -1,5 +1,5 @@
 import type { NextFunction } from '@/bot.js';
-import type { ForwardContext } from '@/types.js';
+import type { ForwardContext } from '@/types/app.js';
 
 import logger from '@/utils/logger.js';
 import { replyWithError } from '@/utils/replyUtils.js';
@@ -16,14 +16,13 @@ export const requireReferencedThread = async (ctx: ForwardContext, next: NextFun
     logger.info(`requireReferencedThread ${threadId}`);
 
     try {
-        const thread = await ctx.db.getThreadById(threadId);
+        ctx.thread = await ctx.db.getThreadById(threadId);
 
-        if (thread) {
-            ctx.thread = thread;
+        if (ctx.thread) {
             return next();
         }
 
-        logger.warn({ threadId }, 'Thread data not found');
+        logger.error({ threadId }, 'Thread data not found');
         await replyWithError(ctx, 'Could not find the thread data for this user.');
     } catch (err) {
         logger.error(err, `Error looking up thread ${threadId}.`);
@@ -36,7 +35,6 @@ export const requireReferencedThread = async (ctx: ForwardContext, next: NextFun
  * Also updates the thread with the latest message information.
  *
  * @param {ForwardContext} ctx - The context object with user and message information
- * @param {string} adminGroupId - The admin group ID to create a thread in if needed
  * @returns {Promise<ThreadData|undefined>} The thread data or undefined on error
  */
 export const requireThreadForUser = async (ctx: ForwardContext, next: NextFunction) => {
@@ -50,14 +48,14 @@ export const requireThreadForUser = async (ctx: ForwardContext, next: NextFuncti
             logger.info(`Update thread with associated message`);
 
             ctx.thread = await updateThreadByMessage(ctx, threadData, ctx.message!);
-            return next();
+        } else {
+            logger.info('Thread does not exist for user, create new thread...');
+            ctx.thread = await createNewThread(ctx);
         }
-
-        logger.info('Thread does not exist for user, create new thread...');
-        ctx.thread = await createNewThread(ctx);
 
         return next();
     } catch (err) {
-        logger.error(err, 'Error created');
+        logger.error(err, 'Error getting thread for user');
+        await replyWithError(ctx, ctx.settings.failure || 'Could not send message, please try again later.');
     }
 };

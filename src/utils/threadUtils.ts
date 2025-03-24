@@ -1,4 +1,4 @@
-import type { ForwardContext, ThreadData } from '@/types.js';
+import type { ForwardContext, ThreadData } from '@/types/app.js';
 import type { TelegramMessage, TelegramUser } from '@/types/telegram.js';
 
 import logger from './logger.js';
@@ -25,9 +25,9 @@ const mapUserToThreadName = (user: TelegramUser) => {
  */
 export const createNewThread = async (ctx: ForwardContext) => {
     try {
-        logger.info(`Creating new thread in ${ctx.settings.adminGroupId} with name=${mapUserToThreadName(ctx.from)}`);
+        logger.info(`Creating new thread in ${ctx.settings!.adminGroupId} with name=${mapUserToThreadName(ctx.from)}`);
         const response = await ctx.bot.api.createForumTopic({
-            chat_id: ctx.settings.adminGroupId,
+            chat_id: ctx.settings!.adminGroupId,
             name: mapUserToThreadName(ctx.from),
         });
 

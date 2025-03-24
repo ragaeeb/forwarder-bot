@@ -11,6 +11,7 @@ import { DynamoDBService } from './services/dynamodb.js';
 import { TelegramAPI } from './services/telegramAPI.js';
 
 let mockDatabase: DataService | undefined;
+let bot: Bot | undefined;
 
 /**
  * Sets a mock database for testing purposes.
@@ -20,6 +21,19 @@ let mockDatabase: DataService | undefined;
  */
 export const setMockDatabase = (db: DataService) => {
     mockDatabase = db;
+};
+
+const initBot = async () => {
+    logger.info('Starting bot');
+    const myBot = new Bot(config.BOT_TOKEN);
+
+    logger.info(`Bot started, starting data service`);
+    const db = mockDatabase || new DynamoDBService();
+
+    logger.info(`register handlers`);
+    registerHandlers(myBot, db);
+
+    return myBot;
 };
 
 /**
@@ -36,8 +50,6 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         logger.error(err.stack, 'Stack trace:');
     });
 
-    let bot;
-
     try {
         logger.info(`Webhook called: body=${event.body}`);
 
@@ -50,24 +62,16 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             };
         }
 
-        bot = new Bot(config.BOT_TOKEN);
+        if (!bot) {
+            bot = await initBot();
+        }
 
-        logger.info(`Starting dynamodb service`);
-        const db = mockDatabase || new DynamoDBService();
-
-        logger.info(`register handlers`);
-        registerHandlers(bot, db);
-
-        logger.info(`Init bot`);
-
-        // Process the update via the handler
-        await bot.init();
-
-        logger.info(`handleUpdate`);
-
-        // Parse update from the webhook request body
-        const update = event.body ? JSON.parse(event.body) : {};
-        await bot.handleUpdate(update);
+        if (event.body) {
+            logger.info(`handleUpdate`);
+            await bot!.handleUpdate(JSON.parse(event.body));
+        } else {
+            logger.debug('Skipping update.');
+        }
 
         logger.info(`return 200`);
 
@@ -75,16 +79,15 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             body: JSON.stringify({ ok: true }),
             statusCode: 200,
         };
-    } catch (error) {
+    } catch (error: any) {
         logger.error(error, `Error processing webhook:`);
 
         return {
-            body: JSON.stringify({ error: String(error), ok: false }),
+            body: JSON.stringify({ error: error.message || String(error), ok: false }),
             statusCode: 200, // Always return 200 to Telegram
         };
     } finally {
         logger.info(`Shutting down gracefully...`);
-        await bot?.stop();
     }
 };
 
@@ -96,7 +99,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
  * @returns {Promise<boolean>} True if the webhook was set successfully, false otherwise
  */
 export const initWebhook = async (apiUrl: string): Promise<boolean> => {
-    const telegramAPI = new TelegramAPI();
+    const telegramAPI = new TelegramAPI(config.BOT_TOKEN);
 
     return telegramAPI.setWebhook({
         drop_pending_updates: true,
@@ -112,7 +115,7 @@ export const initWebhook = async (apiUrl: string): Promise<boolean> => {
  * @returns {Promise<boolean>} True if the webhook was deleted successfully, false otherwise
  */
 export const resetHook = async (): Promise<boolean> => {
-    const telegramAPI = new TelegramAPI();
+    const telegramAPI = new TelegramAPI(config.BOT_TOKEN);
 
     return telegramAPI.deleteWebhook({
         drop_pending_updates: true,

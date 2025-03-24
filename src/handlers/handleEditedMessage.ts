@@ -1,4 +1,4 @@
-import type { ForwardContext } from '@/types.js';
+import type { ForwardContext } from '@/types/app.js';
 
 import logger from '@/utils/logger.js';
 import { mapTelegramMessageToSavedMessage } from '@/utils/messageUtils.js';
@@ -22,7 +22,7 @@ export const onEditedMessage = async (ctx: ForwardContext) => {
         }
 
         const threadId = parseInt(threadData.threadId);
-        const { adminGroupId } = ctx.settings;
+        const { adminGroupId } = ctx.settings!;
 
         logger.info(`Notifying of edited message to group ${adminGroupId}/${threadId}`);
 

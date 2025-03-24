@@ -1,6 +1,6 @@
-import type { SavedMessage } from '@/types.js';
+import type { SavedMessage } from '@/types/app.js';
 
-import type { TelegramMessage } from '../types/telegram.js';
+import type { TelegramMessage, TelegramUpdate } from '../types/telegram.js';
 
 /**
  * Determines the media type contained in a message.
@@ -44,7 +44,6 @@ const getMediaId = (message: TelegramMessage) => {
  * @returns {SavedMessage} Standardized message object for storage
  */
 export const mapTelegramMessageToSavedMessage = (message: TelegramMessage, type: 'admin' | 'user'): SavedMessage => {
-    console.log('message', message);
     const mediaType = getMediaType(message);
     const mediaId = getMediaId(message);
 
@@ -69,4 +68,8 @@ export const mapTelegramMessageToSavedMessage = (message: TelegramMessage, type:
             replyToMessageId: message.reply_to_message.message_id.toString(),
         }),
     };
+};
+
+export const isUpdateSentFromBot = (update: TelegramUpdate) => {
+    return Boolean(update.message?.from?.is_bot || update.edited_message?.from?.is_bot);
 };

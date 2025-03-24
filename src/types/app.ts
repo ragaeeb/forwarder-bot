@@ -1,6 +1,6 @@
-import type { Context } from './bot.js';
-import type { DataService } from './services/types.js';
-import type { TelegramMessageOrigin, TelegramUser } from './types/telegram.js';
+import type { Context } from '../bot.js';
+import type { DataService } from '../services/types.js';
+import type { TelegramMessageOrigin, TelegramUser } from './telegram.js';
 
 /**
  * Settings for the bot
@@ -20,7 +20,7 @@ export interface BotSettings {
  */
 export type ForwardContext = Context & {
     db: DataService;
-    settings: BotSettings;
+    settings?: BotSettings;
     thread?: ThreadData;
 };
 

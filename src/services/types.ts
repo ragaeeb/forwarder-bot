@@ -1,4 +1,4 @@
-import type { BotSettings, SavedMessage, ThreadData } from '@/types.js';
+import type { BotSettings, SavedMessage, ThreadData } from '@/types/app.js';
 
 /**
  * Interface defining data storage operations for the bot.

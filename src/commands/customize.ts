@@ -1,4 +1,4 @@
-import type { BotSettings, ForwardContext } from '@/types.js';
+import type { BotSettings, ForwardContext } from '@/types/app.js';
 
 import logger from '@/utils/logger.js';
 import { replyWithError, replyWithSuccess } from '@/utils/replyUtils.js';
@@ -29,7 +29,7 @@ export const onCustomize = async (ctx: ForwardContext) => {
 
     try {
         const customizeCommand = command as keyof BotSettings;
-        const result = await ctx.db.saveSettings({ ...ctx.settings, [customizeCommand]: args });
+        const result = await ctx.db.saveSettings({ ...ctx.settings!, [customizeCommand]: args });
         await replyWithSuccess(ctx, `Saved ${command} command to reply with: ${result[customizeCommand]}`);
     } catch (err) {
         logger.error(err, 'Error saving customization setting');

@@ -1,5 +1,5 @@
 import type { NextFunction } from '@/bot.js';
-import type { ForwardContext } from '@/types.js';
+import type { ForwardContext } from '@/types/app.js';
 
 import { TelegramForumTopic } from '@/types/telegram.js';
 import logger from '@/utils/logger.js';

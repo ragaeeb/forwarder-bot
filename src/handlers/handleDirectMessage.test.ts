@@ -1,4 +1,4 @@
-import type { ForwardContext } from '@/types.js';
+import type { ForwardContext } from '@/types/app.js';
 
 import { mapTelegramMessageToSavedMessage } from '@/utils/messageUtils.js';
 import { replyWithError, replyWithSuccess } from '@/utils/replyUtils.js';

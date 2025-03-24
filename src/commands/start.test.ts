@@ -1,4 +1,4 @@
-import { ForwardContext } from '@/types.js';
+import { ForwardContext } from '@/types/app.js';
 import { describe, expect, it, vi } from 'vitest';
 
 import { onStart } from './start.js';

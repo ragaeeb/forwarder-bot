@@ -2,6 +2,7 @@ import type { TelegramMessage, TelegramUpdate, TelegramUser } from './types/tele
 
 import { TelegramAPI } from './services/telegramAPI.js';
 import logger from './utils/logger.js';
+import { isUpdateSentFromBot } from './utils/messageUtils.js';
 
 /**
  * Command handler type
@@ -19,7 +20,6 @@ export interface Context {
         type: string;
     };
     from: TelegramUser;
-    me: TelegramUser;
     message?: TelegramMessage;
     reply: (text: string) => Promise<TelegramMessage>;
     text?: string;
@@ -44,9 +44,7 @@ export type UpdateHandler = (ctx: Context) => Promise<void> | void;
 export class Bot {
     public api: TelegramAPI;
     private commandHandlers: Map<string, CommandHandler[]> = new Map();
-    private me?: TelegramUser;
     private middlewares: Middleware[] = [];
-    private token: string;
     private updateHandlers: Map<string, UpdateHandler[]> = new Map();
 
     /**
@@ -55,8 +53,7 @@ export class Bot {
      * @param {string} token - Telegram Bot token
      */
     constructor(token: string) {
-        this.token = token;
-        this.api = new TelegramAPI();
+        this.api = new TelegramAPI(token);
     }
 
     /**
@@ -104,7 +101,6 @@ export class Bot {
         logger.debug('Processing update', update.update_id);
 
         try {
-            // Determine the update type
             let updateType = null;
             let message = null;
 
@@ -117,7 +113,12 @@ export class Bot {
             }
 
             if (!updateType || !message) {
-                logger.warn('Unsupported update type', update);
+                logger.warn(update, 'Unsupported update type');
+                return;
+            }
+
+            if (isUpdateSentFromBot(update)) {
+                logger.warn(message.from, 'Skipping update sent from bot');
                 return;
             }
 
@@ -146,7 +147,6 @@ export class Bot {
                     last_name: message.from?.last_name,
                     username: message.from?.username,
                 } as TelegramUser,
-                me: this.me!,
                 message,
                 reply: async (text: string) => {
                     return this.api.sendMessage({
@@ -186,19 +186,6 @@ export class Bot {
     }
 
     /**
-     * Initialize the bot
-     *
-     * @returns {Promise<TelegramUser>} - Bot info
-     */
-    async init(): Promise<TelegramUser> {
-        if (!this.me) {
-            this.me = await this.api.getMe();
-            logger.info(`Bot initialized: @${this.me.username}`);
-        }
-        return this.me;
-    }
-
-    /**
      * Register an update handler with optional middleware
      *
      * @param {string} updateType - Update type ('message', 'edited_message', etc.)
@@ -231,26 +218,6 @@ export class Bot {
         });
 
         return this;
-    }
-
-    /**
-     * Start the bot
-     *
-     * @returns {Promise<TelegramUser>} - Bot info
-     */
-    async start(): Promise<TelegramUser> {
-        await this.init();
-        logger.info(`Bot @${this.me?.username} started`);
-        return this.me!;
-    }
-
-    /**
-     * Stop the bot
-     *
-     * @returns {Promise<void>}
-     */
-    async stop(): Promise<void> {
-        logger.info('Bot stopped');
     }
 
     /**

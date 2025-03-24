@@ -1,4 +1,4 @@
-import type { ForwardContext } from '@/types.js';
+import type { ForwardContext } from '@/types/app.js';
 
 import { replyWithError, replyWithSuccess, replyWithWarning } from '@/utils/replyUtils.js';
 import { afterEach, beforeEach, describe, expect, it, type Mock, vi } from 'vitest';

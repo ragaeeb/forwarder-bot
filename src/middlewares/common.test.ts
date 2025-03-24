@@ -1,16 +1,10 @@
 import type { NextFunction } from '@/bot.js';
-import type { ForwardContext } from '@/types.js';
+import type { ForwardContext } from '@/types/app.js';
 
 import { DataService } from '@/services/types.js';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import {
-    injectDependencies,
-    requireAdminReply,
-    requireParticipant,
-    requirePrivateChat,
-    requireSetup,
-} from './common.js';
+import { injectDependencies, requireAdminReply, requirePrivateChat, requireSetup } from './common.js';
 
 describe('common', () => {
     let next: NextFunction;
@@ -18,29 +12,6 @@ describe('common', () => {
     beforeEach(() => {
         vi.clearAllMocks();
         next = vi.fn();
-    });
-
-    describe('requireParticipant', () => {
-        it('should not proceed if the message is from the bot', () => {
-            const ctx = { from: { id: 1 }, me: { id: 1 } };
-            requireParticipant(ctx as unknown as ForwardContext, next);
-
-            expect(next).not.toHaveBeenCalled();
-        });
-
-        it('should not proceed if the message is another bot', () => {
-            const ctx = { from: { id: 2, is_bot: true }, me: { id: 1 } };
-            requireParticipant(ctx as unknown as ForwardContext, next);
-
-            expect(next).not.toHaveBeenCalled();
-        });
-
-        it('should proceed if the message is not from a bot and itself', () => {
-            const ctx = { from: { id: 1 }, me: { id: 2 } };
-            requireParticipant(ctx as unknown as ForwardContext, next);
-
-            expect(next).toHaveBeenCalledExactlyOnceWith();
-        });
     });
 
     describe('requireSetup', () => {
@@ -72,7 +43,7 @@ describe('common', () => {
     });
 
     describe('injectDependencies', () => {
-        it('should proceed if we were able to inject the settings and bot identity', async () => {
+        it('should proceed if we were able to inject the settings', async () => {
             const db = { getSettings: vi.fn().mockResolvedValue({ adminGroupId: '1' }) };
             const ctx = { bot: { api: { getMe: vi.fn().mockResolvedValue({ id: 1 }) } } } as unknown as ForwardContext;
             const fn = injectDependencies(db as unknown as DataService);
@@ -81,7 +52,6 @@ describe('common', () => {
 
             expect(next).toHaveBeenCalledExactlyOnceWith();
             expect(ctx.db).toBe(db);
-            expect(ctx.me).toEqual({ id: 1 });
             expect(ctx.settings).toEqual({ adminGroupId: '1' });
         });
 
@@ -94,25 +64,12 @@ describe('common', () => {
 
             expect(next).toHaveBeenCalledExactlyOnceWith();
             expect(ctx.db).toBe(db);
-            expect(ctx.me).toEqual({ id: 1 });
             expect(ctx.settings).toBeUndefined();
         });
 
         it('should fail if we could not query the settings', async () => {
             const db = { getSettings: vi.fn().mockRejectedValue(new Error('Cannot connect to db')) };
             const ctx = { bot: { api: { getMe: vi.fn().mockResolvedValue({ id: 1 }) } } } as unknown as ForwardContext;
-            const fn = injectDependencies(db as unknown as DataService);
-
-            await fn(ctx, next);
-
-            expect(next).not.toHaveBeenCalled();
-        });
-
-        it('should fail if we could not get our identity', async () => {
-            const db = { getSettings: vi.fn() };
-            const ctx = {
-                bot: { api: { getMe: vi.fn().mockRejectedValue(new Error('Cannot connect to telegram api')) } },
-            } as unknown as ForwardContext;
             const fn = injectDependencies(db as unknown as DataService);
 
             await fn(ctx, next);

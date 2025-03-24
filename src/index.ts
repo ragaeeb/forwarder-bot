@@ -1,20 +1,12 @@
 import process from 'node:process';
-
-import type { TelegramUpdate } from './types/telegram.js';
+import { setTimeout } from 'node:timers/promises';
 
 import { Bot } from './bot.js';
 import { config } from './config.js';
 import { MockDataService } from './services/mockDataService.js';
 import logger from './utils/logger.js';
+import { isUpdateSentFromBot } from './utils/messageUtils.js';
 import { handler, setMockDatabase } from './webhook.js';
-
-logger.info(`index.ts dev entry point`);
-
-/**
- * Set up a mock database for development mode
- */
-const mockDb = new MockDataService();
-setMockDatabase(mockDb);
 
 /**
  * Creates a mock API Gateway event from a Telegram update
@@ -23,7 +15,7 @@ setMockDatabase(mockDb);
  * @param {TelegramUpdate} update - Telegram update object
  * @returns {Object} Mocked API Gateway event
  */
-const createMockEvent = (update: TelegramUpdate) => ({
+const mapPayloadToApiGatewayEvent = (update: any) => ({
     body: JSON.stringify(update),
     headers: { 'x-telegram-bot-api-secret-token': config.SECRET_TOKEN },
     httpMethod: 'POST',
@@ -39,78 +31,78 @@ const createMockEvent = (update: TelegramUpdate) => ({
 });
 
 /**
- * Start the bot in development mode
- * Uses polling to get updates, then passes them to the webhook handler
+ * Single cycle of polling for updates
+ *
+ * @param bot - The bot instance
+ * @param lastUpdateIdRef - Reference to the last update ID
+ * @returns The updated last update ID
  */
-async function startDevBot() {
+const fetchAndProcessUpdates = async (bot: Bot, lastUpdateId: number | undefined): Promise<number | undefined> => {
     try {
-        const bot = new Bot(config.BOT_TOKEN);
+        const updates = await bot.api.getUpdates({
+            allowed_updates: ['message', 'edited_message'],
+            limit: 100,
+            offset: lastUpdateId !== undefined ? lastUpdateId + 1 : undefined,
+            timeout: 30,
+        });
 
-        // Delete any existing webhook
-        await bot.api.deleteWebhook({ drop_pending_updates: false });
+        if (updates.length > 0) {
+            logger.debug(`Received ${updates.length} updates`);
 
-        let lastUpdateId = 0;
+            // Update the last processed update ID to the most recent one
+            const newLastUpdateId = updates[updates.length - 1].update_id;
 
-        logger.info('Starting bot in development mode with polling');
-        const me = await bot.api.getMe();
-        logger.info(`Bot @${me.username} started`);
-
-        // Start polling loop
-        const pollUpdates = async () => {
-            try {
-                // Get updates with long polling
-                const updates = await bot.api.getUpdates({
-                    limit: 100,
-                    offset: lastUpdateId > 0 ? lastUpdateId + 1 : undefined,
-                    timeout: 30,
-                });
-
-                // Process each update by passing it to the webhook handler
-                if (updates && updates.length > 0) {
-                    logger.info(`Received ${updates.length} updates`);
-
-                    // Update the last processed update ID to the most recent one
-                    lastUpdateId = updates[updates.length - 1].update_id;
-
-                    for (const update of updates) {
-                        // Skip messages from our own bot
-                        if (update.message?.from?.is_bot && update.message.from.id === me.id) {
-                            logger.debug('Skipping message from self');
-                            continue;
-                        }
-
-                        // Convert update to a mock API Gateway event
-                        const mockEvent = createMockEvent(update);
-
-                        // Process with webhook handler
-                        await handler(mockEvent);
-                    }
+            for (const update of updates) {
+                if (!isUpdateSentFromBot(update)) {
+                    await handler(mapPayloadToApiGatewayEvent(update));
+                } else {
+                    logger.debug('Skipping message from bot');
                 }
-
-                // Continue polling if not stopped
-                setTimeout(pollUpdates, 1000);
-            } catch (error) {
-                logger.error('Error polling updates:', error);
-                setTimeout(pollUpdates, 5000); // Retry after 5 seconds on error
             }
-        };
 
-        // Set up clean shutdown
-        const cleanUp = () => {
-            logger.info(`Shutting down gracefully...`);
-            process.exit(0);
-        };
+            return newLastUpdateId;
+        }
 
-        process.on('SIGINT', cleanUp);
-        process.on('SIGTERM', cleanUp);
-
-        // Start the polling loop
-        pollUpdates();
+        return lastUpdateId;
     } catch (error) {
-        logger.error('Failed to start bot:', error);
-        process.exit(1);
+        logger.error('Error polling updates:', error);
+        return lastUpdateId; // Keep the last update ID on error
     }
-}
+};
 
-// Start the development bot
-startDevBot();
+/**
+ * Continuous polling loop that doesn't create nested stacks
+ */
+const startPolling = async (bot: Bot) => {
+    const isPolling = true;
+    let lastUpdateId: number | undefined = undefined;
+
+    // This is the main polling loop
+    while (isPolling) {
+        lastUpdateId = await fetchAndProcessUpdates(bot, lastUpdateId);
+
+        // Wait between polling cycles
+        await setTimeout(1000);
+    }
+};
+
+const cleanUp = () => {
+    logger.info(`Shutting down gracefully...`);
+    process.exit(0);
+};
+
+logger.info(`index.ts dev entry point`);
+
+const mockDb = new MockDataService();
+setMockDatabase(mockDb);
+
+const bot = new Bot(config.BOT_TOKEN);
+
+logger.info('Starting bot in development mode with polling');
+const me = await bot.api.getMe();
+logger.info(`Bot @${me.username} started`);
+
+process.on('SIGINT', cleanUp);
+process.on('SIGTERM', cleanUp);
+
+await startPolling(bot);

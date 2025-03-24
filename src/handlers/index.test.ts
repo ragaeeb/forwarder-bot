@@ -4,15 +4,16 @@ import type { DataService } from '@/services/types.js';
 import { onCustomize } from '@/commands/customize.js';
 import { onSetup } from '@/commands/setup.js';
 import { onStart } from '@/commands/start.js';
-import { classifyMessage } from '@/middlewares/requireAcceptableMessage.js';
-import { injectDependencies, requireParticipant, requirePrivateChat, requireSetup } from '@/middlewares/common.js';
+import { injectDependencies, requireAdminReply, requirePrivateChat, requireSetup } from '@/middlewares/common.js';
 import { requireGroupAdmin } from '@/middlewares/requireGroupAdmin.js';
 import { requireManageTopicsPermission } from '@/middlewares/requireManageTopicsPermission.js';
+import { requireReferencedThread, requireThreadForUser } from '@/middlewares/requireMessageThread.js';
 import { requireNewSetup } from '@/middlewares/requireNewSetup.js';
 import { requireToken } from '@/middlewares/requireToken.js';
 import { describe, expect, it, vi } from 'vitest';
 
-import { onGenericMessage } from './genericMessage.js';
+import { onAdminReply } from './handleAdminReply.js';
+import { onDirectMessage } from './handleDirectMessage.js';
 import { onEditedMessage } from './handleEditedMessage.js';
 import { registerHandlers } from './index.js';
 
@@ -21,16 +22,7 @@ vi.mock('@/commands/customize.js', () => ({
     onCustomize: vi.fn(),
 }));
 
-vi.mock('@/commands/start.js');
-vi.mock('@/commands/setup.js');
 vi.mock('@/middlewares/common.js');
-vi.mock('@/middlewares/classifyMessage.js');
-vi.mock('@/middlewares/requireGroupAdmin.js');
-vi.mock('@/middlewares/requireManageTopicsPermission.js');
-vi.mock('@/middlewares/requireNewSetup.js');
-vi.mock('@/middlewares/requireToken.js');
-vi.mock('./genericMessage.js');
-vi.mock('./handleEditedMessage.js');
 
 describe('registerHandlers', () => {
     it('should register only setup handler when bot is not configured', async () => {
@@ -44,9 +36,8 @@ describe('registerHandlers', () => {
 
         registerHandlers(bot as unknown as Bot, db as unknown as DataService);
 
-        expect(bot.use).toHaveBeenCalledTimes(2);
+        expect(bot.use).toHaveBeenCalledTimes(1);
         expect(injectDependencies).toHaveBeenCalledExactlyOnceWith(db);
-        expect(bot.use).toHaveBeenCalledWith(requireParticipant);
 
         expect(bot.command).toHaveBeenCalledTimes(4);
         expect(bot.command).toHaveBeenNthCalledWith(
@@ -63,8 +54,23 @@ describe('registerHandlers', () => {
         expect(bot.command).toHaveBeenNthCalledWith(3, 'ack', requireSetup, requireGroupAdmin, onCustomize);
         expect(bot.command).toHaveBeenNthCalledWith(4, 'failure', requireSetup, requireGroupAdmin, onCustomize);
 
-        expect(bot.on).toHaveBeenCalledTimes(2);
-        expect(bot.on).toHaveBeenNthCalledWith(1, 'message', requireSetup, classifyMessage, onGenericMessage);
-        expect(bot.on).toHaveBeenNthCalledWith(2, 'edited_message', requirePrivateChat, requireSetup, onEditedMessage);
+        expect(bot.on).toHaveBeenCalledTimes(3);
+        expect(bot.on).toHaveBeenNthCalledWith(
+            1,
+            'message',
+            requireSetup,
+            requireAdminReply,
+            requireReferencedThread,
+            onAdminReply,
+        );
+        expect(bot.on).toHaveBeenNthCalledWith(
+            2,
+            'message',
+            requireSetup,
+            requirePrivateChat,
+            requireThreadForUser,
+            onDirectMessage,
+        );
+        expect(bot.on).toHaveBeenNthCalledWith(3, 'edited_message', requirePrivateChat, requireSetup, onEditedMessage);
     });
 });
