@@ -291,5 +291,5 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## Acknowledgments
 
-- [gramio](https://github.com/gramiojs/gramio) for the Telegram Bot API client
+- [gramio](https://github.com/gramiojs/gramio) for the Telegram Bot API client inspiration.
 - [Serverless Framework](https://www.serverless.com/) for the deployment tooling
