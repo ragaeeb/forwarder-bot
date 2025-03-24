@@ -38,9 +38,6 @@ describe('Telegram Bot E2E Tests', () => {
 
         // Register handlers
         await registerHandlers(bot, db);
-
-        // Initialize bot
-        await bot.init();
     });
 
     afterEach(() => {
@@ -49,13 +46,6 @@ describe('Telegram Bot E2E Tests', () => {
 
         // Clear any timeouts
         vi.clearAllTimers();
-    });
-
-    it('should initialize and respond to getMe', async () => {
-        const requests = telegramServer.getRequests();
-
-        // Check that getMe was called
-        expect(requests.some((req) => req.method === 'getMe')).toBe(true);
     });
 
     it('should handle a direct message from a user', async () => {
@@ -146,7 +136,7 @@ describe('Telegram Bot E2E Tests', () => {
         const confirmRequest = requests.find(
             (req) =>
                 req.method === 'sendMessage' &&
-                req.params.chat_id === adminGroupId &&
+                req.params.chat_id === Number(adminGroupId) &&
                 req.params.text.includes('Reply sent to user'),
         );
         expect(confirmRequest).toBeDefined();

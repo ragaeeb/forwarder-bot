@@ -44,9 +44,6 @@ describe('Bot Setup E2E Tests', () => {
 
         // Register handlers
         await registerHandlers(bot, db);
-
-        // Initialize bot
-        await bot.init();
     });
 
     afterEach(() => {

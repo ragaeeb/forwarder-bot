@@ -111,7 +111,6 @@ export class TelegramTestServer {
         const chat: TelegramChat = isGroupChat
             ? {
                   id: -Math.abs(chatId),
-                  is_forum: true,
                   title: 'Test Group',
                   type: 'supergroup',
               }
