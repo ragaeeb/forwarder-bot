@@ -1,6 +1,6 @@
 import logger from '@/utils/logger.js';
 
-import type { BotSettings, SavedMessage, ThreadData } from '../types.js';
+import type { BotSettings, SavedMessage, ThreadData } from '../types/app.js';
 
 import { DataService } from './types.js';
 

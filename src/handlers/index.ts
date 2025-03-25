@@ -1,82 +1,66 @@
+import type { Bot, CommandHandler, Middleware, UpdateHandler } from '@/bot.js';
 import type { DataService } from '@/services/types.js';
-import type { Bot, Context, ContextType, DeriveDefinitions, Handler } from 'gramio';
 
 import { CUSTOMIZE_COMMANDS, onCustomize } from '@/commands/customize.js';
 import { onSetup } from '@/commands/setup.js';
 import { onStart } from '@/commands/start.js';
+import { injectDependencies, requireAdminReply, requirePrivateChat, requireSetup } from '@/middlewares/common.js';
+import { requireGroupAdmin } from '@/middlewares/requireGroupAdmin.js';
+import { requireManageTopicsPermission } from '@/middlewares/requireManageTopicsPermission.js';
+import { requireReferencedThread, requireThreadForUser } from '@/middlewares/requireMessageThread.js';
+import { requireNewSetup } from '@/middlewares/requireNewSetup.js';
+import { requireToken } from '@/middlewares/requireToken.js';
 import logger from '@/utils/logger.js';
 
-import { onGenericMessage } from './genericMessage.js';
-import { handleEditedMessage } from './handleEditedMessage.js';
-import { ignoreSelfMessages } from './middlewares.js';
+import { onAdminReply } from './handleAdminReply.js';
+import { onDirectMessage } from './handleDirectMessage.js';
+import { onEditedMessage } from './handleEditedMessage.js';
 
 /**
- * Type for handling bot commands with context
- */
-type CommandHandler = (
-    context: ContextType<Bot, 'message'> &
-        DeriveDefinitions['global'] &
-        DeriveDefinitions['message'] & {
-            args: null | string;
-        },
-) => unknown;
-
-/**
- * Middleware for processing requests
- */
-type Middleware = Handler<Context<Bot> & DeriveDefinitions['global']>;
-
-/**
- * Handler for processing updates
- */
-type UpdateHandler = Handler<ContextType<Bot, any> & DeriveDefinitions & DeriveDefinitions['global']>;
-
-/**
- * Register handlers and middleware for the bot.
- * Sets up command handlers, message handlers, and middleware
- * based on the bot's configuration state.
+ * Register handlers and middleware for the bot. Sets up command handlers, message handlers, and middleware based on the bot's configuration state.
  *
  * @param {Bot} bot - Bot instance
  * @param {DataService} db - Database service instance
  * @returns {Promise<void>}
  */
-export const registerHandlers = async (bot: Bot, db: DataService) => {
+export const registerHandlers = (bot: Bot, db: DataService) => {
     logger.info(`registerHandlers`);
 
-    const settings = await db.getSettings();
+    bot.use(injectDependencies(db) as Middleware);
 
-    bot.derive(async () => {
-        const me = await bot.api.getMe();
+    bot.command(
+        'setup',
+        requireToken as Middleware,
+        requireGroupAdmin as Middleware,
+        requireNewSetup as Middleware,
+        requireManageTopicsPermission as Middleware,
+        onSetup as CommandHandler,
+    );
 
-        return {
-            bot,
-            db,
-            me,
-            settings,
-        };
+    bot.command('start', requireSetup as Middleware, onStart as CommandHandler);
+
+    CUSTOMIZE_COMMANDS.forEach((command) => {
+        bot.command(
+            command,
+            requireSetup as Middleware,
+            requireGroupAdmin as Middleware,
+            onCustomize as CommandHandler,
+        );
     });
 
-    bot.use(ignoreSelfMessages as Middleware);
-
-    logger.info(`Registering commands`);
-
-    bot.command('setup', onSetup as CommandHandler); // Handle setup command with token verification
-
-    if (settings) {
-        bot.command('start', onStart as CommandHandler);
-
-        CUSTOMIZE_COMMANDS.forEach((command) => {
-            bot.command(command, onCustomize as CommandHandler);
-        });
-
-        logger.info(`Registering message and edit handlers`);
-
-        // Handle direct messages from users
-        bot.on('message', onGenericMessage as UpdateHandler);
-        bot.on('edited_message', handleEditedMessage as UpdateHandler);
-    } else {
-        logger.warn('Skipping handlers that require configuration prerequisite');
-    }
-
-    logger.info(`registerHandlers completed`);
+    bot.on(
+        'message',
+        requireSetup as Middleware,
+        requireAdminReply as Middleware,
+        requireReferencedThread as Middleware,
+        onAdminReply as UpdateHandler,
+    );
+    bot.on(
+        'message',
+        requireSetup as Middleware,
+        requirePrivateChat as Middleware,
+        requireThreadForUser as Middleware,
+        onDirectMessage as UpdateHandler,
+    );
+    bot.on('edited_message', requirePrivateChat, requireSetup as Middleware, onEditedMessage as UpdateHandler);
 };

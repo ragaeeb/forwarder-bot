@@ -2,7 +2,7 @@ import logger from '@/utils/logger.js';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, GetCommand, PutCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
 
-import type { BotSettings, SavedMessage, ThreadData } from '../types.js';
+import type { BotSettings, SavedMessage, ThreadData } from '../types/app.js';
 import type { DataService } from './types.js';
 
 import { config } from '../config.js';

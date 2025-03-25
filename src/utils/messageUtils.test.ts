@@ -1,4 +1,4 @@
-import type { TelegramMessage } from 'gramio';
+import type { TelegramMessage } from '@/types/telegram.js';
 
 import { describe, expect, it } from 'vitest';
 
@@ -13,7 +13,6 @@ describe('messageUtils', () => {
                 from: {
                     first_name: 'John',
                     id: 98765,
-                    is_bot: false,
                     last_name: 'Doe',
                     username: 'johndoe',
                 },
@@ -47,7 +46,6 @@ describe('messageUtils', () => {
                 from: {
                     first_name: 'Admin',
                     id: 98765,
-                    is_bot: false,
                     username: 'adminuser',
                 },
                 message_id: 12345,
@@ -79,10 +77,8 @@ describe('messageUtils', () => {
                 from: {
                     first_name: 'John',
                     id: 98765,
-                    is_bot: false,
                 },
                 message_id: 12345,
-                // No text field
             };
 
             const result = mapTelegramMessageToSavedMessage(message, 'user');
@@ -98,7 +94,6 @@ describe('messageUtils', () => {
                 from: {
                     first_name: 'John',
                     id: 98765,
-                    is_bot: false,
                 },
                 message_id: 12345,
                 photo: [
@@ -129,7 +124,6 @@ describe('messageUtils', () => {
                 from: {
                     first_name: 'John',
                     id: 98765,
-                    is_bot: false,
                 },
                 message_id: 12345,
             };
@@ -149,7 +143,6 @@ describe('messageUtils', () => {
                 from: {
                     first_name: 'John',
                     id: 98765,
-                    is_bot: false,
                 },
                 message_id: 12345,
                 video: {
@@ -175,7 +168,6 @@ describe('messageUtils', () => {
                 from: {
                     first_name: 'John',
                     id: 98765,
-                    is_bot: false,
                 },
                 message_id: 12345,
                 voice: {
@@ -198,15 +190,14 @@ describe('messageUtils', () => {
                     duration: 240,
                     file_id: 'audio_file_id',
                     file_unique_id: 'audio',
-                    performer: 'Artist Name',
-                    title: 'Song Title',
+                    performer: 'Speaker Name',
+                    title: 'Lecture Title',
                 },
                 chat: { id: 67890, type: 'private' },
                 date: 1645564800,
                 from: {
                     first_name: 'John',
                     id: 98765,
-                    is_bot: false,
                 },
                 message_id: 12345,
             };
@@ -224,7 +215,6 @@ describe('messageUtils', () => {
                 from: {
                     first_name: 'John',
                     id: 98765,
-                    is_bot: false,
                 },
                 message_id: 12345,
                 sticker: {
@@ -253,7 +243,6 @@ describe('messageUtils', () => {
                 from: {
                     first_name: 'John',
                     id: 98765,
-                    is_bot: false,
                 },
                 message_id: 12345,
                 reply_to_message: {
@@ -262,7 +251,6 @@ describe('messageUtils', () => {
                     from: {
                         first_name: 'Jane',
                         id: 11111,
-                        is_bot: false,
                     },
                     message_id: 12340,
                     text: 'Original message',
@@ -282,7 +270,6 @@ describe('messageUtils', () => {
                 from: {
                     first_name: 'John',
                     id: 98765,
-                    is_bot: false,
                 },
                 message_id: 12345,
                 quote: {
@@ -307,7 +294,6 @@ describe('messageUtils', () => {
                     sender_user: {
                         first_name: 'Original',
                         id: 11111,
-                        is_bot: false,
                         last_name: 'Sender',
                     },
                     type: 'user',
@@ -315,7 +301,6 @@ describe('messageUtils', () => {
                 from: {
                     first_name: 'John',
                     id: 98765,
-                    is_bot: false,
                 },
                 message_id: 12345,
                 text: 'Forwarded message content',
@@ -328,7 +313,6 @@ describe('messageUtils', () => {
                 sender_user: {
                     first_name: 'Original',
                     id: 11111,
-                    is_bot: false,
                     last_name: 'Sender',
                 },
                 type: 'user',

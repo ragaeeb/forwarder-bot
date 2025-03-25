@@ -1,133 +1,49 @@
-import { ForwardContext } from '@/types.js';
+import type { ForwardContext } from '@/types/app.js';
+
 import { mapTelegramMessageToSavedMessage } from '@/utils/messageUtils.js';
-import { replyWithSuccess } from '@/utils/replyUtils.js';
-import { createNewThread, getUpsertedThread } from '@/utils/threadUtils.js';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { replyWithError, replyWithSuccess } from '@/utils/replyUtils.js';
+import { createNewThread } from '@/utils/threadUtils.js';
+import { beforeEach, describe, expect, it, type Mock, vi } from 'vitest';
 
-import { handleDirectMessage } from './handleDirectMessage.js';
+import { onDirectMessage } from './handleDirectMessage.js';
 
-vi.mock('@/utils/logger.js', () => ({
-    default: {
-        debug: vi.fn(),
-        error: vi.fn(),
-        info: vi.fn(),
-        warn: vi.fn(),
-    },
-}));
+vi.mock('@/utils/replyUtils.js');
+vi.mock('@/utils/threadUtils.js');
+vi.mock('@/utils/messageUtils.js');
 
-vi.mock('@/utils/messageUtils.js', () => ({
-    mapTelegramMessageToSavedMessage: vi.fn().mockReturnValue({ id: '123', type: 'user' }),
-}));
-
-vi.mock('@/utils/replyUtils.js', () => ({
-    replyWithError: vi.fn(),
-    replyWithSuccess: vi.fn().mockResolvedValue({}),
-}));
-
-vi.mock('@/utils/threadUtils.js', () => ({
-    createNewThread: vi.fn(),
-    getUpsertedThread: vi.fn(),
-}));
-
-describe('handleDirectMessage', () => {
+describe('onDirectMessage', () => {
     beforeEach(() => {
         vi.clearAllMocks();
     });
 
     it('should forward message to admin group successfully', async () => {
-        const threadData = { chatId: '789', threadId: 456, userId: '123' };
         const ctx = {
             bot: { api: { forwardMessage: vi.fn().mockResolvedValue({}) } },
-            chatId: 123,
+            chat: { id: 123 },
             db: { saveMessage: vi.fn().mockResolvedValue({}) },
             from: { id: 123 },
-            id: 789,
-            settings: {},
-            update: { message: { message_id: 789, text: 'Hello admin' } },
+            message: { message_id: 789, text: 'Hello admin' },
+            settings: { adminGroupId: '1' },
+            thread: { chatId: '789', threadId: 456, userId: '123' },
         } as unknown as ForwardContext;
 
-        (getUpsertedThread as any).mockResolvedValue(threadData);
+        (mapTelegramMessageToSavedMessage as Mock).mockReturnValue({ id: '123', type: 'user' });
 
-        const result = await handleDirectMessage(ctx, 'admin-group-123');
+        await onDirectMessage(ctx);
 
-        expect(getUpsertedThread).toHaveBeenCalledWith(ctx, 'admin-group-123');
-        expect(ctx.db.saveMessage).toHaveBeenCalledTimes(1);
-        expect(mapTelegramMessageToSavedMessage).toHaveBeenCalledWith(ctx.update?.message, 'user');
+        expect(ctx.db.saveMessage).toHaveBeenCalledExactlyOnceWith({ id: '123', type: 'user' });
 
-        expect(ctx.bot.api.forwardMessage).toHaveBeenCalledWith({
-            chat_id: 'admin-group-123',
+        expect(ctx.bot.api.forwardMessage).toHaveBeenCalledExactlyOnceWith({
+            chat_id: '1',
             from_chat_id: 123,
             message_id: 789,
             message_thread_id: 456,
         });
 
-        expect(replyWithSuccess).toHaveBeenCalledWith(ctx, expect.any(String));
-
-        expect(result).toBeDefined();
-    });
-
-    it('should return undefined when thread data is not found', async () => {
-        const ctx = { from: { id: 123 } } as unknown as ForwardContext;
-
-        (getUpsertedThread as any).mockResolvedValue(null);
-
-        const result = await handleDirectMessage(ctx, 'admin-group-123');
-
-        expect(getUpsertedThread).toHaveBeenCalledWith(ctx, 'admin-group-123');
-        expect(result).toBeUndefined();
-    });
-
-    it('should save message before forwarding', async () => {
-        const threadData = { chatId: '789', threadId: 456, userId: '123' };
-        const ctx = {
-            bot: { api: { forwardMessage: vi.fn().mockResolvedValue({}) } },
-            chatId: 123,
-            db: { saveMessage: vi.fn().mockResolvedValue({}) },
-            from: { id: 123 },
-            id: 789,
-            update: { message: { message_id: 789, text: 'Hello admin' } },
-        } as unknown as ForwardContext;
-
-        (getUpsertedThread as any).mockResolvedValue(threadData);
-
-        await handleDirectMessage(ctx, 'admin-group-123');
-
-        expect(ctx.db.saveMessage).toHaveBeenCalledTimes(1);
-        expect(ctx.db.saveMessage).toHaveBeenCalledWith(expect.objectContaining({ id: '123', type: 'user' }));
-
-        const saveMessageOrder = vi.mocked(ctx.db.saveMessage).mock.invocationCallOrder[0];
-        const forwardMessageOrder = vi.mocked(ctx.bot.api.forwardMessage).mock.invocationCallOrder[0];
-
-        expect(saveMessageOrder).toBeLessThan(forwardMessageOrder);
-    });
-
-    it('should get or create thread before forwarding', async () => {
-        const threadData = { chatId: '789', threadId: 456, userId: '123' };
-        const ctx = {
-            bot: { api: { forwardMessage: vi.fn().mockResolvedValue({}) } },
-            chatId: 123,
-            db: { saveMessage: vi.fn().mockResolvedValue({}) },
-            from: { id: 123 },
-            id: 789,
-            update: { message: { message_id: 789 } },
-        } as unknown as ForwardContext;
-
-        (getUpsertedThread as any).mockResolvedValue(threadData);
-
-        await handleDirectMessage(ctx, 'admin-group-123');
-
-        expect(getUpsertedThread).toHaveBeenCalledWith(ctx, 'admin-group-123');
-
-        const getThreadOrder = vi.mocked(getUpsertedThread).mock.invocationCallOrder[0];
-        const forwardMessageOrder = vi.mocked(ctx.bot.api.forwardMessage).mock.invocationCallOrder[0];
-
-        expect(getThreadOrder).toBeLessThan(forwardMessageOrder);
+        expect(replyWithSuccess).toHaveBeenCalledOnce();
     });
 
     it('should retry forward when thread not found error occurs', async () => {
-        const threadData = { chatId: '789', threadId: 456, userId: '123' };
-        const newThreadData = { chatId: '789', threadId: 789, userId: '123' };
-
         const ctx = {
             bot: {
                 api: {
@@ -137,37 +53,38 @@ describe('handleDirectMessage', () => {
                         .mockResolvedValueOnce({}),
                 },
             },
-            chatId: 123,
+            chat: { id: 123 },
             db: { saveMessage: vi.fn().mockResolvedValue({}) },
             from: { id: 123 },
-            id: 789,
-            settings: {},
-            update: { message: { message_id: 789 } },
+            message: { message_id: 1 },
+            settings: { adminGroupId: 'admin-group-123' },
+            thread: { chatId: '789', threadId: 2, userId: '123' },
         } as unknown as ForwardContext;
 
-        (getUpsertedThread as any).mockResolvedValue(threadData);
-        (createNewThread as any).mockResolvedValue(newThreadData);
+        (createNewThread as any).mockResolvedValue({ chatId: '789', threadId: 9, userId: '123' });
         (replyWithSuccess as any).mockResolvedValue('success-result');
 
-        const result = await handleDirectMessage(ctx, 'admin-group-123');
+        await onDirectMessage(ctx);
 
-        expect(createNewThread).toHaveBeenCalledWith(ctx, 'admin-group-123');
+        expect(createNewThread).toHaveBeenCalledWith(ctx);
         expect(ctx.bot.api.forwardMessage).toHaveBeenCalledTimes(2);
 
-        // Second call should have the new thread ID
+        expect(ctx.bot.api.forwardMessage).toHaveBeenNthCalledWith(1, {
+            chat_id: 'admin-group-123',
+            from_chat_id: 123,
+            message_id: 1,
+            message_thread_id: 2,
+        });
+
         expect(ctx.bot.api.forwardMessage).toHaveBeenLastCalledWith({
             chat_id: 'admin-group-123',
             from_chat_id: 123,
-            message_id: 789,
-            message_thread_id: 789,
+            message_id: 1,
+            message_thread_id: 9,
         });
-
-        expect(result).toBeDefined();
     });
 
     it('should handle errors during thread recreation', async () => {
-        const threadData = { chatId: '789', threadId: 456, userId: '123' };
-
         const ctx = {
             bot: {
                 api: {
@@ -176,46 +93,90 @@ describe('handleDirectMessage', () => {
                     }),
                 },
             },
-            chatId: 123,
+            chat: { id: 123 },
             db: { saveMessage: vi.fn().mockResolvedValue({}) },
             from: { id: 123 },
             id: 789,
-            settings: {},
-            update: { message: { message_id: 789 } },
+            message: { message_id: 789 },
+            settings: { adminGroupId: 'admin-group-123', failure: 'F' },
+            thread: { chatId: '789', threadId: 456, userId: '123' },
         } as unknown as ForwardContext;
 
-        (getUpsertedThread as any).mockResolvedValue(threadData);
         (createNewThread as any).mockRejectedValue(new Error('Failed to create thread'));
 
-        const result = await handleDirectMessage(ctx, 'admin-group-123');
+        await onDirectMessage(ctx);
 
-        expect(createNewThread).toHaveBeenCalledWith(ctx, 'admin-group-123');
-        expect(result).toBeUndefined();
+        expect(createNewThread).toHaveBeenCalledExactlyOnceWith(ctx);
+        expect(replyWithError).toHaveBeenCalledExactlyOnceWith(ctx, 'F');
     });
 
-    it('should handle when forwardMessageToGroup returns undefined', async () => {
-        const threadData = { chatId: '789', threadId: 456, userId: '123' };
-
+    it('should handle non-thread related errors', async () => {
         const ctx = {
             bot: {
                 api: {
-                    forwardMessage: vi.fn().mockResolvedValue({}),
+                    forwardMessage: vi.fn().mockRejectedValue({
+                        message: 'something',
+                    }),
                 },
             },
-            chatId: 123,
+            chat: { id: 123 },
             db: { saveMessage: vi.fn().mockResolvedValue({}) },
             from: { id: 123 },
             id: 789,
-            settings: {},
-            update: { message: { message_id: 789 } },
+            message: { message_id: 789 },
+            settings: { adminGroupId: 'admin-group-123', failure: 'F' },
+            thread: { chatId: '789', threadId: 456, userId: '123' },
         } as unknown as ForwardContext;
 
-        (getUpsertedThread as any).mockResolvedValue(threadData);
-        (replyWithSuccess as any).mockResolvedValue(undefined); // This will make forwardMessageToGroup return undefined
+        await onDirectMessage(ctx);
 
-        const result = await handleDirectMessage(ctx, 'admin-group-123');
+        expect(createNewThread).not.toHaveBeenCalled();
+        expect(replyWithError).toHaveBeenCalledOnce();
+        expect(replyWithSuccess).not.toHaveBeenCalled();
+    });
 
-        expect(replyWithSuccess).toHaveBeenCalled();
-        expect(result).toBeUndefined();
+    it('should handle errors if message cannot be forwarded the 2nd time', async () => {
+        const ctx = {
+            bot: {
+                api: {
+                    forwardMessage: vi
+                        .fn()
+                        .mockRejectedValueOnce({
+                            message: 'message thread not found',
+                        })
+                        .mockRejectedValueOnce({
+                            message: 'message thread not found again',
+                        }),
+                },
+            },
+            chat: { id: 123 },
+            db: { saveMessage: vi.fn().mockResolvedValue({}) },
+            from: { id: 123 },
+            id: 789,
+            message: { message_id: 789 },
+            settings: { adminGroupId: 'admin-group-123' },
+            thread: { chatId: '789', threadId: 456, userId: '123' },
+        } as unknown as ForwardContext;
+
+        (createNewThread as any).mockResolvedValue({ chatId: '789', threadId: 9, userId: '123' });
+
+        await onDirectMessage(ctx);
+
+        expect(createNewThread).toHaveBeenCalledExactlyOnceWith(ctx);
+        expect(replyWithError).toHaveBeenCalledExactlyOnceWith(
+            ctx,
+            'Could not deliver message, please try again later.',
+        );
+    });
+
+    it('should handle database errors', async () => {
+        const ctx = {
+            db: { saveMessage: vi.fn().mockRejectedValue(new Error('Cannot access database')) },
+            settings: {},
+        } as unknown as ForwardContext;
+
+        await onDirectMessage(ctx);
+
+        expect(replyWithError).toHaveBeenCalledOnce();
     });
 });

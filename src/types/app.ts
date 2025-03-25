@@ -1,7 +1,10 @@
-import type { Bot, DeriveDefinitions, MessageContext, TelegramMessageOrigin, TelegramUser } from 'gramio';
+import type { Context } from '../bot.js';
+import type { DataService } from '../services/types.js';
+import type { TelegramMessageOrigin, TelegramUser } from './telegram.js';
 
-import type { DataService } from './services/types.js';
-
+/**
+ * Settings for the bot
+ */
 export interface BotSettings {
     ack?: string;
     adminGroupId: string;
@@ -12,15 +15,18 @@ export interface BotSettings {
     setupBy: TelegramUser;
 }
 
-export type ForwardContext = MessageContext<Bot<Record<string, never>, DeriveDefinitions>> & {
-    api: Bot<Record<string, never>, DeriveDefinitions>['api'];
-    args: null | string;
-    bot: Bot;
+/**
+ * Context for forwarding messages
+ */
+export type ForwardContext = Context & {
     db: DataService;
-    me: TelegramUser;
-    settings: BotSettings;
+    settings?: BotSettings;
+    thread?: ThreadData;
 };
 
+/**
+ * Information about a saved message
+ */
 export interface SavedMessage {
     caption?: string;
     chatId: string;
@@ -42,6 +48,9 @@ export interface SavedMessage {
     type: 'admin' | 'user';
 }
 
+/**
+ * Information about a thread
+ */
 export interface ThreadData {
     chatId: string;
     createdAt: string;

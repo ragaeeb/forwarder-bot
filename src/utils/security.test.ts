@@ -5,8 +5,7 @@ import { hashToken } from './security.js';
 describe('security', () => {
     describe('hashToken', () => {
         it('should create a SHA-256 hash of the input token', () => {
-            const token = 'test-token';
-            const result = hashToken(token);
+            const result = hashToken('test-token');
 
             // SHA-256 hash of 'test-token' as hex
             const expectedHash = '4c5dc9b7708905f77f5e5d16316b5dfb425e68cb326dcd55a860e90a7707031e';
@@ -16,8 +15,7 @@ describe('security', () => {
         });
 
         it('should handle empty strings', () => {
-            const token = '';
-            const result = hashToken(token);
+            const result = hashToken('');
 
             // SHA-256 hash of empty string as hex
             const expectedHash = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855';
@@ -35,29 +33,21 @@ describe('security', () => {
         });
 
         it('should produce different hashes for different inputs', () => {
-            const token1 = 'test-token-1';
-            const token2 = 'test-token-2';
-
-            const hash1 = hashToken(token1);
-            const hash2 = hashToken(token2);
+            const hash1 = hashToken('test-token-1');
+            const hash2 = hashToken('test-token-2');
 
             expect(hash1).not.toBe(hash2);
         });
 
         it('should handle special characters', () => {
-            const token = '!@#$%^&*()_+{}|:"<>?[];\',./ \\';
-            const result = hashToken(token);
+            const result = hashToken('!@#$%^&*()_+{}|:"<>?[];\',./ \\');
 
             expect(result.length).toBe(64);
-            // We don't check the exact hash, just that it produces a valid SHA-256 hash
         });
 
         it('should handle unicode characters', () => {
-            const token = '你好世界😀🔑';
-            const result = hashToken(token);
-
+            const result = hashToken('你好世界😀🔑');
             expect(result.length).toBe(64);
-            // We don't check the exact hash, just that it produces a valid SHA-256 hash
         });
     });
 });

@@ -234,7 +234,7 @@ The `serverless.yml` file contains the AWS infrastructure configuration:
 
 ```bash
 # View deployment logs
-bun run serverless logs --function webhook --tail
+bun run logs
 
 # Remove the webhook (stop receiving updates)
 bun run reset
@@ -273,6 +273,7 @@ The following features are planned for future releases:
 7. **Multi-admin Analytics**: Track which admin responded to which message
 8. **Advanced Search**: Search functionality within user conversations
 9. **Protection Customization**: Control whether you want to protect your messages from being forwarded or not.
+10. **Quote Original Message**: For edited messages.
 
 ## Contributing
 
@@ -290,5 +291,5 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## Acknowledgments
 
-- [gramio](https://github.com/gramiojs/gramio) for the Telegram Bot API client
+- [gramio](https://github.com/gramiojs/gramio) for the Telegram Bot API client inspiration.
 - [Serverless Framework](https://www.serverless.com/) for the deployment tooling

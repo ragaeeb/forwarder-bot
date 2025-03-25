@@ -1,7 +1,7 @@
+import type { BotSettings, SavedMessage, ThreadData } from '@/types/app.js';
+
 import { DynamoDBDocumentClient, GetCommand, PutCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-
-import type { BotSettings, SavedMessage, ThreadData } from '../types.js';
 
 import { DynamoDBService } from './dynamodb.js';
 
@@ -18,21 +18,6 @@ vi.mock('@aws-sdk/lib-dynamodb', () => ({
     GetCommand: vi.fn(),
     PutCommand: vi.fn(),
     QueryCommand: vi.fn(),
-}));
-
-vi.mock('@/utils/logger.js', () => ({
-    default: {
-        debug: vi.fn(),
-        error: vi.fn(),
-        info: vi.fn(),
-        warn: vi.fn(),
-    },
-}));
-
-vi.mock('../config.js', () => ({
-    config: {
-        TABLE_NAME: 'test-table',
-    },
 }));
 
 describe('DynamoDBService', () => {

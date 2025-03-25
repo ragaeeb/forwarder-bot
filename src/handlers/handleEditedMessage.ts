@@ -1,8 +1,7 @@
-import type { ForwardContext } from '@/types.js';
+import type { ForwardContext } from '@/types/app.js';
 
 import logger from '@/utils/logger.js';
 import { mapTelegramMessageToSavedMessage } from '@/utils/messageUtils.js';
-import { TelegramMessage } from 'gramio';
 
 /**
  * Handles when a user edits a message they previously sent to the bot.
@@ -11,55 +10,45 @@ import { TelegramMessage } from 'gramio';
  * @param {ForwardContext} ctx - The context object containing edited message information
  * @returns {Promise<void>}
  */
-export const handleEditedMessage = async (ctx: ForwardContext) => {
-    logger.info(ctx.chat, `handleEditedMessage`);
-
-    if (ctx.chat?.type !== 'private') {
-        logger.info(`Skipping non-DM edited message`);
-        return;
-    }
+export const onEditedMessage = async (ctx: ForwardContext) => {
+    logger.info(`handleEditedMessage`);
 
     try {
-        const userId = ctx.from?.id.toString() as string;
-
-        logger.info(`Looking up thread for user=${userId}`);
-        const threadData = await ctx.db.getThreadByUserId(userId);
-        logger.info(threadData, `Thread for user ${userId}`);
+        const threadData = await ctx.db.getThreadByUserId(ctx.from.id.toString());
 
         if (!threadData) {
-            logger.warn(`Received edited message but no thread exists for user ${userId}`);
+            logger.warn(`Received edited message but no thread exists for user ${ctx.from.id}`);
             return;
         }
 
         const threadId = parseInt(threadData.threadId);
+        const { adminGroupId } = ctx.settings!;
 
-        logger.info(`Notifying of edited message to group`);
-
-        const { adminGroupId } = ctx.settings;
+        logger.info(`Notifying of edited message to group ${adminGroupId}/${threadId}`);
 
         await ctx.bot.api.sendMessage({
             chat_id: adminGroupId,
             message_thread_id: threadId,
-            text: `🔄 Message Edit Notification`,
+            text: `✏️ Message Edit Notification`,
         });
 
-        logger.info(`Forwarding new message`);
+        logger.info(`Forwarding new message from ${ctx.chat.id} to ${adminGroupId}/${threadId}`);
+
+        const originalMessageId = ctx.message!.message_id;
 
         await ctx.bot.api.forwardMessage({
             chat_id: adminGroupId,
-            from_chat_id: ctx.chatId,
-            message_id: ctx.update?.edited_message?.message_id as number,
+            from_chat_id: ctx.chat.id,
+            message_id: originalMessageId,
             message_thread_id: threadId,
         });
-
-        const originalMessageId = ctx.update?.edited_message?.message_id.toString();
 
         logger.info(`Saving edited message to database ${originalMessageId}`);
 
         const result = await ctx.db.saveMessage({
-            ...mapTelegramMessageToSavedMessage(ctx.update?.edited_message as TelegramMessage, 'user'),
+            ...mapTelegramMessageToSavedMessage(ctx.message!, 'user'),
             id: `${originalMessageId}_edited_${Date.now()}`,
-            originalMessageId,
+            originalMessageId: originalMessageId.toString(),
         });
 
         logger.info(`Saved edited message with id=${result.id}`);
