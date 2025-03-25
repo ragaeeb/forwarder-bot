@@ -45,7 +45,7 @@ describe('common', () => {
     describe('injectDependencies', () => {
         it('should proceed if we were able to inject the settings', async () => {
             const db = { getSettings: vi.fn().mockResolvedValue({ adminGroupId: '1' }) };
-            const ctx = { bot: { api: { getMe: vi.fn().mockResolvedValue({ id: 1 }) } } } as unknown as ForwardContext;
+            const ctx = {} as unknown as ForwardContext;
             const fn = injectDependencies(db as unknown as DataService);
 
             await fn(ctx, next);
@@ -57,7 +57,7 @@ describe('common', () => {
 
         it('should proceed even if we were not setup', async () => {
             const db = { getSettings: vi.fn() };
-            const ctx = { bot: { api: { getMe: vi.fn().mockResolvedValue({ id: 1 }) } } } as unknown as ForwardContext;
+            const ctx = {} as unknown as ForwardContext;
             const fn = injectDependencies(db as unknown as DataService);
 
             await fn(ctx, next);
@@ -69,10 +69,9 @@ describe('common', () => {
 
         it('should fail if we could not query the settings', async () => {
             const db = { getSettings: vi.fn().mockRejectedValue(new Error('Cannot connect to db')) };
-            const ctx = { bot: { api: { getMe: vi.fn().mockResolvedValue({ id: 1 }) } } } as unknown as ForwardContext;
             const fn = injectDependencies(db as unknown as DataService);
 
-            await fn(ctx, next);
+            await fn({} as unknown as ForwardContext, next);
 
             expect(next).not.toHaveBeenCalled();
         });

@@ -6,10 +6,11 @@ import logger from '@/utils/logger.js';
 import { hashToken } from '@/utils/security.js';
 
 /**
- * Middleware to check if sender is a group admin
- * Only allows admins in supergroups to proceed
+ * Middleware to verify the provided token matches the hashed bot token
+ * Only allows requests with a valid token to proceed
  *
- * @returns {Function} Middleware function
+ * @param {ForwardContext} ctx - The context object containing the token
+ * @param {NextFunction} next - The next middleware function to call if validation passes
  */
 export const requireToken = (ctx: ForwardContext, next: NextFunction) => {
     const { args: providedToken } = ctx;

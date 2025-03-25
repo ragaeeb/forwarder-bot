@@ -56,6 +56,6 @@ export const requireThreadForUser = async (ctx: ForwardContext, next: NextFuncti
         return next();
     } catch (err) {
         logger.error(err, 'Error getting thread for user');
-        await replyWithError(ctx, ctx.settings.failure || 'Could not send message, please try again later.');
+        await replyWithError(ctx, ctx.settings?.failure || 'Could not send message, please try again later.');
     }
 };

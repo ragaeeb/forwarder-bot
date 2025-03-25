@@ -6,7 +6,6 @@ import { isUpdateSentFromBot } from './utils/messageUtils.js';
 
 vi.mock('./services/telegramAPI.js', () => ({
     TelegramAPI: vi.fn().mockImplementation(() => ({
-        getMe: vi.fn().mockResolvedValue({ first_name: 'TestBot', id: 123456, is_bot: true, username: 'test_bot' }),
         sendMessage: vi.fn().mockResolvedValue({ message_id: 123 }),
     })),
 }));

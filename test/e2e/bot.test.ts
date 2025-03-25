@@ -180,7 +180,6 @@ describe('Telegram Bot E2E Tests', () => {
             { file_id: 'large_id', file_unique_id: 'large', height: 800, width: 800 },
         ];
         photoMessage.message!.caption = 'Check out this photo';
-        delete photoMessage.message!.text;
 
         await bot.handleUpdate(photoMessage);
 
@@ -205,7 +204,7 @@ describe('Telegram Bot E2E Tests', () => {
             file_unique_id: 'unique_doc_id',
         };
         documentMessage.message!.caption = 'Check out this document';
-        delete documentMessage.message!.text;
+        documentMessage.message!.text = undefined;
 
         await bot.handleUpdate(documentMessage);
 
@@ -322,7 +321,7 @@ describe('Telegram Bot E2E Tests', () => {
             { file_id: 'large_photo', file_unique_id: 'large', height: 800, width: 800 },
         ];
         adminReply.message!.caption = 'Photo reply';
-        delete adminReply.message!.text;
+        adminReply.message!.text = undefined;
 
         adminReply.message!.message_thread_id = 789;
         adminReply.message!.reply_to_message = {
@@ -385,7 +384,7 @@ describe('Telegram Bot E2E Tests', () => {
             file_unique_id: 'unique_doc_id',
         };
         adminReply.message!.caption = 'Document reply';
-        delete adminReply.message!.text;
+        adminReply.message!.text = undefined;
 
         adminReply.message!.message_thread_id = 789;
         adminReply.message!.reply_to_message = {

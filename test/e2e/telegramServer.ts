@@ -184,7 +184,6 @@ export class TelegramTestServer {
      * Setup default responses for common API methods
      */
     private setupDefaultResponses() {
-        // getMe response
         this.responses.set('getMe', () => this.botInfo);
 
         // sendMessage response

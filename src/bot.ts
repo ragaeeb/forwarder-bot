@@ -126,7 +126,7 @@ export class Bot {
             let command: null | string = null;
             let args: string | undefined;
 
-            if (message.text && message.text.startsWith('/')) {
+            if (message.text?.startsWith('/')) {
                 const parts = message.text.slice(1).split(' ');
                 command = parts[0];
                 args = parts.length > 1 ? parts.slice(1).join(' ') : undefined;

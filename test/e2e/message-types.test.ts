@@ -71,7 +71,6 @@ describe('Message Types E2E Tests', () => {
             file_id: 'voice_file_id',
             file_unique_id: 'unique_voice_id',
         };
-        delete voiceMessage.message!.text;
 
         // Setup response for forwardMessage
         telegramServer.setResponse('forwardMessage', (params) => ({
@@ -121,7 +120,7 @@ describe('Message Types E2E Tests', () => {
             file_id: 'admin_voice_id',
             file_unique_id: 'unique_admin_voice_id',
         };
-        delete adminReply.message!.text;
+        adminReply.message!.text = undefined;
 
         // Setup as a reply in thread
         adminReply.message!.message_thread_id = 789;
@@ -187,7 +186,6 @@ describe('Message Types E2E Tests', () => {
             width: 1280,
         };
         videoMessage.message!.caption = 'Check out this video';
-        delete videoMessage.message!.text;
 
         telegramServer.clearRequests();
 
@@ -220,7 +218,7 @@ describe('Message Types E2E Tests', () => {
             width: 1280,
         };
         adminReply.message!.caption = 'Video response';
-        delete adminReply.message!.text;
+        adminReply.message!.text = undefined;
 
         // Setup as a reply in thread
         adminReply.message!.message_thread_id = 789;
@@ -322,7 +320,6 @@ describe('Message Types E2E Tests', () => {
             type: 'regular',
             width: 512,
         };
-        delete stickerMessage.message!.text;
 
         telegramServer.clearRequests();
 
