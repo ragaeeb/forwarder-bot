@@ -40,7 +40,7 @@ describe('handleAdminReply', () => {
                 reply_to_message: 10,
                 text: 'Hello user',
             },
-            thread: { chatId: 1 },
+            thread: { userId: 1 },
         } as unknown as ForwardContext;
     });
 

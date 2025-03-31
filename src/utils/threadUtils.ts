@@ -20,7 +20,6 @@ const mapUserToThreadName = (user: TelegramUser) => {
  * Initializes a thread record in the database with metadata.
  *
  * @param {ForwardContext} ctx - The context object with user information
- * @param {string} groupId - The admin group ID to create the thread in
  * @returns {Promise<ThreadData|undefined>} The created thread data or undefined on error
  */
 export const createNewThread = async (ctx: ForwardContext) => {
@@ -33,8 +32,9 @@ export const createNewThread = async (ctx: ForwardContext) => {
 
         logger.info(response, `Thread created, saving thread`);
 
+        // No changes needed to ThreadData structure, the underlying database
+        // implementation handles the storage details
         return ctx.db.saveThread({
-            chatId: ctx.chat!.id.toString(),
             createdAt: new Date((ctx.message?.date as number) * 1000).toISOString(),
             lastMessageId: ctx.message?.message_id.toString() as string,
             name: response.name,

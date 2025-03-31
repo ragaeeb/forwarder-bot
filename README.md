@@ -274,6 +274,8 @@ The following features are planned for future releases:
 8. **Advanced Search**: Search functionality within user conversations
 9. **Protection Customization**: Control whether you want to protect your messages from being forwarded or not.
 10. **Quote Original Message**: For edited messages.
+11. **Fix Design Flaw**: `threadIds` in a group are useless if bot is reassigned to a new group which will have completely different thread ID mappings. This will allow multiple bots to be hosted in the same AWS instance.
+12. **Standardize field names**: Remove `messageId` and `id` duplication from `messages` table.
 
 ## Contributing
 

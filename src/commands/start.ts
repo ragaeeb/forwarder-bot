@@ -1,6 +1,7 @@
 import type { ForwardContext } from '@/types/app.js';
 
 import logger from '@/utils/logger.js';
+import { mapTelegramMessageToSavedMessage } from '@/utils/messageUtils.js';
 
 /**
  * Handles the /start command when a user first interacts with the bot.
@@ -11,6 +12,8 @@ import logger from '@/utils/logger.js';
  */
 export const onStart = async (ctx: ForwardContext) => {
     logger.info(ctx.chat, `onStart`);
+
+    await ctx.db.saveMessage(mapTelegramMessageToSavedMessage(ctx.message!, 'user'));
 
     await ctx.reply(
         ctx.settings!.greeting ||

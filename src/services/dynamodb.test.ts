@@ -39,7 +39,6 @@ describe('DynamoDBService', () => {
         it('should return the bot config when found', async () => {
             const mockConfig: BotSettings = {
                 adminGroupId: 'admin-123',
-                configId: 'config-123',
                 setupAt: '2023-01-01T00:00:00Z',
                 setupBy: { first_name: 'Admin', id: 123, is_bot: false },
             };
@@ -51,8 +50,8 @@ describe('DynamoDBService', () => {
             const result = await dynamoDBService.getSettings();
 
             expect(GetCommand).toHaveBeenCalledWith({
-                Key: { userId: 'config' },
-                TableName: 'test-table',
+                Key: { configId: 'main' },
+                TableName: 'test-table-config',
             });
             expect(result).toEqual(mockConfig);
         });
@@ -89,11 +88,11 @@ describe('DynamoDBService', () => {
 
             expect(QueryCommand).toHaveBeenCalledWith({
                 ExpressionAttributeValues: {
-                    ':userId': `${userId}#messages`,
+                    ':userId': `${userId}`,
                 },
                 KeyConditionExpression: 'userId = :userId',
                 ScanIndexForward: false,
-                TableName: 'test-table',
+                TableName: 'test-table-messages',
             });
             expect(result).toEqual(mockMessages);
         });
@@ -126,7 +125,6 @@ describe('DynamoDBService', () => {
         it('should return thread when found', async () => {
             const threadId = 'thread123';
             const mockThread: ThreadData = {
-                chatId: 'chat123',
                 createdAt: '2023-01-01T00:00:00Z',
                 lastMessageId: 'msg123',
                 name: 'Test Thread',
@@ -147,7 +145,7 @@ describe('DynamoDBService', () => {
                 },
                 IndexName: 'ThreadIdIndex',
                 KeyConditionExpression: 'threadId = :threadId',
-                TableName: 'test-table',
+                TableName: 'test-table-threads',
             });
             expect(result).toEqual(mockThread);
         });
@@ -174,7 +172,6 @@ describe('DynamoDBService', () => {
         it('should return thread when found', async () => {
             const userId = 'user123';
             const mockThread: ThreadData = {
-                chatId: 'chat123',
                 createdAt: '2023-01-01T00:00:00Z',
                 lastMessageId: 'msg123',
                 name: 'Test Thread',
@@ -184,14 +181,20 @@ describe('DynamoDBService', () => {
             };
 
             mockClient.send.mockResolvedValueOnce({
-                Item: mockThread,
+                Items: [mockThread],
             });
 
             const result = await dynamoDBService.getThreadByUserId(userId);
 
-            expect(GetCommand).toHaveBeenCalledWith({
-                Key: { userId },
-                TableName: 'test-table',
+            expect(QueryCommand).toHaveBeenCalledWith({
+                ExpressionAttributeValues: {
+                    ':userId': 'user123',
+                },
+                IndexName: 'UserUpdatedIndex',
+                KeyConditionExpression: 'userId = :userId',
+                Limit: 1,
+                ScanIndexForward: false,
+                TableName: 'test-table-threads',
             });
             expect(result).toEqual(mockThread);
         });
@@ -216,7 +219,6 @@ describe('DynamoDBService', () => {
         it('should save the config and return it', async () => {
             const mockConfig: BotSettings = {
                 adminGroupId: 'admin-123',
-                configId: 'config-123',
                 setupAt: '2023-01-01T00:00:00Z',
                 setupBy: { first_name: 'Admin', id: 123, is_bot: false },
             };
@@ -227,10 +229,10 @@ describe('DynamoDBService', () => {
 
             expect(PutCommand).toHaveBeenCalledWith({
                 Item: {
-                    userId: 'config',
+                    configId: 'main',
                     ...mockConfig,
                 },
-                TableName: 'test-table',
+                TableName: 'test-table-config',
             });
             expect(result).toEqual(mockConfig);
         });
@@ -238,7 +240,6 @@ describe('DynamoDBService', () => {
         it('should throw error when save fails', async () => {
             const mockConfig: BotSettings = {
                 adminGroupId: 'admin-123',
-                configId: 'config-123',
                 setupAt: '2023-01-01T00:00:00Z',
                 setupBy: { first_name: 'Admin', id: 123, is_bot: false },
             };
@@ -271,9 +272,10 @@ describe('DynamoDBService', () => {
             expect(PutCommand).toHaveBeenCalledWith({
                 Item: {
                     ...mockMessage,
-                    userId: 'user123#messages',
+                    messageId: 'msg123',
+                    userId: 'user123',
                 },
-                TableName: 'test-table',
+                TableName: 'test-table-messages',
             });
             expect(result).toEqual(mockMessage);
         });
@@ -301,7 +303,6 @@ describe('DynamoDBService', () => {
     describe('saveThread', () => {
         it('should save the thread and return it', async () => {
             const mockThread: ThreadData = {
-                chatId: 'chat123',
                 createdAt: '2023-01-01T00:00:00Z',
                 lastMessageId: 'msg123',
                 name: 'Test Thread',
@@ -316,7 +317,7 @@ describe('DynamoDBService', () => {
 
             expect(PutCommand).toHaveBeenCalledWith({
                 Item: mockThread,
-                TableName: 'test-table',
+                TableName: 'test-table-threads',
             });
             expect(result).toEqual(mockThread);
         });
@@ -327,7 +328,6 @@ describe('DynamoDBService', () => {
 
             await expect(
                 dynamoDBService.saveThread({
-                    chatId: 'chat123',
                     createdAt: '2023-01-01T00:00:00Z',
                     lastMessageId: 'msg123',
                     name: 'Test Thread',

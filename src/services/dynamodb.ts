@@ -15,17 +15,28 @@ import { config } from '../config.js';
  */
 export class DynamoDBService implements DataService {
     private client: DynamoDBDocumentClient;
-    private tableName: string;
+    private configTable: string;
+    private messagesTable: string;
+    private threadsTable: string;
 
     /**
      * Creates a new DynamoDBService instance.
-     * Initializes the DynamoDB client and sets the table name from config.
+     * Initializes the DynamoDB client and sets the table names.
      */
     constructor() {
         const dbClient = new DynamoDBClient({});
         this.client = DynamoDBDocumentClient.from(dbClient);
-        this.tableName = config.TABLE_NAME;
-        logger.info(`Using DynamoDB table: ${this.tableName}`);
+
+        // Base table name without suffix
+        const baseTableName = config.TABLE_NAME;
+
+        this.threadsTable = `${baseTableName}-threads`;
+        this.messagesTable = `${baseTableName}-messages`;
+        this.configTable = `${baseTableName}-config`;
+
+        logger.info(
+            `Using DynamoDB tables: threads=${this.threadsTable}, messages=${this.messagesTable}, config=${this.configTable}`,
+        );
     }
 
     /**
@@ -42,11 +53,11 @@ export class DynamoDBService implements DataService {
             const response = await this.client.send(
                 new QueryCommand({
                     ExpressionAttributeValues: {
-                        ':userId': `${userId}#messages`,
+                        ':userId': userId,
                     },
                     KeyConditionExpression: 'userId = :userId',
                     ScanIndexForward: false, // Sort by most recent first
-                    TableName: this.tableName,
+                    TableName: this.messagesTable,
                 }),
             );
 
@@ -71,14 +82,21 @@ export class DynamoDBService implements DataService {
 
             const response = await this.client.send(
                 new GetCommand({
-                    Key: { userId: 'config' },
-                    TableName: this.tableName,
+                    Key: {
+                        configId: 'main',
+                    },
+                    TableName: this.configTable,
                 }),
             );
 
-            logger.info(`getSettings() result: ${Boolean(response.Item)}`);
+            if (response.Item) {
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                const { configId, ...settings } = response.Item;
+                return settings as BotSettings;
+            }
 
-            return response.Item as BotSettings;
+            logger.info(`getSettings() result: ${Boolean(response.Item)}`);
+            return undefined;
         } catch (error) {
             logger.error(error, 'Error getting bot config');
             throw error;
@@ -104,7 +122,7 @@ export class DynamoDBService implements DataService {
                     },
                     IndexName: 'ThreadIdIndex',
                     KeyConditionExpression: 'threadId = :threadId',
-                    TableName: this.tableName,
+                    TableName: this.threadsTable,
                 }),
             );
 
@@ -121,6 +139,7 @@ export class DynamoDBService implements DataService {
 
     /**
      * Retrieves a thread by the user ID it's associated with.
+     * Gets the most recent thread for the user.
      *
      * @param {string} userId - The user ID to look up the thread for
      * @returns {Promise<ThreadData | undefined>} The thread data or undefined if not found
@@ -129,15 +148,25 @@ export class DynamoDBService implements DataService {
     async getThreadByUserId(userId: string): Promise<ThreadData | undefined> {
         try {
             logger.info(`getThreadByUserId: ${userId}`);
+
             const response = await this.client.send(
-                new GetCommand({
-                    Key: { userId },
-                    TableName: this.tableName,
+                new QueryCommand({
+                    ExpressionAttributeValues: {
+                        ':userId': userId,
+                    },
+                    IndexName: 'UserUpdatedIndex',
+                    KeyConditionExpression: 'userId = :userId',
+                    Limit: 1, // Only get the most recent thread
+                    ScanIndexForward: false, // Sort in descending order (newest first)
+                    TableName: this.threadsTable,
                 }),
             );
 
-            logger.info(`getThreadByUserId: ${Boolean(response.Item)}`);
-            return response.Item as ThreadData;
+            if (response.Items && response.Items.length > 0) {
+                return response.Items[0] as ThreadData;
+            }
+
+            return undefined;
         } catch (error) {
             logger.error({ error, userId }, 'Error getting thread by user ID');
             throw error;
@@ -146,7 +175,6 @@ export class DynamoDBService implements DataService {
 
     /**
      * Saves a message to the database.
-     * Messages are stored with a composite key of userId#messages to group them by user.
      *
      * @param {SavedMessage} message - The message to save
      * @returns {Promise<SavedMessage>} The saved message
@@ -156,7 +184,8 @@ export class DynamoDBService implements DataService {
         try {
             const messageData = {
                 ...message,
-                userId: `${message.from.userId}#messages`,
+                messageId: message.id,
+                userId: message.from.userId,
             };
 
             logger.info(`saveMessage ${message.id}`);
@@ -164,7 +193,7 @@ export class DynamoDBService implements DataService {
             await this.client.send(
                 new PutCommand({
                     Item: messageData,
-                    TableName: this.tableName,
+                    TableName: this.messagesTable,
                 }),
             );
 
@@ -189,10 +218,10 @@ export class DynamoDBService implements DataService {
             await this.client.send(
                 new PutCommand({
                     Item: {
-                        userId: 'config',
+                        configId: 'main',
                         ...config,
                     },
-                    TableName: this.tableName,
+                    TableName: this.configTable,
                 }),
             );
 
@@ -216,7 +245,7 @@ export class DynamoDBService implements DataService {
             await this.client.send(
                 new PutCommand({
                     Item: thread,
-                    TableName: this.tableName,
+                    TableName: this.threadsTable,
                 }),
             );
 
