@@ -1,22 +1,19 @@
-# serverless.yml
 org: ${env:SERVERLESS_ORG, ''}
 app: ${env:SERVERLESS_APP, ''}
 service: ${env:SERVERLESS_SERVICE, 'telegram-forwarder-bot'}
 
-frameworkVersion: '4'
-
-# Define variables section to centralize configuration
 custom:
-    tableName: ${env:TABLE_NAME, '${self:service}-table'}
+    baseTableName: ${env:TABLE_NAME, '${self:service}-${sls:stage}'}
 
 provider:
     name: aws
     runtime: nodejs22.x
     architecture: arm64
+    stage: ${sls:stage} # Uses the stage from CLI or defaults to 'dev'
     environment:
         BOT_TOKEN: ${env:BOT_TOKEN}
         SECRET_TOKEN: ${env:SECRET_TOKEN, ''}
-        TABLE_NAME: ${self:custom.tableName}
+        TABLE_NAME: ${self:custom.baseTableName}
     iam:
         role:
             statements:
@@ -28,9 +25,13 @@ provider:
                       - dynamodb:PutItem
                       - dynamodb:UpdateItem
                       - dynamodb:DeleteItem
+                      - dynamodb:BatchWriteItem
                   Resource:
                       - !GetAtt ThreadsTable.Arn
+                      - !GetAtt MessagesTable.Arn
+                      - !GetAtt ConfigTable.Arn
                       - !Join ['', [!GetAtt ThreadsTable.Arn, '/index/*']]
+                      - !Join ['', [!GetAtt MessagesTable.Arn, '/index/*']]
 
 functions:
     webhook:
@@ -45,16 +46,20 @@ resources:
         ThreadsTable:
             Type: AWS::DynamoDB::Table
             Properties:
-                TableName: ${self:custom.tableName}
+                TableName: ${self:custom.baseTableName}-threads
                 BillingMode: PAY_PER_REQUEST
                 AttributeDefinitions:
                     - AttributeName: userId
                       AttributeType: S
                     - AttributeName: threadId
                       AttributeType: S
+                    - AttributeName: updatedAt
+                      AttributeType: S
                 KeySchema:
                     - AttributeName: userId
                       KeyType: HASH
+                    - AttributeName: threadId
+                      KeyType: RANGE
                 GlobalSecondaryIndexes:
                     - IndexName: ThreadIdIndex
                       KeySchema:
@@ -62,3 +67,50 @@ resources:
                             KeyType: HASH
                       Projection:
                           ProjectionType: ALL
+                    - IndexName: UserUpdatedIndex
+                      KeySchema:
+                          - AttributeName: userId
+                            KeyType: HASH
+                          - AttributeName: updatedAt
+                            KeyType: RANGE
+                      Projection:
+                          ProjectionType: ALL
+
+        MessagesTable:
+            Type: AWS::DynamoDB::Table
+            Properties:
+                TableName: ${self:custom.baseTableName}-messages
+                BillingMode: PAY_PER_REQUEST
+                AttributeDefinitions:
+                    - AttributeName: userId
+                      AttributeType: S
+                    - AttributeName: messageId
+                      AttributeType: S
+                    - AttributeName: timestamp
+                      AttributeType: S
+                KeySchema:
+                    - AttributeName: userId
+                      KeyType: HASH
+                    - AttributeName: messageId
+                      KeyType: RANGE
+                GlobalSecondaryIndexes:
+                    - IndexName: UserTimestampIndex
+                      KeySchema:
+                          - AttributeName: userId
+                            KeyType: HASH
+                          - AttributeName: timestamp
+                            KeyType: RANGE
+                      Projection:
+                          ProjectionType: ALL
+
+        ConfigTable:
+            Type: AWS::DynamoDB::Table
+            Properties:
+                TableName: ${self:custom.baseTableName}-config
+                BillingMode: PAY_PER_REQUEST
+                AttributeDefinitions:
+                    - AttributeName: configId
+                      AttributeType: S
+                KeySchema:
+                    - AttributeName: configId
+                      KeyType: HASH

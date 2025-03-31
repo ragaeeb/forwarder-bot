@@ -71,6 +71,7 @@ export class MockDataService implements DataService {
      */
     async saveMessage(message: SavedMessage): Promise<SavedMessage> {
         this.messages.push(message);
+        logger.info(message, `saveMessage`);
         return message;
     }
 
@@ -93,6 +94,7 @@ export class MockDataService implements DataService {
      */
     async saveThread(thread: ThreadData): Promise<ThreadData> {
         this.threads.push(thread);
+        logger.info(thread, `saveThread`);
         return thread;
     }
 }

@@ -31,8 +31,7 @@ describe('threadUtils', () => {
                 chat: { id: 54321 },
                 db: {
                     saveThread: vi.fn().mockResolvedValue({
-                        chatId: '54321',
-                        createdAt: '2022-02-23T00:00:00.000Z',
+                        createdAt: expect.any(String),
                         lastMessageId: '67890',
                         name: '12345: John Doe (johndoe)',
                         threadId: '99999',
@@ -66,7 +65,6 @@ describe('threadUtils', () => {
             });
 
             expect(ctx.db.saveThread).toHaveBeenCalledExactlyOnceWith({
-                chatId: '54321',
                 createdAt: expect.any(String),
                 lastMessageId: '67890',
                 name: '12345: John Doe (johndoe)',
@@ -76,7 +74,6 @@ describe('threadUtils', () => {
             });
 
             expect(result).toEqual({
-                chatId: '54321',
                 createdAt: '2022-02-23T00:00:00.000Z',
                 lastMessageId: '67890',
                 name: '12345: John Doe (johndoe)',

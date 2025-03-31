@@ -8,7 +8,6 @@ import type { TelegramMessageOrigin, TelegramUser } from './telegram.js';
 export interface BotSettings {
     ack?: string;
     adminGroupId: string;
-    configId: string;
     failure?: string;
     greeting?: string;
     setupAt: string;
@@ -52,7 +51,6 @@ export interface SavedMessage {
  * Information about a thread
  */
 export interface ThreadData {
-    chatId: string;
     createdAt: string;
     lastMessageId: string;
     name: string;

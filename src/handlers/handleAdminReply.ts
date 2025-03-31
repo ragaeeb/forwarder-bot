@@ -18,7 +18,7 @@ import type { TelegramMessage } from '../types/telegram.js';
  */
 const forwardMessageToUser = async (ctx: ForwardContext) => {
     const message = ctx.message!;
-    const { chatId } = ctx.thread!;
+    const { userId: chatId } = ctx.thread!;
 
     const commonMessage = {
         chat_id: parseInt(chatId),
