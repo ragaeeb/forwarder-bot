@@ -9,6 +9,7 @@ import { DataService } from './types.js';
  * Stores all data in memory rather than in a database.
  */
 export class MockDataService implements DataService {
+    public readonly botUsername: string;
     private botConfig?: BotSettings;
     private messages: SavedMessage[];
     private threads: ThreadData[];
@@ -17,9 +18,10 @@ export class MockDataService implements DataService {
      * Creates a new MockDataService instance.
      * Initializes empty arrays for messages and threads.
      */
-    constructor() {
-        logger.info(`Using Mock table`);
+    constructor(botUsername: string) {
+        logger.info(`Using Mock table for @${botUsername}`);
 
+        this.botUsername = botUsername;
         this.messages = [];
         this.threads = [];
     }
@@ -31,7 +33,7 @@ export class MockDataService implements DataService {
      * @returns {Promise<SavedMessage[]>} Array of messages for the user
      */
     async getMessagesByUserId(userId: string): Promise<SavedMessage[]> {
-        return this.messages.filter((m) => m.from.userId === userId);
+        return this.messages.filter((m) => m.botUsername === this.botUsername && m.from.userId === userId);
     }
 
     /**
@@ -50,7 +52,7 @@ export class MockDataService implements DataService {
      * @returns {Promise<ThreadData | undefined>} The thread data or undefined if not found
      */
     async getThreadById(threadId: string): Promise<ThreadData | undefined> {
-        return this.threads.find((t) => t.threadId === threadId);
+        return this.threads.find((t) => t.botUsername === this.botUsername && t.threadId === threadId);
     }
 
     /**
@@ -60,7 +62,7 @@ export class MockDataService implements DataService {
      * @returns {Promise<ThreadData | undefined>} The thread data or undefined if not found
      */
     async getThreadByUserId(userId: string): Promise<ThreadData | undefined> {
-        return this.threads.find((t) => t.userId === userId);
+        return this.threads.find((t) => t.botUsername === this.botUsername && t.userId === userId);
     }
 
     /**
@@ -70,9 +72,15 @@ export class MockDataService implements DataService {
      * @returns {Promise<SavedMessage>} The saved message
      */
     async saveMessage(message: SavedMessage): Promise<SavedMessage> {
-        this.messages.push(message);
-        logger.info(message, `saveMessage`);
-        return message;
+        const enriched: SavedMessage = { ...message, botUsername: this.botUsername };
+
+        this.messages = this.messages.filter(
+            (existing) => !(existing.botUsername === this.botUsername && existing.id === enriched.id),
+        );
+        this.messages.push(enriched);
+
+        logger.info(enriched, `saveMessage`);
+        return enriched;
     }
 
     /**
@@ -82,8 +90,8 @@ export class MockDataService implements DataService {
      * @returns {Promise<BotSettings>} The saved configuration
      */
     async saveSettings(botConfig: BotSettings): Promise<BotSettings> {
-        this.botConfig = botConfig;
-        return botConfig;
+        this.botConfig = { ...botConfig, botUsername: this.botUsername };
+        return this.botConfig;
     }
 
     /**
@@ -93,8 +101,14 @@ export class MockDataService implements DataService {
      * @returns {Promise<ThreadData>} The saved thread data
      */
     async saveThread(thread: ThreadData): Promise<ThreadData> {
-        this.threads.push(thread);
-        logger.info(thread, `saveThread`);
-        return thread;
+        const enriched: ThreadData = { ...thread, botUsername: this.botUsername };
+
+        this.threads = this.threads.filter(
+            (existing) => !(existing.botUsername === this.botUsername && existing.threadId === enriched.threadId),
+        );
+        this.threads.push(enriched);
+
+        logger.info(enriched, `saveThread`);
+        return enriched;
     }
 }

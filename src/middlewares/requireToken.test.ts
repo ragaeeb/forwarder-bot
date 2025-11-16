@@ -18,19 +18,22 @@ describe('requireToken', () => {
     });
 
     it('should do nothing when token is not provided', () => {
-        requireToken({} as unknown as ForwardContext, next);
+        requireToken({ bot: { token: 'BT' }, botUsername: 'testbot' } as unknown as ForwardContext, next);
 
         expect(next).not.toHaveBeenCalled();
     });
 
     it('should do nothing when an invalid token is provided', () => {
-        requireToken({ args: Date.now().toString() } as unknown as ForwardContext, next);
+        requireToken(
+            { args: Date.now().toString(), bot: { token: 'BT' }, botUsername: 'testbot' } as unknown as ForwardContext,
+            next,
+        );
 
         expect(next).not.toHaveBeenCalled();
     });
 
     it('should pass if correct token is provided', () => {
-        requireToken({ args: 'HBT' } as unknown as ForwardContext, next);
+        requireToken({ args: 'HBT', bot: { token: 'BT' }, botUsername: 'testbot' } as unknown as ForwardContext, next);
 
         expect(next).toHaveBeenCalledExactlyOnceWith();
     });

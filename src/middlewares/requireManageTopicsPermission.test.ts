@@ -23,6 +23,7 @@ describe('requireManageTopicsPermission', () => {
                     createForumTopic: vi.fn().mockRejectedValue(new Error('Cannot create thread')),
                 },
             },
+            botUsername: 'testbot',
             chat: {
                 id: 1,
             },
@@ -46,6 +47,7 @@ describe('requireManageTopicsPermission', () => {
                     deleteForumTopic: vi.fn().mockRejectedValue(new Error('Cannot create thread')),
                 },
             },
+            botUsername: 'testbot',
             chat: {
                 id: 1,
             },
@@ -69,6 +71,7 @@ describe('requireManageTopicsPermission', () => {
                     deleteForumTopic: vi.fn().mockResolvedValue(true),
                 },
             },
+            botUsername: 'testbot',
             chat: {
                 id: 1,
             },

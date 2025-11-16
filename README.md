@@ -29,8 +29,9 @@ A serverless Telegram bot that forwards messages between users and a private adm
 
 ### Technical Features
 
-- Completely serverless architecture using AWS Lambda and API Gateway
-- Messages and thread relationships stored in DynamoDB for persistence
+- Completely serverless architecture that runs on AWS Lambda, Vercel, or any platform that can host Node.js webhooks
+- Multi-bot configuration — host multiple Telegram bots on a single deployment
+- Pluggable data storage layer with MongoDB (default), DynamoDB, or in-memory mock services
 - Customizable welcome, acknowledgment, and error messages
 - Easy configuration and setup process
 - Comprehensive test coverage
@@ -47,23 +48,25 @@ graph TD
     Topic -->|Bot forwards replies| Bot
     Bot -->|Delivers admin replies| User
 
-    Bot -->|Stores data in| DynamoDB[(DynamoDB)]
-    DynamoDB -->|Retrieves data for| Bot
+    Bot -->|Stores data in| DataStore[(MongoDB / DynamoDB)]
+    DataStore -->|Retrieves data for| Bot
 
-    subgraph AWS
+    subgraph Hosting
         Lambda[AWS Lambda Function] -->|Hosts| Bot
         APIGateway[API Gateway] -->|Webhook calls| Lambda
-        DynamoDB
+        Vercel[Vercel Serverless Function] -->|Hosts| Bot
+        DataStore
     end
 ```
 
 ## Prerequisites
 
 - Bun `v1.2.5` or later
-- An AWS account for serverless deployment
+- A MongoDB instance (Atlas or self-hosted) for persistent storage
 - A Telegram bot token (obtained from [@BotFather](https://t.me/BotFather))
 - A Telegram group with topics enabled
-- Serverless Framework (optional for development)
+- An AWS account or Vercel account (depending on where you deploy)
+- Serverless Framework (optional for AWS deployment)
 
 ## Setup Instructions
 
@@ -104,10 +107,14 @@ graph TD
 3. Create a `.env` file in the project root:
 
     ```
-    BOT_TOKEN=your_telegram_bot_token
-    SECRET_TOKEN=your_randomly_generated_secret  # Create a random token for webhook security
-    TABLE_NAME=telegram-forwarder-bot-table      # Optional, defaults to this value
+    BOT_CONFIGS='[{"token":"your_bot_token","secretToken":"your_randomly_generated_secret"}]'
+    DATABASE_PROVIDER=mongodb
+    MONGODB_URI=mongodb+srv://user:password@cluster.mongodb.net
+    MONGODB_DB=forwarder-bot
     ```
+
+    - `BOT_CONFIGS` accepts an array of bot definitions and lets you host multiple bots on one deployment. You can also use the legacy `BOT_TOKEN`/`SECRET_TOKEN` variables for a single bot.
+    - `DATABASE_PROVIDER` can be `mongodb`, `dynamodb`, or `mock` (for local testing).
 
     Generate a random secret token with:
 
@@ -156,7 +163,22 @@ The workflow will:
 - Deploy to AWS
 - Configure the webhook automatically
 
-### 5. Set Up the Bot in Your Group
+### 5. Deploy to Vercel
+
+1. Import this repository into Vercel or connect your GitHub fork.
+2. Configure the following environment variables in the Vercel project settings:
+
+    - `BOT_CONFIGS`
+    - `DATABASE_PROVIDER=mongodb`
+    - `MONGODB_URI`
+    - `MONGODB_DB`
+
+   If you need DynamoDB for compatibility, set `DATABASE_PROVIDER=dynamodb` and provide your AWS credentials via secrets.
+
+3. Trigger a deployment. Vercel will automatically build the project and expose the webhook at `https://<project>.vercel.app/api/telegram/<bot-token>`.
+4. Use `bun scripts/manageHook.ts --setup --token <bot-token>` (locally with the same environment variables) to register the webhook pointing to the Vercel URL, or configure it manually with the Telegram API.
+
+### 6. Set Up the Bot in Your Group
 
 1. After running the `register` command, you'll see a command to run in your Telegram group:
 

@@ -15,15 +15,23 @@ import { handler, setMockDatabase } from './webhook.js';
  * @param {TelegramUpdate} update - Telegram update object
  * @returns {Object} Mocked API Gateway event
  */
+const selectedBot = config.defaultBot;
+
+if (!selectedBot) {
+    throw new Error('No bot tokens configured. Set BOT_CONFIGS or BOT_TOKEN to use dev mode.');
+}
+
 const mapPayloadToApiGatewayEvent = (update: any) => ({
     body: JSON.stringify(update),
-    headers: { 'x-telegram-bot-api-secret-token': config.SECRET_TOKEN },
+    headers: {
+        ...(selectedBot.secretToken && { 'x-telegram-bot-api-secret-token': selectedBot.secretToken }),
+    },
     httpMethod: 'POST',
     isBase64Encoded: false,
     multiValueHeaders: {},
     multiValueQueryStringParameters: null,
-    path: `/${config.BOT_TOKEN}`,
-    pathParameters: { token: config.BOT_TOKEN },
+    path: `/${selectedBot.token}`,
+    pathParameters: { token: selectedBot.token },
     queryStringParameters: null,
     requestContext: {} as any,
     resource: '',
@@ -93,13 +101,18 @@ const cleanUp = () => {
 
 logger.info(`index.ts dev entry point`);
 
-const mockDb = new MockDataService();
-setMockDatabase(mockDb);
-
-const bot = new Bot(config.BOT_TOKEN);
+const bot = new Bot(selectedBot.token);
 
 logger.info('Starting bot in development mode with polling');
 const me = await bot.api.getMe();
+bot.username = me.username;
+
+if (!me.username) {
+    throw new Error('Bot username is required to initialize the mock database.');
+}
+
+const mockDb = new MockDataService(me.username);
+setMockDatabase(mockDb);
 logger.info(`Bot @${me.username} started`);
 
 process.on('SIGINT', cleanUp);

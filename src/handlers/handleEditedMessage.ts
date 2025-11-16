@@ -46,7 +46,7 @@ export const onEditedMessage = async (ctx: ForwardContext) => {
         logger.info(`Saving edited message to database ${originalMessageId}`);
 
         const result = await ctx.db.saveMessage({
-            ...mapTelegramMessageToSavedMessage(ctx.message!, 'user'),
+            ...mapTelegramMessageToSavedMessage(ctx.message!, 'user', ctx.botUsername),
             id: `${originalMessageId}_edited_${Date.now()}`,
             originalMessageId: originalMessageId.toString(),
         });

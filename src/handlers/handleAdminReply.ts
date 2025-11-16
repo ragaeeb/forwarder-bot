@@ -104,6 +104,7 @@ export const onAdminReply = async (ctx: ForwardContext) => {
                     reply_to_message: sentMessage.reply_to_message,
                 } as TelegramMessage,
                 'admin',
+                ctx.botUsername,
             ),
         );
 

@@ -43,6 +43,8 @@ export type UpdateHandler = (ctx: Context) => Promise<void> | void;
  */
 export class Bot {
     public api: TelegramAPI;
+    public username: string | undefined;
+    public readonly token: string;
     private commandHandlers: Map<string, CommandHandler[]> = new Map();
     private middlewares: Middleware[] = [];
     private updateHandlers: Map<string, UpdateHandler[]> = new Map();
@@ -53,6 +55,7 @@ export class Bot {
      * @param {string} token - Telegram Bot token
      */
     constructor(token: string) {
+        this.token = token;
         this.api = new TelegramAPI(token);
     }
 

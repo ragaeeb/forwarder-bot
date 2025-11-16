@@ -1,7 +1,6 @@
 import type { NextFunction } from '@/bot.js';
 import type { ForwardContext } from '@/types/app.js';
 
-import { config } from '@/config.js';
 import logger from '@/utils/logger.js';
 import { hashToken } from '@/utils/security.js';
 
@@ -15,7 +14,7 @@ import { hashToken } from '@/utils/security.js';
 export const requireToken = (ctx: ForwardContext, next: NextFunction) => {
     const { args: providedToken } = ctx;
 
-    if (providedToken === hashToken(config.BOT_TOKEN)) {
+    if (providedToken === hashToken(ctx.bot.token)) {
         return next();
     }
 

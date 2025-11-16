@@ -21,6 +21,7 @@ describe('onDirectMessage', () => {
             bot: { api: { forwardMessage: vi.fn().mockResolvedValue({}) } },
             chat: { id: 123 },
             db: { saveMessage: vi.fn().mockResolvedValue({}) },
+            botUsername: 'testbot',
             from: { id: 123 },
             message: { message_id: 789, text: 'Hello admin' },
             settings: { adminGroupId: '1' },
@@ -32,6 +33,7 @@ describe('onDirectMessage', () => {
         await onDirectMessage(ctx);
 
         expect(ctx.db.saveMessage).toHaveBeenCalledExactlyOnceWith({ id: '123', type: 'user' });
+        expect(mapTelegramMessageToSavedMessage).toHaveBeenCalledWith(ctx.message, 'user', 'testbot');
 
         expect(ctx.bot.api.forwardMessage).toHaveBeenCalledExactlyOnceWith({
             chat_id: '1',
@@ -55,6 +57,7 @@ describe('onDirectMessage', () => {
             },
             chat: { id: 123 },
             db: { saveMessage: vi.fn().mockResolvedValue({}) },
+            botUsername: 'testbot',
             from: { id: 123 },
             message: { message_id: 1 },
             settings: { adminGroupId: 'admin-group-123' },
@@ -95,6 +98,7 @@ describe('onDirectMessage', () => {
             },
             chat: { id: 123 },
             db: { saveMessage: vi.fn().mockResolvedValue({}) },
+            botUsername: 'testbot',
             from: { id: 123 },
             id: 789,
             message: { message_id: 789 },
@@ -121,6 +125,7 @@ describe('onDirectMessage', () => {
             },
             chat: { id: 123 },
             db: { saveMessage: vi.fn().mockResolvedValue({}) },
+            botUsername: 'testbot',
             from: { id: 123 },
             id: 789,
             message: { message_id: 789 },
@@ -151,6 +156,7 @@ describe('onDirectMessage', () => {
             },
             chat: { id: 123 },
             db: { saveMessage: vi.fn().mockResolvedValue({}) },
+            botUsername: 'testbot',
             from: { id: 123 },
             id: 789,
             message: { message_id: 789 },
@@ -171,7 +177,11 @@ describe('onDirectMessage', () => {
 
     it('should handle database errors', async () => {
         const ctx = {
+            bot: { api: { forwardMessage: vi.fn() } },
+            botUsername: 'testbot',
+            chat: { id: 123 },
             db: { saveMessage: vi.fn().mockRejectedValue(new Error('Cannot access database')) },
+            from: { id: 123 },
             settings: {},
         } as unknown as ForwardContext;
 

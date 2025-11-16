@@ -43,7 +43,9 @@ export const onDirectMessage = async (ctx: ForwardContext) => {
     try {
         logger.info(`Saving message to database`);
 
-        await ctx.db.saveMessage(mapTelegramMessageToSavedMessage(ctx.message!, 'user'));
+        await ctx.db.saveMessage(
+            mapTelegramMessageToSavedMessage(ctx.message!, 'user', ctx.botUsername),
+        );
 
         logger.info(`Forwarding DM from user to admin group`);
 

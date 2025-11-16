@@ -13,7 +13,9 @@ import { mapTelegramMessageToSavedMessage } from '@/utils/messageUtils.js';
 export const onStart = async (ctx: ForwardContext) => {
     logger.info(ctx.chat, `onStart`);
 
-    await ctx.db.saveMessage(mapTelegramMessageToSavedMessage(ctx.message!, 'user'));
+    await ctx.db.saveMessage(
+        mapTelegramMessageToSavedMessage(ctx.message!, 'user', ctx.botUsername),
+    );
 
     await ctx.reply(
         ctx.settings!.greeting ||

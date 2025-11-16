@@ -36,6 +36,7 @@ describe('handleAdminReply', () => {
             db: {
                 saveMessage: vi.fn().mockResolvedValue({}),
             },
+            botUsername: 'testbot',
             message: {
                 reply_to_message: 10,
                 text: 'Hello user',
@@ -57,7 +58,11 @@ describe('handleAdminReply', () => {
             });
 
             expect(ctx.db.saveMessage).toHaveBeenCalledExactlyOnceWith({ id: '123', type: 'admin' });
-            expect(mapTelegramMessageToSavedMessage).toHaveBeenCalledExactlyOnceWith(sentMessage, 'admin');
+            expect(mapTelegramMessageToSavedMessage).toHaveBeenCalledExactlyOnceWith(
+                sentMessage,
+                'admin',
+                'testbot',
+            );
             expect(updateThreadByMessage).toHaveBeenCalledExactlyOnceWith(ctx, ctx.thread, sentMessage);
             expect(replyWithSuccess).toHaveBeenCalledWith(ctx, 'Reply sent to user');
         });

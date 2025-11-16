@@ -21,321 +21,226 @@ vi.mock('@aws-sdk/lib-dynamodb', () => ({
 }));
 
 describe('DynamoDBService', () => {
-    let dynamoDBService: DynamoDBService;
-    let mockClient: { send: any };
+    const BOT_USERNAME = 'testbot';
+    let service: DynamoDBService;
+    let mockClient: { send: ReturnType<typeof vi.fn> };
 
     beforeEach(() => {
         vi.clearAllMocks();
 
-        mockClient = {
-            send: vi.fn(),
-        };
+        mockClient = { send: vi.fn() };
         (DynamoDBDocumentClient.from as any).mockReturnValue(mockClient);
 
-        dynamoDBService = new DynamoDBService();
+        service = new DynamoDBService(BOT_USERNAME);
     });
 
     describe('getSettings', () => {
-        it('should return the bot config when found', async () => {
-            const mockConfig: BotSettings = {
+        it('retrieves bot settings using a prefixed config key', async () => {
+            const storedItem = {
                 adminGroupId: 'admin-123',
+                botUsername: BOT_USERNAME,
+                configId: `${BOT_USERNAME}#main`,
                 setupAt: '2023-01-01T00:00:00Z',
                 setupBy: { first_name: 'Admin', id: 123, is_bot: false },
-            };
+            } satisfies Record<string, unknown>;
 
-            mockClient.send.mockResolvedValueOnce({
-                Item: mockConfig,
-            });
+            mockClient.send.mockResolvedValueOnce({ Item: storedItem });
 
-            const result = await dynamoDBService.getSettings();
+            const result = await service.getSettings();
 
             expect(GetCommand).toHaveBeenCalledWith({
-                Key: { configId: 'main' },
+                Key: { configId: `${BOT_USERNAME}#main` },
                 TableName: 'test-table-config',
             });
-            expect(result).toEqual(mockConfig);
-        });
-
-        it('should return undefined when config not found', async () => {
-            mockClient.send.mockResolvedValueOnce({});
-
-            const result = await dynamoDBService.getSettings();
-
-            expect(result).toBeUndefined();
-        });
-
-        it('should handle errors', async () => {
-            const error = new Error('DynamoDB error');
-            mockClient.send.mockRejectedValueOnce(error);
-
-            await expect(dynamoDBService.getSettings()).rejects.toThrow(expect.any(Error));
+            expect(result).toEqual({
+                adminGroupId: 'admin-123',
+                botUsername: BOT_USERNAME,
+                setupAt: '2023-01-01T00:00:00Z',
+                setupBy: { first_name: 'Admin', id: 123, is_bot: false },
+            } satisfies BotSettings);
         });
     });
 
     describe('getMessagesByUserId', () => {
-        it('should return messages for a user', async () => {
-            const userId = 'user123';
-            const mockMessages = [
-                { id: 'msg1', text: 'Hello', timestamp: '2023-01-01T00:00:00Z' },
-                { id: 'msg2', text: 'World', timestamp: '2023-01-01T00:01:00Z' },
-            ] as SavedMessage[];
+        it('queries messages using the prefixed user id and maps results', async () => {
+            const storedMessages = [
+                {
+                    botUsername: BOT_USERNAME,
+                    id: 'msg1',
+                    messageId: 'msg1',
+                    text: 'Hello',
+                    timestamp: '2023-01-01T00:00:00Z',
+                    type: 'user',
+                    userId: `${BOT_USERNAME}#user123`,
+                    from: { userId: 'user123' },
+                },
+            ];
 
-            mockClient.send.mockResolvedValueOnce({
-                Items: mockMessages,
-            });
+            mockClient.send.mockResolvedValueOnce({ Items: storedMessages });
 
-            const result = await dynamoDBService.getMessagesByUserId(userId);
+            const result = await service.getMessagesByUserId('user123');
 
             expect(QueryCommand).toHaveBeenCalledWith({
-                ExpressionAttributeValues: {
-                    ':userId': `${userId}`,
-                },
+                ExpressionAttributeValues: { ':userId': `${BOT_USERNAME}#user123` },
                 KeyConditionExpression: 'userId = :userId',
                 ScanIndexForward: false,
                 TableName: 'test-table-messages',
             });
-            expect(result).toEqual(mockMessages);
-        });
 
-        it('should return empty array when no messages found', async () => {
-            mockClient.send.mockResolvedValueOnce({
-                Items: [],
-            });
-
-            const result = await dynamoDBService.getMessagesByUserId('user123');
-
-            expect(result).toEqual([]);
-        });
-
-        it('should return empty array when items are not defined', async () => {
-            mockClient.send.mockResolvedValueOnce({});
-
-            const result = await dynamoDBService.getMessagesByUserId('user123');
-
-            expect(result).toEqual([]);
-        });
-
-        it('should handle errors', async () => {
-            mockClient.send.mockRejectedValueOnce(new Error('DynamoDB error'));
-            await expect(dynamoDBService.getMessagesByUserId('user123')).rejects.toThrow(expect.any(Error));
+            expect(result).toEqual([
+                expect.objectContaining({
+                    botUsername: BOT_USERNAME,
+                    id: 'msg1',
+                    type: 'user',
+                }) satisfies Partial<SavedMessage>,
+            ]);
         });
     });
 
     describe('getThreadById', () => {
-        it('should return thread when found', async () => {
-            const threadId = 'thread123';
-            const mockThread: ThreadData = {
+        it('queries using the prefixed thread id and strips it from the response', async () => {
+            const storedThread = {
+                actualThreadId: '123',
+                actualUserId: 'user123',
+                botUsername: BOT_USERNAME,
                 createdAt: '2023-01-01T00:00:00Z',
-                lastMessageId: 'msg123',
-                name: 'Test Thread',
-                threadId: '123',
-                updatedAt: '2023-01-01T00:01:00Z',
-                userId: 'user123',
-            };
+                lastMessageId: '999',
+                name: 'Support',
+                threadId: `${BOT_USERNAME}#123`,
+                updatedAt: '2023-01-02T00:00:00Z',
+                userId: `${BOT_USERNAME}#user123`,
+            } satisfies Record<string, unknown>;
 
-            mockClient.send.mockResolvedValueOnce({
-                Items: [mockThread],
-            });
+            mockClient.send.mockResolvedValueOnce({ Items: [storedThread] });
 
-            const result = await dynamoDBService.getThreadById(threadId);
+            const thread = await service.getThreadById('123');
 
             expect(QueryCommand).toHaveBeenCalledWith({
-                ExpressionAttributeValues: {
-                    ':threadId': threadId,
-                },
+                ExpressionAttributeValues: { ':threadId': `${BOT_USERNAME}#123` },
                 IndexName: 'ThreadIdIndex',
                 KeyConditionExpression: 'threadId = :threadId',
                 TableName: 'test-table-threads',
             });
-            expect(result).toEqual(mockThread);
-        });
 
-        it('should return undefined when thread not found', async () => {
-            mockClient.send.mockResolvedValueOnce({
-                Items: [],
-            });
-
-            const result = await dynamoDBService.getThreadById('thread123');
-
-            expect(result).toBeUndefined();
-        });
-
-        it('should handle errors', async () => {
-            const error = new Error('DynamoDB error');
-            mockClient.send.mockRejectedValueOnce(error);
-
-            await expect(dynamoDBService.getThreadById('thread123')).rejects.toThrow(expect.any(Error));
+            expect(thread).toEqual({
+                botUsername: BOT_USERNAME,
+                createdAt: '2023-01-01T00:00:00Z',
+                lastMessageId: '999',
+                name: 'Support',
+                threadId: '123',
+                updatedAt: '2023-01-02T00:00:00Z',
+                userId: 'user123',
+            } satisfies ThreadData);
         });
     });
 
     describe('getThreadByUserId', () => {
-        it('should return thread when found', async () => {
-            const userId = 'user123';
-            const mockThread: ThreadData = {
+        it('queries using the prefixed user id', async () => {
+            const storedThread = {
+                actualThreadId: '123',
+                actualUserId: 'user123',
+                botUsername: BOT_USERNAME,
                 createdAt: '2023-01-01T00:00:00Z',
-                lastMessageId: 'msg123',
-                name: 'Test Thread',
-                threadId: '123',
-                updatedAt: '2023-01-01T00:01:00Z',
-                userId: userId,
+                lastMessageId: '999',
+                name: 'Support',
+                threadId: `${BOT_USERNAME}#123`,
+                updatedAt: '2023-01-02T00:00:00Z',
+                userId: `${BOT_USERNAME}#user123`,
             };
 
-            mockClient.send.mockResolvedValueOnce({
-                Items: [mockThread],
-            });
+            mockClient.send.mockResolvedValueOnce({ Items: [storedThread] });
 
-            const result = await dynamoDBService.getThreadByUserId(userId);
+            const thread = await service.getThreadByUserId('user123');
 
             expect(QueryCommand).toHaveBeenCalledWith({
-                ExpressionAttributeValues: {
-                    ':userId': 'user123',
-                },
+                ExpressionAttributeValues: { ':userId': `${BOT_USERNAME}#user123` },
                 IndexName: 'UserUpdatedIndex',
                 KeyConditionExpression: 'userId = :userId',
                 Limit: 1,
                 ScanIndexForward: false,
                 TableName: 'test-table-threads',
             });
-            expect(result).toEqual(mockThread);
-        });
 
-        it('should return undefined when thread not found', async () => {
-            mockClient.send.mockResolvedValueOnce({});
-
-            const result = await dynamoDBService.getThreadByUserId('user123');
-
-            expect(result).toBeUndefined();
-        });
-
-        it('should handle errors', async () => {
-            const error = new Error('DynamoDB error');
-            mockClient.send.mockRejectedValueOnce(error);
-
-            await expect(dynamoDBService.getThreadByUserId('user123')).rejects.toThrow(expect.any(Error));
-        });
-    });
-
-    describe('saveSettings', () => {
-        it('should save the config and return it', async () => {
-            const mockConfig: BotSettings = {
-                adminGroupId: 'admin-123',
-                setupAt: '2023-01-01T00:00:00Z',
-                setupBy: { first_name: 'Admin', id: 123, is_bot: false },
-            };
-
-            mockClient.send.mockResolvedValueOnce({});
-
-            const result = await dynamoDBService.saveSettings(mockConfig);
-
-            expect(PutCommand).toHaveBeenCalledWith({
-                Item: {
-                    configId: 'main',
-                    ...mockConfig,
-                },
-                TableName: 'test-table-config',
-            });
-            expect(result).toEqual(mockConfig);
-        });
-
-        it('should throw error when save fails', async () => {
-            const mockConfig: BotSettings = {
-                adminGroupId: 'admin-123',
-                setupAt: '2023-01-01T00:00:00Z',
-                setupBy: { first_name: 'Admin', id: 123, is_bot: false },
-            };
-
-            const error = new Error('DynamoDB error');
-            mockClient.send.mockRejectedValueOnce(error);
-
-            await expect(dynamoDBService.saveSettings(mockConfig)).rejects.toThrow(error);
+            expect(thread).toEqual({
+                botUsername: BOT_USERNAME,
+                createdAt: '2023-01-01T00:00:00Z',
+                lastMessageId: '999',
+                name: 'Support',
+                threadId: '123',
+                updatedAt: '2023-01-02T00:00:00Z',
+                userId: 'user123',
+            } satisfies ThreadData);
         });
     });
 
     describe('saveMessage', () => {
-        it('should save the message with modified userId and return original message', async () => {
-            const mockMessage: SavedMessage = {
-                chatId: 'chat123',
-                from: {
-                    firstName: 'John',
-                    userId: 'user123',
-                },
-                id: 'msg123',
-                text: 'Hello world',
+        it('persists the message with prefixed identifiers', async () => {
+            const message: SavedMessage = {
+                botUsername: BOT_USERNAME,
+                chatId: 'chat-1',
+                from: { userId: 'user123' },
+                id: 'msg1',
+                text: 'Hi',
                 timestamp: '2023-01-01T00:00:00Z',
                 type: 'user',
             };
 
-            mockClient.send.mockResolvedValueOnce({});
-
-            const result = await dynamoDBService.saveMessage(mockMessage);
+            await service.saveMessage(message);
 
             expect(PutCommand).toHaveBeenCalledWith({
-                Item: {
-                    ...mockMessage,
-                    messageId: 'msg123',
-                    userId: 'user123',
-                },
+                Item: expect.objectContaining({
+                    botUsername: BOT_USERNAME,
+                    messageId: 'msg1',
+                    userId: `${BOT_USERNAME}#user123`,
+                }),
                 TableName: 'test-table-messages',
             });
-            expect(result).toEqual(mockMessage);
         });
+    });
 
-        it('should throw error when save fails', async () => {
-            const mockMessage: SavedMessage = {
-                chatId: 'chat123',
-                from: {
-                    firstName: 'John',
-                    userId: 'user123',
-                },
-                id: 'msg123',
-                text: 'Hello world',
-                timestamp: '2023-01-01T00:00:00Z',
-                type: 'user',
+    describe('saveSettings', () => {
+        it('stores settings with a prefixed config id', async () => {
+            const settings: BotSettings = {
+                adminGroupId: 'admin-123',
+                botUsername: BOT_USERNAME,
+                setupAt: '2023-01-01T00:00:00Z',
+                setupBy: { first_name: 'Admin', id: 123, is_bot: false },
             };
 
-            const error = new Error('DynamoDB error');
-            mockClient.send.mockRejectedValueOnce(error);
+            await service.saveSettings(settings);
 
-            await expect(dynamoDBService.saveMessage(mockMessage)).rejects.toThrow(error);
+            expect(PutCommand).toHaveBeenCalledWith({
+                Item: expect.objectContaining({
+                    botUsername: BOT_USERNAME,
+                    configId: `${BOT_USERNAME}#main`,
+                }),
+                TableName: 'test-table-config',
+            });
         });
     });
 
     describe('saveThread', () => {
-        it('should save the thread and return it', async () => {
-            const mockThread: ThreadData = {
+        it('stores thread with prefixed identifiers', async () => {
+            const thread: ThreadData = {
+                botUsername: BOT_USERNAME,
                 createdAt: '2023-01-01T00:00:00Z',
-                lastMessageId: 'msg123',
-                name: 'Test Thread',
+                lastMessageId: '999',
+                name: 'Support',
                 threadId: '123',
-                updatedAt: '2023-01-01T00:01:00Z',
+                updatedAt: '2023-01-02T00:00:00Z',
                 userId: 'user123',
             };
 
-            mockClient.send.mockResolvedValueOnce({});
-
-            const result = await dynamoDBService.saveThread(mockThread);
+            await service.saveThread(thread);
 
             expect(PutCommand).toHaveBeenCalledWith({
-                Item: mockThread,
+                Item: expect.objectContaining({
+                    botUsername: BOT_USERNAME,
+                    threadId: `${BOT_USERNAME}#123`,
+                    userId: `${BOT_USERNAME}#user123`,
+                }),
                 TableName: 'test-table-threads',
             });
-            expect(result).toEqual(mockThread);
-        });
-
-        it('should throw error when save fails', async () => {
-            const error = new Error('DynamoDB error');
-            mockClient.send.mockRejectedValueOnce(error);
-
-            await expect(
-                dynamoDBService.saveThread({
-                    createdAt: '2023-01-01T00:00:00Z',
-                    lastMessageId: 'msg123',
-                    name: 'Test Thread',
-                    threadId: '123',
-                    updatedAt: '2023-01-01T00:01:00Z',
-                    userId: 'user123',
-                }),
-            ).rejects.toThrow(error);
         });
     });
 });

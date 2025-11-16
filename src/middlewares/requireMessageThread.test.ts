@@ -25,6 +25,7 @@ describe('requireMessageThread', () => {
             };
 
             const ctx = {
+                botUsername: 'testbot',
                 db: {
                     getThreadByUserId: vi.fn().mockResolvedValue(thread),
                 },
@@ -48,6 +49,7 @@ describe('requireMessageThread', () => {
 
         it('should create a new thread when an existing thread does not exist for the user', async () => {
             const ctx = {
+                botUsername: 'testbot',
                 db: {
                     getThreadByUserId: vi.fn(),
                 },
@@ -73,6 +75,7 @@ describe('requireMessageThread', () => {
 
         it('should not proceed if there are any errors getting the thread', async () => {
             const ctx = {
+                botUsername: 'testbot',
                 db: {
                     getThreadByUserId: vi.fn().mockRejectedValue(new Error('Error getting thread')),
                 },
@@ -92,6 +95,7 @@ describe('requireMessageThread', () => {
 
         it('should not proceed if there are any errors creating a new thread', async () => {
             const ctx = {
+                botUsername: 'testbot',
                 db: {
                     getThreadByUserId: vi.fn(),
                 },
@@ -111,6 +115,7 @@ describe('requireMessageThread', () => {
 
         it('should not proceed if there are any errors updating a thread', async () => {
             const ctx = {
+                botUsername: 'testbot',
                 db: {
                     getThreadByUserId: vi.fn().mockResolvedValue({ threadId: '11' }),
                 },
@@ -134,6 +139,7 @@ describe('requireMessageThread', () => {
             const thread = { threadId: '11' };
 
             const ctx = {
+                botUsername: 'testbot',
                 db: {
                     getThreadById: vi.fn().mockResolvedValue(thread),
                 },
@@ -152,6 +158,7 @@ describe('requireMessageThread', () => {
 
         it('should catch errors if thread cannot be found', async () => {
             const ctx = {
+                botUsername: 'testbot',
                 db: {
                     getThreadById: vi.fn(),
                 },
@@ -169,6 +176,7 @@ describe('requireMessageThread', () => {
 
         it('should catch errors if there are problems getting thread', async () => {
             const ctx = {
+                botUsername: 'testbot',
                 db: {
                     getThreadById: vi.fn().mockRejectedValue(new Error('Cannot get thread')),
                 },

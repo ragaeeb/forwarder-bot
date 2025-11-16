@@ -16,13 +16,13 @@ describe('common', () => {
 
     describe('requireSetup', () => {
         it('should not proceed if the setup was not completed', () => {
-            requireSetup({} as unknown as ForwardContext, next);
+            requireSetup({ botUsername: 'testbot' } as unknown as ForwardContext, next);
 
             expect(next).not.toHaveBeenCalled();
         });
 
         it('should proceed if the setup was already completed', () => {
-            requireSetup({ settings: { adminGroupId: '1' } } as unknown as ForwardContext, next);
+            requireSetup({ botUsername: 'testbot', settings: { adminGroupId: '1' } } as unknown as ForwardContext, next);
 
             expect(next).toHaveBeenCalledExactlyOnceWith();
         });
@@ -30,13 +30,13 @@ describe('common', () => {
 
     describe('requirePrivateChat', () => {
         it.each(['group', 'supergroup'])('should not proceed if it is a %s', (type) => {
-            requirePrivateChat({ chat: { type } } as unknown as ForwardContext, next);
+            requirePrivateChat({ botUsername: 'testbot', chat: { type } } as unknown as ForwardContext, next);
 
             expect(next).not.toHaveBeenCalled();
         });
 
         it('should proceed if it is a private chat', () => {
-            requirePrivateChat({ chat: { type: 'private' } } as unknown as ForwardContext, next);
+            requirePrivateChat({ botUsername: 'testbot', chat: { type: 'private' } } as unknown as ForwardContext, next);
 
             expect(next).toHaveBeenCalledExactlyOnceWith();
         });
@@ -45,7 +45,7 @@ describe('common', () => {
     describe('injectDependencies', () => {
         it('should proceed if we were able to inject the settings', async () => {
             const db = { getSettings: vi.fn().mockResolvedValue({ adminGroupId: '1' }) };
-            const ctx = {} as unknown as ForwardContext;
+            const ctx = { botUsername: 'testbot' } as unknown as ForwardContext;
             const fn = injectDependencies(db as unknown as DataService);
 
             await fn(ctx, next);
@@ -57,7 +57,7 @@ describe('common', () => {
 
         it('should proceed even if we were not setup', async () => {
             const db = { getSettings: vi.fn() };
-            const ctx = {} as unknown as ForwardContext;
+            const ctx = { botUsername: 'testbot' } as unknown as ForwardContext;
             const fn = injectDependencies(db as unknown as DataService);
 
             await fn(ctx, next);
@@ -71,7 +71,7 @@ describe('common', () => {
             const db = { getSettings: vi.fn().mockRejectedValue(new Error('Cannot connect to db')) };
             const fn = injectDependencies(db as unknown as DataService);
 
-            await fn({} as unknown as ForwardContext, next);
+            await fn({ botUsername: 'testbot' } as unknown as ForwardContext, next);
 
             expect(next).not.toHaveBeenCalled();
         });
@@ -80,6 +80,7 @@ describe('common', () => {
     describe('requireAdminReply', () => {
         it('should accept a reply from the admin', () => {
             const ctx = {
+                botUsername: 'testbot',
                 chat: { id: 1, type: 'supergroup' },
                 message: { message_thread_id: 1, reply_to_message: {} },
                 settings: { adminGroupId: '1' },
@@ -92,6 +93,7 @@ describe('common', () => {
 
         it('should not accept a DM from the user', () => {
             const ctx = {
+                botUsername: 'testbot',
                 chat: { id: 1, type: 'private' },
                 settings: { adminGroupId: '2' },
             } as unknown as ForwardContext;
@@ -103,6 +105,7 @@ describe('common', () => {
 
         it('should not proceed if it is an unknown message', () => {
             const ctx = {
+                botUsername: 'testbot',
                 chat: { id: 1, type: 'group' },
                 settings: { adminGroupId: '2' },
             } as unknown as ForwardContext;
