@@ -9,7 +9,7 @@ describe('telegramAPI', () => {
     beforeEach(() => {
         api = new TelegramAPI('test-token');
 
-        fetchMock = vi.fn().mockImplementation(async () => {
+        fetchMock = vi.fn(async () => {
             return {
                 json: async () => ({ ok: true, result: { mock: 'data' } }),
                 ok: true,

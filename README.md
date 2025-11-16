@@ -200,6 +200,8 @@ The workflow will:
 
 2. This will start a polling-based development server that processes updates locally
 3. Any code changes will automatically restart the bot
+4. Lint/format the codebase with `bunx biome check .` before committing changes
+5. Run `bun test` (or `bun run test` for direct Vitest output) to execute the full suite
 
 ## Usage
 
@@ -229,19 +231,48 @@ Run these commands in your admin group to customize the bot's messages:
 
 ### Environment Variables
 
-| Variable              | Description                           | Required | Default                      |
-| --------------------- | ------------------------------------- | -------- | ---------------------------- |
-| BOT_TOKEN             | Telegram Bot API token                | Yes      | -                            |
-| SECRET_TOKEN          | Secret token for webhook security     | Yes      | -                            |
-| TABLE_NAME            | DynamoDB table name                   | No       | telegram-forwarder-bot-table |
-| AWS_ACCESS_KEY_ID     | AWS access key for deployment         | Yes\*    | -                            |
-| AWS_SECRET_ACCESS_KEY | AWS secret key for deployment         | Yes\*    | -                            |
-| AWS_REGION            | AWS region for deployment             | No       | us-east-1                    |
-| SERVERLESS_ORG        | Serverless Framework organization     | No       | -                            |
-| SERVERLESS_APP        | Serverless Framework application name | No       | -                            |
-| SERVERLESS_SERVICE    | Serverless Framework service name     | No       | telegram-forwarder-bot       |
+| Variable                | Description                                                                  | Required | Default                      |
+| ----------------------- | ---------------------------------------------------------------------------- | -------- | ---------------------------- |
+| BOT_CONFIGS             | JSON definition for one or more bots (token + secret). Overrides BOT_TOKEN.  | No       | -                            |
+| BOT_TOKEN               | Telegram Bot API token (legacy single-bot env)                              | Yes\*    | -                            |
+| SECRET_TOKEN            | Secret token for webhook security                                           | Yes      | -                            |
+| DATABASE_PROVIDER       | Storage backend: `mongodb`, `dynamodb`, or `mock`                           | No       | mongodb                      |
+| MONGODB_URI             | MongoDB connection string                                                   | Yes†     | -                            |
+| MONGODB_DB              | MongoDB database name                                                       | No       | forwarder-bot                |
+| TABLE_NAME              | DynamoDB base table name (for legacy + migrations)                          | No       | telegram-forwarder-bot-table |
+| AWS_ACCESS_KEY_ID       | AWS access key for deployment/migrations                                    | Yes‡     | -                            |
+| AWS_SECRET_ACCESS_KEY   | AWS secret access key for deployment/migrations                             | Yes‡     | -                            |
+| AWS_REGION              | AWS region for deployment/migrations                                        | No       | us-east-1                    |
+| SERVERLESS_ORG          | Serverless Framework organization                                           | No       | -                            |
+| SERVERLESS_APP          | Serverless Framework application name                                       | No       | -                            |
+| SERVERLESS_SERVICE      | Serverless Framework service name                                           | No       | telegram-forwarder-bot       |
+| MIGRATION_BOT_USERNAME  | Bot handle (without @) to tag migrated records                              | Only for migration | -                   |
+| LEGACY_BOT_TOKEN        | Previous bot token used as the DynamoDB prefix                              | Only for migration | -                   |
 
-\*Required for deployment only
+\*Set either `BOT_CONFIGS` or `BOT_TOKEN`.
+
+†Required whenever `DATABASE_PROVIDER=mongodb` or when running MongoDB migrations.
+
+‡Needed for AWS deployments and for the DynamoDB → MongoDB migration script.
+
+### Migrating from DynamoDB to MongoDB
+
+If you previously stored messages in DynamoDB keyed by a bot token, run the migration helper once to copy everything into MongoDB while re-namespacing the data by bot username:
+
+```bash
+export BOT_TOKEN=<new-or-current-token>
+export MIGRATION_BOT_USERNAME=my_bot
+export LEGACY_BOT_TOKEN=<old_bot_token>
+export MONGODB_URI="mongodb+srv://..."
+export AWS_ACCESS_KEY_ID=...
+export AWS_SECRET_ACCESS_KEY=...
+export AWS_REGION=us-east-1
+export TABLE_NAME=telegram-forwarder-bot-table
+
+bun run migrate:ddb
+```
+
+The script scans the legacy DynamoDB tables, strips the old token prefixes from message/thread identifiers, and upserts the normalized data into MongoDB using the provided bot username. Records without explicit bot identifiers are automatically tagged so your chats continue to work after rotating bot tokens.
 
 ### Serverless Configuration
 
@@ -308,6 +339,8 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 3. Commit your changes (`git commit -m 'Add some amazing feature'`)
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
+
+Before submitting, run `bunx biome check .`, `bun test`, and `bun run build` to ensure linting, tests, and builds succeed.
 
 ## License
 

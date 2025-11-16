@@ -9,14 +9,13 @@ vi.mock('./bot.js', () => {
     const handleUpdate = vi.fn().mockResolvedValue(undefined);
     const getMe = vi.fn().mockResolvedValue({ username: 'testbot' });
 
-    const BotMock = vi.fn().mockImplementation((token: string) => ({
-        api: {
-            getMe,
-        },
-        handleUpdate,
-        token,
-        username: undefined as string | undefined,
-    }));
+    const BotMock = vi.fn(function BotMock(this: any, token: string) {
+        this.api = { getMe };
+        this.handleUpdate = handleUpdate;
+        this.token = token;
+        this.username = undefined as string | undefined;
+        return this;
+    });
 
     return {
         Bot: BotMock,
@@ -28,12 +27,18 @@ vi.mock('./handlers/index.js', () => ({
     registerHandlers: vi.fn(),
 }));
 
-vi.mock('./services/telegramAPI.js', () => ({
-    TelegramAPI: vi.fn().mockImplementation(() => ({
-        deleteWebhook: vi.fn().mockResolvedValue(true),
-        setWebhook: vi.fn().mockResolvedValue(true),
-    })),
-}));
+vi.mock('./services/telegramAPI.js', () => {
+    const deleteWebhook = vi.fn().mockResolvedValue(true);
+    const setWebhook = vi.fn().mockResolvedValue(true);
+
+    const TelegramAPI = vi.fn(function TelegramAPIStub(this: any) {
+        this.deleteWebhook = deleteWebhook;
+        this.setWebhook = setWebhook;
+        return this;
+    });
+
+    return { TelegramAPI };
+});
 
 describe('webhook', () => {
     const createEvent = (overrides: Partial<APIGatewayProxyEvent> = {}): APIGatewayProxyEvent => ({
@@ -172,7 +177,7 @@ describe('webhook', () => {
 
             const req = {
                 headers: {},
-                on: vi.fn().mockImplementation(function (event: string, handler: (...args: any[]) => void) {
+                on: vi.fn(function (event: string, handler: (...args: any[]) => void) {
                     if (event === 'end') {
                         handler();
                     }

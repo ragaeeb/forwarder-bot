@@ -11,18 +11,19 @@
         "reset": "bun scripts/manageHook.ts --reset",
         "remove": "bun run serverless remove --stage prod",
         "migrate": "bun scripts/migrateLegacy.ts",
+        "migrate:ddb": "bun scripts/migrateDynamoToMongo.ts",
         "register": "bun scripts/manageHook.ts --setup",
         "reveal": "bun scripts/manageHook.ts --reveal",
-        "lint": "bun x eslint src --ext .ts",
+        "lint": "bunx biome check .",
         "test": "vitest run --coverage"
     },
     "dependencies": {
-        "@aws-sdk/client-dynamodb": "^3.777.0",
-        "@aws-sdk/lib-dynamodb": "^3.778.0",
+        "@aws-sdk/client-dynamodb": "^3.932.0",
+        "@aws-sdk/lib-dynamodb": "^3.932.0",
         "env-var": "^7.5.0",
-        "mongodb": "^6.8.0",
-        "pino": "^9.6.0",
-        "pino-pretty": "^13.0.0"
+        "mongodb": "^7.0.0",
+        "pino": "^10.1.0",
+        "pino-pretty": "^13.1.2"
     },
     "repository": {
         "type": "git",
@@ -32,22 +33,14 @@
     "license": "MIT",
     "description": "Telegram bot that forwards messages between users and a group with topics",
     "devDependencies": {
-        "@eslint/js": "^9.23.0",
-        "@types/aws-lambda": "^8.10.148",
-        "@types/node": "^22.13.14",
-        "@vitest/coverage-v8": "^3.1.1",
-        "@vitest/eslint-plugin": "^1.1.38",
-        "eslint": "^9.23.0",
-        "eslint-config-prettier": "^10.1.1",
-        "eslint-plugin-perfectionist": "^4.10.1",
-        "eslint-plugin-prettier": "^5.2.5",
-        "globals": "^16.0.0",
+        "@types/aws-lambda": "^8.10.158",
+        "@types/node": "^24.10.1",
+        "@vitest/coverage-v8": "^4.0.9",
+        "@biomejs/biome": "^2.3.5",
         "mongodb-memory-server": "^10.3.0",
-        "prettier": "^3.5.3",
-        "serverless": "^4.9.1",
-        "typescript": "^5.8.2",
-        "typescript-eslint": "^8.29.0",
-        "vitest": "^3.1.1"
+        "serverless": "^4.23.0",
+        "typescript": "^5.9.3",
+        "vitest": "^4.0.9"
     },
     "engines": {
         "bun": ">=1.2.5"

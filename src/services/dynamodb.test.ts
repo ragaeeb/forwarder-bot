@@ -6,7 +6,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { DynamoDBService } from './dynamodb.js';
 
 vi.mock('@aws-sdk/client-dynamodb', () => ({
-    DynamoDBClient: vi.fn().mockImplementation(() => ({})),
+    DynamoDBClient: vi.fn(function DynamoDBClientMock() {
+        return {};
+    }),
 }));
 
 vi.mock('@aws-sdk/lib-dynamodb', () => ({
