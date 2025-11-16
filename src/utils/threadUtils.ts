@@ -35,6 +35,7 @@ export const createNewThread = async (ctx: ForwardContext) => {
         // No changes needed to ThreadData structure, the underlying database
         // implementation handles the storage details
         return ctx.db.saveThread({
+            botUsername: ctx.botUsername,
             createdAt: new Date((ctx.message?.date as number) * 1000).toISOString(),
             lastMessageId: ctx.message?.message_id.toString() as string,
             name: response.name,
@@ -62,6 +63,7 @@ export const updateThreadByMessage = (ctx: ForwardContext, threadData: ThreadDat
 
     return ctx.db.saveThread({
         ...threadData,
+        botUsername: ctx.botUsername,
         lastMessageId: message.message_id.toString(),
         updatedAt: new Date().toISOString(),
     });

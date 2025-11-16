@@ -6,6 +6,7 @@ import { onEditedMessage } from './handleEditedMessage.js';
 
 vi.mock('@/utils/messageUtils.js', () => ({
     mapTelegramMessageToSavedMessage: vi.fn((message, type) => ({
+        botUsername: 'testbot',
         chatId: '123',
         from: {
             firstName: message.from?.first_name,
@@ -46,6 +47,7 @@ describe('onEditedMessage', () => {
                 getThreadByUserId: vi.fn(),
                 saveMessage: vi.fn(),
             },
+            botUsername: 'testbot',
             from: user,
             message: {
                 chat: {
@@ -76,6 +78,7 @@ describe('onEditedMessage', () => {
 
         it('should process edited message correctly when all conditions are met', async () => {
             const threadData = {
+                botUsername: 'testbot',
                 chatId: '123',
                 createdAt: '2023-01-01T00:00:00Z',
                 lastMessageId: '788',
@@ -86,6 +89,7 @@ describe('onEditedMessage', () => {
             };
 
             const savedMessage = {
+                botUsername: 'testbot',
                 chatId: '123',
                 from: {
                     firstName: 'Test',
@@ -137,6 +141,7 @@ describe('onEditedMessage', () => {
 
         it('should use parseInt to convert threadId from string to number', async () => {
             const threadData = {
+                botUsername: 'testbot',
                 chatId: '123',
                 createdAt: '2023-01-01T00:00:00Z',
                 lastMessageId: '788',

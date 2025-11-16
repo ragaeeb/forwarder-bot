@@ -15,7 +15,13 @@ describe('start', () => {
 
     describe('onStart', () => {
         it('should reply to the message', async () => {
-            const ctx = { db: { saveMessage: vi.fn() }, message: { id: 'm1' }, reply: vi.fn(), settings: {} };
+            const ctx = {
+                botUsername: 'testbot',
+                db: { saveMessage: vi.fn() },
+                message: { id: 'm1' },
+                reply: vi.fn(),
+                settings: {},
+            };
 
             await onStart(ctx as unknown as ForwardContext);
 
@@ -25,11 +31,20 @@ describe('start', () => {
             );
 
             expect(ctx.db.saveMessage).toHaveBeenCalledExactlyOnceWith({ id: '1' });
-            expect(mapTelegramMessageToSavedMessage).toHaveBeenCalledExactlyOnceWith({ id: 'm1' }, 'user');
+            expect(mapTelegramMessageToSavedMessage).toHaveBeenCalledExactlyOnceWith(
+                { id: 'm1' },
+                'user',
+                'testbot',
+            );
         });
 
         it('should reply to the custom greeting', async () => {
-            const ctx = { db: { saveMessage: vi.fn() }, reply: vi.fn(), settings: { greeting: 'G' } };
+            const ctx = {
+                botUsername: 'testbot',
+                db: { saveMessage: vi.fn() },
+                reply: vi.fn(),
+                settings: { greeting: 'G' },
+            };
 
             await onStart(ctx as unknown as ForwardContext);
 

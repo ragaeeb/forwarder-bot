@@ -12,12 +12,14 @@ vi.mock('@/utils/logger.js', () => ({
     },
 }));
 
+const BOT_USERNAME = 'testbot';
+
 describe('MockDataService', () => {
     let mockDataService: MockDataService;
 
     beforeEach(() => {
         vi.resetAllMocks();
-        mockDataService = new MockDataService();
+        mockDataService = new MockDataService(BOT_USERNAME);
     });
 
     describe('constructor', () => {
@@ -36,7 +38,7 @@ describe('MockDataService', () => {
         it('should return the saved config when it exists', async () => {
             const botConfig: BotSettings = {
                 adminGroupId: '12345',
-                configId: 'test-config',
+                botUsername: BOT_USERNAME,
                 setupAt: '2023-01-01T00:00:00Z',
                 setupBy: {
                     first_name: 'Test',
@@ -60,6 +62,7 @@ describe('MockDataService', () => {
 
         it('should return only messages for the specified user', async () => {
             const user1Message: SavedMessage = {
+                botUsername: BOT_USERNAME,
                 chatId: '100',
                 from: {
                     firstName: 'User1',
@@ -72,6 +75,7 @@ describe('MockDataService', () => {
             };
 
             const user2Message: SavedMessage = {
+                botUsername: BOT_USERNAME,
                 chatId: '200',
                 from: {
                     firstName: 'User2',
@@ -95,6 +99,7 @@ describe('MockDataService', () => {
 
         it('should return multiple messages for the same user in the order they were saved', async () => {
             const message1: SavedMessage = {
+                botUsername: BOT_USERNAME,
                 chatId: '100',
                 from: {
                     firstName: 'User1',
@@ -107,6 +112,7 @@ describe('MockDataService', () => {
             };
 
             const message2: SavedMessage = {
+                botUsername: BOT_USERNAME,
                 chatId: '100',
                 from: {
                     firstName: 'User1',
@@ -134,6 +140,7 @@ describe('MockDataService', () => {
 
         it('should return the thread with the specified ID when it exists', async () => {
             const threadData: ThreadData = {
+                botUsername: BOT_USERNAME,
                 chatId: 'chat-789',
                 createdAt: '2023-01-01T00:00:00Z',
                 lastMessageId: 'msg-001',
@@ -158,6 +165,7 @@ describe('MockDataService', () => {
 
         it('should return the thread for the specified user when it exists', async () => {
             const threadData: ThreadData = {
+                botUsername: BOT_USERNAME,
                 chatId: 'chat-789',
                 createdAt: '2023-01-01T00:00:00Z',
                 lastMessageId: 'msg-001',
@@ -178,7 +186,7 @@ describe('MockDataService', () => {
         it('should save and return the provided config', async () => {
             const botConfig: BotSettings = {
                 adminGroupId: '12345',
-                configId: 'test-config',
+                botUsername: BOT_USERNAME,
                 setupAt: '2023-01-01T00:00:00Z',
                 setupBy: {
                     first_name: 'Test',
@@ -196,7 +204,7 @@ describe('MockDataService', () => {
         it('should overwrite previous config when saving a new one', async () => {
             const initialConfig: BotSettings = {
                 adminGroupId: '12345',
-                configId: 'initial-config',
+                botUsername: BOT_USERNAME,
                 setupAt: '2023-01-01T00:00:00Z',
                 setupBy: {
                     first_name: 'Test',
@@ -207,7 +215,7 @@ describe('MockDataService', () => {
 
             const updatedConfig: BotSettings = {
                 adminGroupId: '98765',
-                configId: 'updated-config',
+                botUsername: BOT_USERNAME,
                 setupAt: '2023-01-02T00:00:00Z',
                 setupBy: {
                     first_name: 'Updated Test',
@@ -227,6 +235,7 @@ describe('MockDataService', () => {
     describe('saveMessage', () => {
         it('should add the message to the messages array and return it', async () => {
             const message: SavedMessage = {
+                botUsername: BOT_USERNAME,
                 chatId: '100',
                 from: {
                     firstName: 'User1',
@@ -241,13 +250,14 @@ describe('MockDataService', () => {
             const savedMessage = await mockDataService.saveMessage(message);
 
             expect(savedMessage).toEqual(message);
-            expect(mockDataService['messages']).toContain(message);
+            expect(mockDataService['messages']).toContainEqual(savedMessage);
         });
 
         it('should preserve all message properties when saving', async () => {
             const message: SavedMessage = {
                 caption: 'Caption text',
                 chatId: '100',
+                botUsername: BOT_USERNAME,
                 from: {
                     firstName: 'User1',
                     lastName: 'Test',
@@ -274,6 +284,7 @@ describe('MockDataService', () => {
     describe('saveThread', () => {
         it('should add the thread to the threads array and return it', async () => {
             const threadData: ThreadData = {
+                botUsername: BOT_USERNAME,
                 chatId: 'chat-789',
                 createdAt: '2023-01-01T00:00:00Z',
                 lastMessageId: 'msg-001',
@@ -286,11 +297,12 @@ describe('MockDataService', () => {
             const savedThread = await mockDataService.saveThread(threadData);
 
             expect(savedThread).toEqual(threadData);
-            expect(mockDataService['threads']).toContain(threadData);
+            expect(mockDataService['threads']).toContainEqual(savedThread);
         });
 
         it('should allow saving multiple threads', async () => {
             const thread1: ThreadData = {
+                botUsername: BOT_USERNAME,
                 chatId: 'chat-789',
                 createdAt: '2023-01-01T00:00:00Z',
                 lastMessageId: 'msg-001',
@@ -301,6 +313,7 @@ describe('MockDataService', () => {
             };
 
             const thread2: ThreadData = {
+                botUsername: BOT_USERNAME,
                 chatId: 'chat-123',
                 createdAt: '2023-01-02T00:00:00Z',
                 lastMessageId: 'msg-002',
@@ -313,8 +326,8 @@ describe('MockDataService', () => {
             await mockDataService.saveThread(thread1);
             await mockDataService.saveThread(thread2);
 
-            expect(mockDataService['threads']).toContain(thread1);
-            expect(mockDataService['threads']).toContain(thread2);
+            expect(mockDataService['threads']).toContainEqual(thread1);
+            expect(mockDataService['threads']).toContainEqual(thread2);
             expect(mockDataService['threads'].length).toBe(2);
         });
     });

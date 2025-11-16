@@ -4,8 +4,13 @@ import { describe, expect, it } from 'vitest';
 
 import { mapTelegramMessageToSavedMessage } from './messageUtils.js';
 
+const BOT_USERNAME = 'testbot';
+
 describe('messageUtils', () => {
     describe('mapTelegramMessageToSavedMessage', () => {
+        const mapMessage = (message: TelegramMessage, type: 'admin' | 'user') =>
+            mapTelegramMessageToSavedMessage(message, type, BOT_USERNAME);
+
         it('should map a basic text message correctly', () => {
             const message: TelegramMessage = {
                 chat: { id: 67890, type: 'private' },
@@ -20,9 +25,10 @@ describe('messageUtils', () => {
                 text: 'Hello, world!',
             };
 
-            const result = mapTelegramMessageToSavedMessage(message, 'user');
+            const result = mapMessage(message, 'user');
 
             expect(result).toEqual({
+                botUsername: BOT_USERNAME,
                 chatId: '67890',
                 from: {
                     firstName: 'John',
@@ -52,9 +58,10 @@ describe('messageUtils', () => {
                 text: 'Admin announcement',
             };
 
-            const result = mapTelegramMessageToSavedMessage(message, 'admin');
+            const result = mapMessage(message, 'admin');
 
             expect(result).toEqual({
+                botUsername: BOT_USERNAME,
                 chatId: '67890',
                 from: {
                     firstName: 'Admin',
@@ -81,7 +88,7 @@ describe('messageUtils', () => {
                 message_id: 12345,
             };
 
-            const result = mapTelegramMessageToSavedMessage(message, 'user');
+            const result = mapMessage(message, 'user');
 
             expect(result.text).toBe('');
         });
@@ -103,7 +110,7 @@ describe('messageUtils', () => {
                 ],
             };
 
-            const result = mapTelegramMessageToSavedMessage(message, 'user');
+            const result = mapMessage(message, 'user');
 
             expect(result.mediaType).toBe('photo');
             expect(result.mediaId).toBe('large_photo_id'); // Should select the last (largest) photo
@@ -128,7 +135,7 @@ describe('messageUtils', () => {
                 message_id: 12345,
             };
 
-            const result = mapTelegramMessageToSavedMessage(message, 'user');
+            const result = mapMessage(message, 'user');
 
             expect(result.mediaType).toBe('document');
             expect(result.mediaId).toBe('doc_file_id');
@@ -154,7 +161,7 @@ describe('messageUtils', () => {
                 },
             };
 
-            const result = mapTelegramMessageToSavedMessage(message, 'user');
+            const result = mapMessage(message, 'user');
 
             expect(result.mediaType).toBe('video');
             expect(result.mediaId).toBe('video_file_id');
@@ -178,7 +185,7 @@ describe('messageUtils', () => {
                 },
             };
 
-            const result = mapTelegramMessageToSavedMessage(message, 'user');
+            const result = mapMessage(message, 'user');
 
             expect(result.mediaType).toBe('voice');
             expect(result.mediaId).toBe('voice_file_id');
@@ -202,7 +209,7 @@ describe('messageUtils', () => {
                 message_id: 12345,
             };
 
-            const result = mapTelegramMessageToSavedMessage(message, 'user');
+            const result = mapMessage(message, 'user');
 
             expect(result.mediaType).toBe('audio');
             expect(result.mediaId).toBe('audio_file_id');
@@ -230,7 +237,7 @@ describe('messageUtils', () => {
                 },
             };
 
-            const result = mapTelegramMessageToSavedMessage(message, 'user');
+            const result = mapMessage(message, 'user');
 
             expect(result.mediaType).toBe('sticker');
             expect(result.mediaId).toBe('sticker_file_id');
@@ -258,7 +265,7 @@ describe('messageUtils', () => {
                 text: 'This is a reply',
             };
 
-            const result = mapTelegramMessageToSavedMessage(message, 'user');
+            const result = mapMessage(message, 'user');
 
             expect(result.replyToMessageId).toBe('12340');
         });
@@ -280,7 +287,7 @@ describe('messageUtils', () => {
                 text: 'This is a quote reply',
             };
 
-            const result = mapTelegramMessageToSavedMessage(message, 'user');
+            const result = mapMessage(message, 'user');
 
             expect(result.quote).toBe('This is the quoted text');
         });
@@ -306,7 +313,7 @@ describe('messageUtils', () => {
                 text: 'Forwarded message content',
             };
 
-            const result = mapTelegramMessageToSavedMessage(message, 'user');
+            const result = mapMessage(message, 'user');
 
             expect(result.forwardOrigin).toEqual({
                 date: 1645564600,

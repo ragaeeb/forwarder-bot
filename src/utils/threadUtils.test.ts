@@ -31,6 +31,7 @@ describe('threadUtils', () => {
                 chat: { id: 54321 },
                 db: {
                     saveThread: vi.fn().mockResolvedValue({
+                        botUsername: 'testbot',
                         createdAt: expect.any(String),
                         lastMessageId: '67890',
                         name: '12345: John Doe (johndoe)',
@@ -39,6 +40,7 @@ describe('threadUtils', () => {
                         userId: '12345',
                     }),
                 },
+                botUsername: 'testbot',
                 from: {
                     first_name: 'John',
                     id: 12345,
@@ -65,6 +67,7 @@ describe('threadUtils', () => {
             });
 
             expect(ctx.db.saveThread).toHaveBeenCalledExactlyOnceWith({
+                botUsername: 'testbot',
                 createdAt: expect.any(String),
                 lastMessageId: '67890',
                 name: '12345: John Doe (johndoe)',
@@ -74,6 +77,7 @@ describe('threadUtils', () => {
             });
 
             expect(result).toEqual({
+                botUsername: 'testbot',
                 createdAt: '2022-02-23T00:00:00.000Z',
                 lastMessageId: '67890',
                 name: '12345: John Doe (johndoe)',
@@ -96,6 +100,7 @@ describe('threadUtils', () => {
                 chat: { id: 54321, type: 'private' },
                 db: {
                     saveThread: vi.fn().mockResolvedValue({
+                        botUsername: 'testbot',
                         chatId: '54321',
                         createdAt: '2022-02-23T00:00:00.000Z',
                         lastMessageId: '67890',
@@ -105,6 +110,7 @@ describe('threadUtils', () => {
                         userId: '12345',
                     }),
                 },
+                botUsername: 'testbot',
                 from: {
                     first_name: 'John',
                     id: 12345,
@@ -135,6 +141,7 @@ describe('threadUtils', () => {
                     },
                 },
                 chat: { id: 54321, type: 'private' },
+                botUsername: 'testbot',
                 from: {
                     id: 12345,
                 },
@@ -163,6 +170,7 @@ describe('threadUtils', () => {
                 db: {
                     saveThread: vi.fn().mockRejectedValue(new Error('Could not save thread')),
                 },
+                botUsername: 'testbot',
                 from: {
                     id: 12345,
                 },
@@ -178,6 +186,7 @@ describe('threadUtils', () => {
             const ctx = {
                 db: {
                     saveThread: vi.fn().mockResolvedValue({
+                        botUsername: 'testbot',
                         chatId: '54321',
                         createdAt: '2022-02-20T00:00:00.000Z',
                         lastMessageId: '99999',
@@ -187,9 +196,11 @@ describe('threadUtils', () => {
                         userId: '12345',
                     }),
                 },
+                botUsername: 'testbot',
             } as unknown as ForwardContext;
 
             const threadData = {
+                botUsername: 'testbot',
                 chatId: '54321',
                 createdAt: '2022-02-20T00:00:00.000Z',
                 lastMessageId: '67880',
@@ -208,6 +219,7 @@ describe('threadUtils', () => {
             const result = await updateThreadByMessage(ctx, threadData, message);
 
             const expected = {
+                botUsername: 'testbot',
                 chatId: '54321',
                 createdAt: '2022-02-20T00:00:00.000Z',
                 lastMessageId: '99999',

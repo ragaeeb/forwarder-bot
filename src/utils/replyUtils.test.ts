@@ -7,6 +7,7 @@ import { replyWithError, replyWithSuccess, replyWithWarning } from './replyUtils
 describe('replyUtils', () => {
     const createMockContext = (overrides = {}) =>
         ({
+            botUsername: 'testbot',
             reply: vi.fn().mockResolvedValue({ message_id: 123 }),
             ...overrides,
         }) as unknown as ForwardContext;

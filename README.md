@@ -29,8 +29,9 @@ A serverless Telegram bot that forwards messages between users and a private adm
 
 ### Technical Features
 
-- Completely serverless architecture using AWS Lambda and API Gateway
-- Messages and thread relationships stored in DynamoDB for persistence
+- Completely serverless architecture that runs on AWS Lambda, Vercel, or any platform that can host Node.js webhooks
+- Multi-bot configuration — host multiple Telegram bots on a single deployment
+- Pluggable data storage layer with MongoDB (default), DynamoDB, or in-memory mock services
 - Customizable welcome, acknowledgment, and error messages
 - Easy configuration and setup process
 - Comprehensive test coverage
@@ -47,23 +48,25 @@ graph TD
     Topic -->|Bot forwards replies| Bot
     Bot -->|Delivers admin replies| User
 
-    Bot -->|Stores data in| DynamoDB[(DynamoDB)]
-    DynamoDB -->|Retrieves data for| Bot
+    Bot -->|Stores data in| DataStore[(MongoDB / DynamoDB)]
+    DataStore -->|Retrieves data for| Bot
 
-    subgraph AWS
+    subgraph Hosting
         Lambda[AWS Lambda Function] -->|Hosts| Bot
         APIGateway[API Gateway] -->|Webhook calls| Lambda
-        DynamoDB
+        Vercel[Vercel Serverless Function] -->|Hosts| Bot
+        DataStore
     end
 ```
 
 ## Prerequisites
 
 - Bun `v1.2.5` or later
-- An AWS account for serverless deployment
+- A MongoDB instance (Atlas or self-hosted) for persistent storage
 - A Telegram bot token (obtained from [@BotFather](https://t.me/BotFather))
 - A Telegram group with topics enabled
-- Serverless Framework (optional for development)
+- An AWS account or Vercel account (depending on where you deploy)
+- Serverless Framework (optional for AWS deployment)
 
 ## Setup Instructions
 
@@ -104,10 +107,14 @@ graph TD
 3. Create a `.env` file in the project root:
 
     ```
-    BOT_TOKEN=your_telegram_bot_token
-    SECRET_TOKEN=your_randomly_generated_secret  # Create a random token for webhook security
-    TABLE_NAME=telegram-forwarder-bot-table      # Optional, defaults to this value
+    BOT_CONFIGS='[{"token":"your_bot_token","secretToken":"your_randomly_generated_secret"}]'
+    DATABASE_PROVIDER=mongodb
+    MONGODB_URI=mongodb+srv://user:password@cluster.mongodb.net
+    MONGODB_DB=forwarder-bot
     ```
+
+    - `BOT_CONFIGS` accepts an array of bot definitions and lets you host multiple bots on one deployment. You can also use the legacy `BOT_TOKEN`/`SECRET_TOKEN` variables for a single bot.
+    - `DATABASE_PROVIDER` can be `mongodb`, `dynamodb`, or `mock` (for local testing).
 
     Generate a random secret token with:
 
@@ -156,7 +163,22 @@ The workflow will:
 - Deploy to AWS
 - Configure the webhook automatically
 
-### 5. Set Up the Bot in Your Group
+### 5. Deploy to Vercel
+
+1. Import this repository into Vercel or connect your GitHub fork.
+2. Configure the following environment variables in the Vercel project settings:
+
+    - `BOT_CONFIGS`
+    - `DATABASE_PROVIDER=mongodb`
+    - `MONGODB_URI`
+    - `MONGODB_DB`
+
+   If you need DynamoDB for compatibility, set `DATABASE_PROVIDER=dynamodb` and provide your AWS credentials via secrets.
+
+3. Trigger a deployment. Vercel will automatically build the project and expose the webhook at `https://<project>.vercel.app/api/telegram/<bot-token>`.
+4. Use `bun scripts/manageHook.ts --setup --token <bot-token>` (locally with the same environment variables) to register the webhook pointing to the Vercel URL, or configure it manually with the Telegram API.
+
+### 6. Set Up the Bot in Your Group
 
 1. After running the `register` command, you'll see a command to run in your Telegram group:
 
@@ -178,6 +200,8 @@ The workflow will:
 
 2. This will start a polling-based development server that processes updates locally
 3. Any code changes will automatically restart the bot
+4. Lint/format the codebase with `bunx biome check .` before committing changes
+5. Run `bun test` (or `bun run test` for direct Vitest output) to execute the full suite
 
 ## Usage
 
@@ -207,19 +231,48 @@ Run these commands in your admin group to customize the bot's messages:
 
 ### Environment Variables
 
-| Variable              | Description                           | Required | Default                      |
-| --------------------- | ------------------------------------- | -------- | ---------------------------- |
-| BOT_TOKEN             | Telegram Bot API token                | Yes      | -                            |
-| SECRET_TOKEN          | Secret token for webhook security     | Yes      | -                            |
-| TABLE_NAME            | DynamoDB table name                   | No       | telegram-forwarder-bot-table |
-| AWS_ACCESS_KEY_ID     | AWS access key for deployment         | Yes\*    | -                            |
-| AWS_SECRET_ACCESS_KEY | AWS secret key for deployment         | Yes\*    | -                            |
-| AWS_REGION            | AWS region for deployment             | No       | us-east-1                    |
-| SERVERLESS_ORG        | Serverless Framework organization     | No       | -                            |
-| SERVERLESS_APP        | Serverless Framework application name | No       | -                            |
-| SERVERLESS_SERVICE    | Serverless Framework service name     | No       | telegram-forwarder-bot       |
+| Variable                | Description                                                                  | Required | Default                      |
+| ----------------------- | ---------------------------------------------------------------------------- | -------- | ---------------------------- |
+| BOT_CONFIGS             | JSON definition for one or more bots (token + secret). Overrides BOT_TOKEN.  | No       | -                            |
+| BOT_TOKEN               | Telegram Bot API token (legacy single-bot env)                              | Yes\*    | -                            |
+| SECRET_TOKEN            | Secret token for webhook security                                           | Yes      | -                            |
+| DATABASE_PROVIDER       | Storage backend: `mongodb`, `dynamodb`, or `mock`                           | No       | mongodb                      |
+| MONGODB_URI             | MongoDB connection string                                                   | Yes†     | -                            |
+| MONGODB_DB              | MongoDB database name                                                       | No       | forwarder-bot                |
+| TABLE_NAME              | DynamoDB base table name (for legacy + migrations)                          | No       | telegram-forwarder-bot-table |
+| AWS_ACCESS_KEY_ID       | AWS access key for deployment/migrations                                    | Yes‡     | -                            |
+| AWS_SECRET_ACCESS_KEY   | AWS secret access key for deployment/migrations                             | Yes‡     | -                            |
+| AWS_REGION              | AWS region for deployment/migrations                                        | No       | us-east-1                    |
+| SERVERLESS_ORG          | Serverless Framework organization                                           | No       | -                            |
+| SERVERLESS_APP          | Serverless Framework application name                                       | No       | -                            |
+| SERVERLESS_SERVICE      | Serverless Framework service name                                           | No       | telegram-forwarder-bot       |
+| MIGRATION_BOT_USERNAME  | Bot handle (without @) to tag migrated records                              | Only for migration | -                   |
+| LEGACY_BOT_TOKEN        | Previous bot token used as the DynamoDB prefix                              | Only for migration | -                   |
 
-\*Required for deployment only
+\*Set either `BOT_CONFIGS` or `BOT_TOKEN`.
+
+†Required whenever `DATABASE_PROVIDER=mongodb` or when running MongoDB migrations.
+
+‡Needed for AWS deployments and for the DynamoDB → MongoDB migration script.
+
+### Migrating from DynamoDB to MongoDB
+
+If you previously stored messages in DynamoDB keyed by a bot token, run the migration helper once to copy everything into MongoDB while re-namespacing the data by bot username:
+
+```bash
+export BOT_TOKEN=<new-or-current-token>
+export MIGRATION_BOT_USERNAME=my_bot
+export LEGACY_BOT_TOKEN=<old_bot_token>
+export MONGODB_URI="mongodb+srv://..."
+export AWS_ACCESS_KEY_ID=...
+export AWS_SECRET_ACCESS_KEY=...
+export AWS_REGION=us-east-1
+export TABLE_NAME=telegram-forwarder-bot-table
+
+bun run migrate:ddb
+```
+
+The script scans the legacy DynamoDB tables, strips the old token prefixes from message/thread identifiers, and upserts the normalized data into MongoDB using the provided bot username. Records without explicit bot identifiers are automatically tagged so your chats continue to work after rotating bot tokens.
 
 ### Serverless Configuration
 
@@ -286,6 +339,8 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 3. Commit your changes (`git commit -m 'Add some amazing feature'`)
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
+
+Before submitting, run `bunx biome check .`, `bun test`, and `bun run build` to ensure linting, tests, and builds succeed.
 
 ## License
 

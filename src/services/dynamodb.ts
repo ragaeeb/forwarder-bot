@@ -14,6 +14,7 @@ import { config } from '../config.js';
  * messages, threads, and bot settings.
  */
 export class DynamoDBService implements DataService {
+    public readonly botUsername: string;
     private client: DynamoDBDocumentClient;
     private configTable: string;
     private messagesTable: string;
@@ -23,20 +24,55 @@ export class DynamoDBService implements DataService {
      * Creates a new DynamoDBService instance.
      * Initializes the DynamoDB client and sets the table names.
      */
-    constructor() {
+    constructor(botUsername: string) {
+        this.botUsername = botUsername;
         const dbClient = new DynamoDBClient({});
         this.client = DynamoDBDocumentClient.from(dbClient);
 
         // Base table name without suffix
-        const baseTableName = config.TABLE_NAME;
+        const baseTableName = config.dynamo.tableName;
 
         this.threadsTable = `${baseTableName}-threads`;
         this.messagesTable = `${baseTableName}-messages`;
         this.configTable = `${baseTableName}-config`;
 
         logger.info(
-            `Using DynamoDB tables: threads=${this.threadsTable}, messages=${this.messagesTable}, config=${this.configTable}`,
+            `Using DynamoDB tables for @${this.botUsername}: threads=${this.threadsTable}, messages=${this.messagesTable}, config=${this.configTable}`,
         );
+    }
+
+    private withPrefix(value: string): string {
+        return `${this.botUsername}#${value}`;
+    }
+
+    private stripPrefix(value: string | undefined): string {
+        if (!value) {
+            return '';
+        }
+
+        const prefix = `${this.botUsername}#`;
+
+        return value.startsWith(prefix) ? value.slice(prefix.length) : value;
+    }
+
+    private mapThread(item: Record<string, any>): ThreadData {
+        const { actualThreadId, actualUserId, botUsername, threadId, userId, ...rest } = item;
+
+        return {
+            ...(rest as Omit<ThreadData, 'threadId' | 'userId' | 'botUsername'>),
+            botUsername: this.botUsername,
+            threadId: actualThreadId || this.stripPrefix(threadId),
+            userId: actualUserId || this.stripPrefix(userId),
+        };
+    }
+
+    private mapMessage(item: Record<string, any>): SavedMessage {
+        const { actualUserId, botUsername, messageId, userId, ...rest } = item;
+
+        return {
+            ...(rest as Omit<SavedMessage, 'botUsername'>),
+            botUsername: this.botUsername,
+        };
     }
 
     /**
@@ -53,7 +89,7 @@ export class DynamoDBService implements DataService {
             const response = await this.client.send(
                 new QueryCommand({
                     ExpressionAttributeValues: {
-                        ':userId': userId,
+                        ':userId': this.withPrefix(userId),
                     },
                     KeyConditionExpression: 'userId = :userId',
                     ScanIndexForward: false, // Sort by most recent first
@@ -63,7 +99,7 @@ export class DynamoDBService implements DataService {
 
             logger.info(`getMessagesByUserId items.length=${response.Items?.length}`);
 
-            return (response.Items || []) as SavedMessage[];
+            return (response.Items || []).map((item) => this.mapMessage(item as Record<string, any>));
         } catch (error) {
             logger.error({ error, userId }, 'Error getting messages by user ID');
             throw error;
@@ -83,7 +119,7 @@ export class DynamoDBService implements DataService {
             const response = await this.client.send(
                 new GetCommand({
                     Key: {
-                        configId: 'main',
+                        configId: this.withPrefix('main'),
                     },
                     TableName: this.configTable,
                 }),
@@ -91,8 +127,11 @@ export class DynamoDBService implements DataService {
 
             if (response.Item) {
                 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                const { configId, ...settings } = response.Item;
-                return settings as BotSettings;
+                const { botUsername, configId, ...settings } = response.Item;
+                return {
+                    ...(settings as Omit<BotSettings, 'botUsername'>),
+                    botUsername: this.botUsername,
+                };
             }
 
             logger.info(`getSettings() result: ${Boolean(response.Item)}`);
@@ -118,7 +157,7 @@ export class DynamoDBService implements DataService {
             const response = await this.client.send(
                 new QueryCommand({
                     ExpressionAttributeValues: {
-                        ':threadId': threadId,
+                        ':threadId': this.withPrefix(threadId),
                     },
                     IndexName: 'ThreadIdIndex',
                     KeyConditionExpression: 'threadId = :threadId',
@@ -129,7 +168,7 @@ export class DynamoDBService implements DataService {
             logger.info(`getThreadById items.length=${response.Items?.length}`);
 
             if (response.Items && response.Items.length > 0) {
-                return response.Items[0] as ThreadData;
+                return this.mapThread(response.Items[0] as Record<string, any>);
             }
         } catch (error) {
             logger.error({ error, threadId }, `Error getting thread by thread ID`);
@@ -152,7 +191,7 @@ export class DynamoDBService implements DataService {
             const response = await this.client.send(
                 new QueryCommand({
                     ExpressionAttributeValues: {
-                        ':userId': userId,
+                        ':userId': this.withPrefix(userId),
                     },
                     IndexName: 'UserUpdatedIndex',
                     KeyConditionExpression: 'userId = :userId',
@@ -163,7 +202,7 @@ export class DynamoDBService implements DataService {
             );
 
             if (response.Items && response.Items.length > 0) {
-                return response.Items[0] as ThreadData;
+                return this.mapThread(response.Items[0] as Record<string, any>);
             }
 
             return undefined;
@@ -184,8 +223,10 @@ export class DynamoDBService implements DataService {
         try {
             const messageData = {
                 ...message,
+                botUsername: this.botUsername,
                 messageId: message.id,
-                userId: message.from.userId,
+                userId: this.withPrefix(message.from.userId),
+                actualUserId: message.from.userId,
             };
 
             logger.info(`saveMessage ${message.id}`);
@@ -197,7 +238,7 @@ export class DynamoDBService implements DataService {
                 }),
             );
 
-            return message;
+            return { ...message, botUsername: this.botUsername };
         } catch (error) {
             logger.error({ error, message }, 'Error saving message');
             throw error;
@@ -215,17 +256,20 @@ export class DynamoDBService implements DataService {
         try {
             logger.info(config, `saveSettings`);
 
+            const storedConfig = {
+                ...config,
+                botUsername: this.botUsername,
+                configId: this.withPrefix('main'),
+            };
+
             await this.client.send(
                 new PutCommand({
-                    Item: {
-                        configId: 'main',
-                        ...config,
-                    },
+                    Item: storedConfig,
                     TableName: this.configTable,
                 }),
             );
 
-            return config;
+            return { ...config, botUsername: this.botUsername };
         } catch (error) {
             logger.error({ config, error }, 'Error saving bot config');
             throw error;
@@ -242,14 +286,23 @@ export class DynamoDBService implements DataService {
     async saveThread(thread: ThreadData): Promise<ThreadData> {
         try {
             logger.info(`saveThread ${thread.threadId}`);
+            const storedThread = {
+                ...thread,
+                botUsername: this.botUsername,
+                threadId: this.withPrefix(thread.threadId),
+                userId: this.withPrefix(thread.userId),
+                actualThreadId: thread.threadId,
+                actualUserId: thread.userId,
+            };
+
             await this.client.send(
                 new PutCommand({
-                    Item: thread,
+                    Item: storedThread,
                     TableName: this.threadsTable,
                 }),
             );
 
-            return thread;
+            return { ...thread, botUsername: this.botUsername };
         } catch (error) {
             logger.error({ error, thread }, 'Error saving thread');
             throw error;

@@ -31,6 +31,7 @@ describe('setup', () => {
                 db: {
                     saveSettings: vi.fn(),
                 },
+                botUsername: 'testbot',
                 from: mockUser,
             } as unknown as ForwardContext;
 
@@ -38,7 +39,7 @@ describe('setup', () => {
 
             expect(ctx.db.saveSettings).toHaveBeenCalledExactlyOnceWith({
                 adminGroupId: '1',
-                configId: 'main',
+                botUsername: 'testbot',
                 setupAt: '2023-01-01T12:00:00.000Z',
                 setupBy: mockUser,
             });
@@ -53,6 +54,7 @@ describe('setup', () => {
                         leaveChat: vi.fn(),
                     },
                 },
+                botUsername: 'testbot',
                 chat: {
                     id: 2,
                 },
@@ -61,6 +63,7 @@ describe('setup', () => {
                 },
                 settings: {
                     adminGroupId: '1',
+                    botUsername: 'testbot',
                 },
             } as unknown as ForwardContext;
 
@@ -79,6 +82,7 @@ describe('setup', () => {
                         leaveChat: vi.fn().mockRejectedValue(new Error('Cannot leave')),
                     },
                 },
+                botUsername: 'testbot',
                 chat: {
                     id: 2,
                 },
@@ -87,6 +91,7 @@ describe('setup', () => {
                 },
                 settings: {
                     adminGroupId: '1',
+                    botUsername: 'testbot',
                 },
             } as unknown as ForwardContext;
 
@@ -105,6 +110,7 @@ describe('setup', () => {
                         leaveChat: vi.fn().mockRejectedValue(new Error('Cannot leave')),
                     },
                 },
+                botUsername: 'testbot',
                 chat: {
                     id: 2,
                 },
@@ -113,6 +119,7 @@ describe('setup', () => {
                 },
                 settings: {
                     adminGroupId: '1',
+                    botUsername: 'testbot',
                 },
             } as unknown as ForwardContext;
 
@@ -134,6 +141,7 @@ describe('setup', () => {
                 db: {
                     saveSettings: vi.fn().mockRejectedValue(new Error()),
                 },
+                botUsername: 'testbot',
             } as unknown as ForwardContext;
 
             (replyWithWarning as Mock).mockRejectedValue(new Error('Cannot reply'));

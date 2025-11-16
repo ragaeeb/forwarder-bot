@@ -14,6 +14,7 @@ import logger from '@/utils/logger.js';
 export const injectDependencies = (db: DataService) => {
     return async (ctx: ForwardContext, next: NextFunction) => {
         ctx.db = db;
+        ctx.botUsername = db.botUsername;
 
         try {
             ctx.settings = (await db.getSettings())!;

@@ -18,6 +18,7 @@ describe('requireGroupAdmin', () => {
 
     it('should reject in non-supergroup chats', async () => {
         const ctx = {
+            botUsername: 'testbot',
             chat: {
                 id: 1,
                 type: 'group',
@@ -37,6 +38,7 @@ describe('requireGroupAdmin', () => {
                     getChatMember: vi.fn().mockResolvedValue({ status: 'member' }),
                 },
             },
+            botUsername: 'testbot',
             chat: {
                 id: 1,
                 type: 'supergroup',
@@ -58,6 +60,7 @@ describe('requireGroupAdmin', () => {
                     getChatMember: vi.fn().mockResolvedValue({ status }),
                 },
             },
+            botUsername: 'testbot',
             chat: {
                 id: 1,
                 type: 'supergroup',

@@ -8,6 +8,7 @@ import type { TelegramMessageOrigin, TelegramUser } from './telegram.js';
 export interface BotSettings {
     ack?: string;
     adminGroupId: string;
+    botUsername: string;
     failure?: string;
     greeting?: string;
     setupAt: string;
@@ -19,6 +20,7 @@ export interface BotSettings {
  */
 export type ForwardContext = Context & {
     db: DataService;
+    botUsername: string;
     settings?: BotSettings;
     thread?: ThreadData;
 };
@@ -27,6 +29,7 @@ export type ForwardContext = Context & {
  * Information about a saved message
  */
 export interface SavedMessage {
+    botUsername: string;
     caption?: string;
     chatId: string;
     forwardOrigin?: TelegramMessageOrigin;
@@ -51,6 +54,7 @@ export interface SavedMessage {
  * Information about a thread
  */
 export interface ThreadData {
+    botUsername: string;
     createdAt: string;
     lastMessageId: string;
     name: string;

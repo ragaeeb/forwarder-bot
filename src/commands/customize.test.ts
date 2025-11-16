@@ -14,7 +14,7 @@ describe('customize', () => {
 
     describe('onCustomize', () => {
         it('should reject the invalid command', async () => {
-            const ctx = { args: 'Test', text: '/abcd Test' };
+            const ctx = { args: 'Test', botUsername: 'testbot', text: '/abcd Test' };
 
             await onCustomize(ctx as unknown as ForwardContext);
 
@@ -22,7 +22,7 @@ describe('customize', () => {
         });
 
         it('should reject missing text', async () => {
-            const ctx = {};
+            const ctx = { botUsername: 'testbot' };
             await onCustomize(ctx as unknown as ForwardContext);
 
             expect(replyWithError).toHaveBeenCalledExactlyOnceWith(ctx, 'Command undefined not found.');
@@ -31,6 +31,7 @@ describe('customize', () => {
         it('should handle errors', async () => {
             const ctx = {
                 args: 'Test',
+                botUsername: 'testbot',
                 db: { saveSettings: vi.fn().mockRejectedValueOnce(new Error('Error saving')) },
                 text: '/ack Test',
             };
@@ -46,6 +47,7 @@ describe('customize', () => {
             async (command) => {
                 const ctx = {
                     args: 'Acknowledged it!',
+                    botUsername: 'testbot',
                     db: { saveSettings: vi.fn().mockResolvedValue({ ack: 'Acknowledged it!' }) },
                     settings: {},
                     text: `/${command} Acknowledged it!`,

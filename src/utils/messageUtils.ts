@@ -41,13 +41,19 @@ const getMediaId = (message: TelegramMessage) => {
  *
  * @param {TelegramMessage} message - The Telegram message to convert
  * @param {'admin'|'user'} type - Whether the message is from an admin or user
+ * @param {string} botUsername - Username of the bot handling the message
  * @returns {SavedMessage} Standardized message object for storage
  */
-export const mapTelegramMessageToSavedMessage = (message: TelegramMessage, type: 'admin' | 'user'): SavedMessage => {
+export const mapTelegramMessageToSavedMessage = (
+    message: TelegramMessage,
+    type: 'admin' | 'user',
+    botUsername: string,
+): SavedMessage => {
     const mediaType = getMediaType(message);
     const mediaId = getMediaId(message);
 
     return {
+        botUsername,
         chatId: message.chat.id.toString(),
         from: {
             ...(message.from?.first_name && { firstName: message.from?.first_name }),

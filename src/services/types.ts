@@ -6,6 +6,7 @@ import type { BotSettings, SavedMessage, ThreadData } from '@/types/app.js';
  * Implementations can use different storage backends (e.g., DynamoDB, in-memory).
  */
 export interface DataService {
+    readonly botUsername: string;
     /**
      * Retrieves messages for a specific user
      *
