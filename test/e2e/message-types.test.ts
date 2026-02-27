@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
 
 import { Bot } from '../../src/bot';
 import { config } from '../../src/config';
@@ -17,8 +17,7 @@ describe('Message Types E2E Tests', () => {
         telegramServer = new TelegramTestServer({
             first_name: 'Test Bot',
             id: 12345,
-            username: 'test_bot',
-        });
+            username: 'test_bot'});
 
         uninstall = telegramServer.install();
 
@@ -36,9 +35,7 @@ describe('Message Types E2E Tests', () => {
             setupBy: {
                 first_name: 'Admin',
                 id: 654321,
-                is_bot: false,
-            },
-        });
+                is_bot: false}});
 
         // Setup thread for test user
         await db.saveThread({
@@ -48,13 +45,12 @@ describe('Message Types E2E Tests', () => {
             name: 'Test User',
             threadId: '789',
             updatedAt: new Date().toISOString(),
-            userId: '123456',
-        });
+            userId: '123456'});
     });
 
     afterEach(() => {
         uninstall();
-        vi.clearAllTimers();
+        
     });
 
     it('should handle voice messages from user to admin', async () => {
@@ -62,31 +58,26 @@ describe('Message Types E2E Tests', () => {
         const voiceMessage = telegramServer.createUserMessage({
             firstName: 'Test',
             userId: 123456,
-            username: 'testuser',
-        });
+            username: 'testuser'});
 
         // Add voice to the message
         voiceMessage.message!.voice = {
             duration: 10,
             file_id: 'voice_file_id',
-            file_unique_id: 'unique_voice_id',
-        };
+            file_unique_id: 'unique_voice_id'};
 
         // Setup response for forwardMessage
         telegramServer.setResponse('forwardMessage', (params) => ({
             chat: {
                 id: params.chat_id,
-                type: params.chat_id < 0 ? 'supergroup' : 'private',
-            },
+                type: params.chat_id < 0 ? 'supergroup' : 'private'},
             date: Math.floor(Date.now() / 1000),
             from: telegramServer['botInfo'],
             message_id: Math.floor(Math.random() * 10000),
             voice: {
                 duration: 10,
                 file_id: 'voice_file_id',
-                file_unique_id: 'unique_voice_id',
-            },
-        }));
+                file_unique_id: 'unique_voice_id'}}));
 
         telegramServer.clearRequests();
 
@@ -111,15 +102,13 @@ describe('Message Types E2E Tests', () => {
             chatId: Number(adminGroupId),
             firstName: 'Admin',
             isGroupChat: true,
-            userId: 654321,
-        });
+            userId: 654321});
 
         // Add voice to the message
         adminReply.message!.voice = {
             duration: 15,
             file_id: 'admin_voice_id',
-            file_unique_id: 'unique_admin_voice_id',
-        };
+            file_unique_id: 'unique_admin_voice_id'};
         adminReply.message!.text = undefined;
 
         // Setup as a reply in thread
@@ -129,24 +118,20 @@ describe('Message Types E2E Tests', () => {
             date: Math.floor(Date.now() / 1000),
             from: { first_name: 'User', id: 123456, is_bot: false },
             message_id: 456,
-            text: 'Original message',
-        };
+            text: 'Original message'};
 
         // Setup response for sendVoice
         telegramServer.setResponse('sendVoice', (params) => ({
             chat: {
                 id: params.chat_id,
-                type: params.chat_id < 0 ? 'supergroup' : 'private',
-            },
+                type: params.chat_id < 0 ? 'supergroup' : 'private'},
             date: Math.floor(Date.now() / 1000),
             from: telegramServer['botInfo'],
             message_id: Math.floor(Math.random() * 10000),
             voice: {
                 duration: 15,
                 file_id: params.voice,
-                file_unique_id: 'unique_admin_voice_id',
-            },
-        }));
+                file_unique_id: 'unique_admin_voice_id'}}));
 
         telegramServer.clearRequests();
 
@@ -174,8 +159,7 @@ describe('Message Types E2E Tests', () => {
         const videoMessage = telegramServer.createUserMessage({
             firstName: 'Test',
             userId: 123456,
-            username: 'testuser',
-        });
+            username: 'testuser'});
 
         // Add video to the message
         videoMessage.message!.video = {
@@ -183,8 +167,7 @@ describe('Message Types E2E Tests', () => {
             file_id: 'video_file_id',
             file_unique_id: 'unique_video_id',
             height: 720,
-            width: 1280,
-        };
+            width: 1280};
         videoMessage.message!.caption = 'Check out this video';
 
         telegramServer.clearRequests();
@@ -206,8 +189,7 @@ describe('Message Types E2E Tests', () => {
             chatId: Number(adminGroupId),
             firstName: 'Admin',
             isGroupChat: true,
-            userId: 654321,
-        });
+            userId: 654321});
 
         // Add video to the message
         adminReply.message!.video = {
@@ -215,8 +197,7 @@ describe('Message Types E2E Tests', () => {
             file_id: 'admin_video_id',
             file_unique_id: 'unique_admin_video_id',
             height: 720,
-            width: 1280,
-        };
+            width: 1280};
         adminReply.message!.caption = 'Video response';
         adminReply.message!.text = undefined;
 
@@ -227,16 +208,14 @@ describe('Message Types E2E Tests', () => {
             date: Math.floor(Date.now() / 1000),
             from: { first_name: 'User', id: 123456, is_bot: false },
             message_id: 456,
-            text: 'Original message',
-        };
+            text: 'Original message'};
 
         // Setup response for sendVideo
         telegramServer.setResponse('sendVideo', (params) => ({
             caption: params.caption,
             chat: {
                 id: params.chat_id,
-                type: params.chat_id < 0 ? 'supergroup' : 'private',
-            },
+                type: params.chat_id < 0 ? 'supergroup' : 'private'},
             date: Math.floor(Date.now() / 1000),
             from: telegramServer['botInfo'],
             message_id: Math.floor(Math.random() * 10000),
@@ -245,9 +224,7 @@ describe('Message Types E2E Tests', () => {
                 file_id: params.video,
                 file_unique_id: 'unique_admin_video_id',
                 height: 720,
-                width: 1280,
-            },
-        }));
+                width: 1280}}));
 
         telegramServer.clearRequests();
 
@@ -268,8 +245,7 @@ describe('Message Types E2E Tests', () => {
             firstName: 'Test',
             text: 'Forwarded content',
             userId: 123456,
-            username: 'testuser',
-        });
+            username: 'testuser'});
 
         // Add forward information
         forwardedMessage.message!.forward_origin = {
@@ -277,10 +253,8 @@ describe('Message Types E2E Tests', () => {
             sender_user: {
                 first_name: 'Original',
                 id: 789012,
-                is_bot: false,
-            },
-            type: 'user',
-        };
+                is_bot: false},
+            type: 'user'};
 
         telegramServer.clearRequests();
 
@@ -306,8 +280,7 @@ describe('Message Types E2E Tests', () => {
         const stickerMessage = telegramServer.createUserMessage({
             firstName: 'Test',
             userId: 123456,
-            username: 'testuser',
-        });
+            username: 'testuser'});
 
         // Add sticker to the message
         stickerMessage.message!.sticker = {
@@ -318,8 +291,7 @@ describe('Message Types E2E Tests', () => {
             is_animated: false,
             is_video: false,
             type: 'regular',
-            width: 512,
-        };
+            width: 512};
 
         telegramServer.clearRequests();
 
@@ -346,15 +318,13 @@ describe('Message Types E2E Tests', () => {
             firstName: 'Test',
             text: 'This is my reply to what you said',
             userId: 123456,
-            username: 'testuser',
-        });
+            username: 'testuser'});
 
         // Add quote to the message
         quotedMessage.message!.quote = {
             entities: [],
             position: 0,
-            text: 'This is the quoted text',
-        };
+            text: 'This is the quoted text'};
 
         telegramServer.clearRequests();
 
@@ -380,8 +350,7 @@ describe('Message Types E2E Tests', () => {
             firstName: 'Test',
             text: 'This is my reply to your previous message',
             userId: 123456,
-            username: 'testuser',
-        });
+            username: 'testuser'});
 
         // Add reply_to_message
         replyMessage.message!.reply_to_message = {
@@ -389,8 +358,7 @@ describe('Message Types E2E Tests', () => {
             date: Math.floor(Date.now() / 1000) - 60,
             from: telegramServer['botInfo'],
             message_id: 112233,
-            text: 'Previous message from bot',
-        };
+            text: 'Previous message from bot'};
 
         telegramServer.clearRequests();
 

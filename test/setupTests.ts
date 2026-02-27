@@ -1,15 +1,15 @@
-import { vi } from 'vitest';
+import { mock } from 'bun:test';
 
-vi.mock('@/utils/logger', () => ({
+mock.module('@/utils/logger', () => ({
     default: {
-        debug: vi.fn(),
-        error: vi.fn(),
-        info: vi.fn(),
-        warn: vi.fn(),
+        debug: mock(() => {}),
+        error: mock(() => {}),
+        info: mock(() => {}),
+        warn: mock(() => {}),
     },
 }));
 
-vi.mock('@/config.js', () => ({
+mock.module('@/config.js', () => ({
     config: {
         BOT_TOKEN: 'BT',
         SECRET_TOKEN: 'test-secret-token',

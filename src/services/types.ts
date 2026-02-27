@@ -60,4 +60,26 @@ export interface DataService {
      * @returns {Promise<ThreadData>} The saved thread data
      */
     saveThread(thread: ThreadData): Promise<ThreadData>;
+
+    // --- new methods for web UI ---
+
+    /**
+     * Retrieves all threads with optional pagination
+     */
+    getAllThreads(options?: { limit?: number; offset?: number }): Promise<ThreadData[]>;
+
+    /**
+     * Returns the total number of threads
+     */
+    getThreadCount(): Promise<number>;
+
+    /**
+     * Returns the unread message count for a specific user thread
+     */
+    getUnreadCount(userId: string): Promise<number>;
+
+    /**
+     * Marks all messages in a thread as read
+     */
+    markThreadRead(userId: string): Promise<void>;
 }

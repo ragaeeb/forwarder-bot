@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, mock } from 'bun:test';
 
 import { TelegramAPI } from './telegramAPI.js';
 
@@ -9,11 +9,10 @@ describe('telegramAPI', () => {
     beforeEach(() => {
         api = new TelegramAPI('test-token');
 
-        fetchMock = vi.fn().mockImplementation(async () => {
+        fetchMock = mock(() => {}).mockImplementation(async () => {
             return {
                 json: async () => ({ ok: true, result: { mock: 'data' } }),
-                ok: true,
-            };
+                ok: true};
         });
 
         global.fetch = fetchMock;
@@ -28,18 +27,15 @@ describe('telegramAPI', () => {
 
         expect(fetchMock).toHaveBeenCalledWith('https://api.telegram.org/bottest-token/getMe', {
             headers: {
-                'Content-Type': 'application/json',
-            },
-            method: 'POST',
-        });
+                'Content-Type': 'application/json'},
+            method: 'POST'});
     });
 
     it('should handle unsuccessful responses', async () => {
         fetchMock.mockImplementationOnce(async () => ({
             ok: false,
             status: 404,
-            text: async () => 'Error message',
-        }));
+            text: async () => 'Error message'}));
 
         await expect(api.getMe()).rejects.toThrow('Telegram API error (404): Error message');
     });
@@ -49,10 +45,8 @@ describe('telegramAPI', () => {
             json: async () => ({
                 description: 'API error',
                 error_code: 400,
-                ok: false,
-            }),
-            ok: true,
-        }));
+                ok: false}),
+            ok: true}));
 
         await expect(api.getMe()).rejects.toThrow('Telegram API error: API error (400)');
     });
@@ -60,10 +54,8 @@ describe('telegramAPI', () => {
     it('should handle errors with incomplete error data', async () => {
         fetchMock.mockImplementationOnce(async () => ({
             json: async () => ({
-                ok: false,
-            }),
-            ok: true,
-        }));
+                ok: false}),
+            ok: true}));
 
         await expect(api.getMe()).rejects.toThrow('Telegram API error: Unknown error (No code)');
     });
@@ -72,8 +64,7 @@ describe('telegramAPI', () => {
         const result = { first_name: 'TestBot', id: 123, is_bot: true };
         fetchMock.mockImplementationOnce(async () => ({
             json: async () => ({ ok: true, result }),
-            ok: true,
-        }));
+            ok: true}));
 
         const meFirst = await api.getMe();
         expect(meFirst).toEqual(result);
@@ -89,51 +80,42 @@ describe('telegramAPI', () => {
             chat_id: 123,
             icon_color: 9367192,
             icon_custom_emoji_id: '12345',
-            name: 'Test Topic',
-        };
+            name: 'Test Topic'};
 
         await api.createForumTopic(params);
 
         expect(fetchMock).toHaveBeenCalledWith('https://api.telegram.org/bottest-token/createForumTopic', {
             body: JSON.stringify(params),
             headers: {
-                'Content-Type': 'application/json',
-            },
-            method: 'POST',
-        });
+                'Content-Type': 'application/json'},
+            method: 'POST'});
     });
 
     it('should delete forum topic', async () => {
         const params = {
             chat_id: 123,
-            message_thread_id: 456,
-        };
+            message_thread_id: 456};
 
         await api.deleteForumTopic(params);
 
         expect(fetchMock).toHaveBeenCalledWith('https://api.telegram.org/bottest-token/deleteForumTopic', {
             body: JSON.stringify(params),
             headers: {
-                'Content-Type': 'application/json',
-            },
-            method: 'POST',
-        });
+                'Content-Type': 'application/json'},
+            method: 'POST'});
     });
 
     it('should delete webhook with params', async () => {
         const params = {
-            drop_pending_updates: true,
-        };
+            drop_pending_updates: true};
 
         await api.deleteWebhook(params);
 
         expect(fetchMock).toHaveBeenCalledWith('https://api.telegram.org/bottest-token/deleteWebhook', {
             body: JSON.stringify(params),
             headers: {
-                'Content-Type': 'application/json',
-            },
-            method: 'POST',
-        });
+                'Content-Type': 'application/json'},
+            method: 'POST'});
     });
 
     it('should delete webhook without params', async () => {
@@ -141,10 +123,8 @@ describe('telegramAPI', () => {
 
         expect(fetchMock).toHaveBeenCalledWith('https://api.telegram.org/bottest-token/deleteWebhook', {
             headers: {
-                'Content-Type': 'application/json',
-            },
-            method: 'POST',
-        });
+                'Content-Type': 'application/json'},
+            method: 'POST'});
     });
 
     it('should forward message', async () => {
@@ -152,35 +132,29 @@ describe('telegramAPI', () => {
             chat_id: 123,
             from_chat_id: 456,
             message_id: 789,
-            message_thread_id: 101112,
-        };
+            message_thread_id: 101112};
 
         await api.forwardMessage(params);
 
         expect(fetchMock).toHaveBeenCalledWith('https://api.telegram.org/bottest-token/forwardMessage', {
             body: JSON.stringify(params),
             headers: {
-                'Content-Type': 'application/json',
-            },
-            method: 'POST',
-        });
+                'Content-Type': 'application/json'},
+            method: 'POST'});
     });
 
     it('should get chat member', async () => {
         const params = {
             chat_id: 123,
-            user_id: 456,
-        };
+            user_id: 456};
 
         await api.getChatMember(params);
 
         expect(fetchMock).toHaveBeenCalledWith('https://api.telegram.org/bottest-token/getChatMember', {
             body: JSON.stringify(params),
             headers: {
-                'Content-Type': 'application/json',
-            },
-            method: 'POST',
-        });
+                'Content-Type': 'application/json'},
+            method: 'POST'});
     });
 
     it('should get updates with params', async () => {
@@ -188,18 +162,15 @@ describe('telegramAPI', () => {
             allowed_updates: ['message', 'callback_query'],
             limit: 10,
             offset: 100,
-            timeout: 30,
-        };
+            timeout: 30};
 
         await api.getUpdates(params);
 
         expect(fetchMock).toHaveBeenCalledWith('https://api.telegram.org/bottest-token/getUpdates', {
             body: JSON.stringify(params),
             headers: {
-                'Content-Type': 'application/json',
-            },
-            method: 'POST',
-        });
+                'Content-Type': 'application/json'},
+            method: 'POST'});
     });
 
     it('should get updates without params', async () => {
@@ -208,26 +179,21 @@ describe('telegramAPI', () => {
         expect(fetchMock).toHaveBeenCalledWith('https://api.telegram.org/bottest-token/getUpdates', {
             body: JSON.stringify({}),
             headers: {
-                'Content-Type': 'application/json',
-            },
-            method: 'POST',
-        });
+                'Content-Type': 'application/json'},
+            method: 'POST'});
     });
 
     it('should leave chat', async () => {
         const params = {
-            chat_id: 123,
-        };
+            chat_id: 123};
 
         await api.leaveChat(params);
 
         expect(fetchMock).toHaveBeenCalledWith('https://api.telegram.org/bottest-token/leaveChat', {
             body: JSON.stringify(params),
             headers: {
-                'Content-Type': 'application/json',
-            },
-            method: 'POST',
-        });
+                'Content-Type': 'application/json'},
+            method: 'POST'});
     });
 
     it('should send document', async () => {
@@ -235,18 +201,15 @@ describe('telegramAPI', () => {
             caption: 'Test document',
             chat_id: 123,
             document: 'file_id',
-            protect_content: true,
-        };
+            protect_content: true};
 
         await api.sendDocument(params);
 
         expect(fetchMock).toHaveBeenCalledWith('https://api.telegram.org/bottest-token/sendDocument', {
             body: JSON.stringify(params),
             headers: {
-                'Content-Type': 'application/json',
-            },
-            method: 'POST',
-        });
+                'Content-Type': 'application/json'},
+            method: 'POST'});
     });
 
     it('should send message', async () => {
@@ -255,18 +218,15 @@ describe('telegramAPI', () => {
             message_thread_id: 456,
             parse_mode: 'HTML' as const,
             protect_content: true,
-            text: 'Test message',
-        };
+            text: 'Test message'};
 
         await api.sendMessage(params);
 
         expect(fetchMock).toHaveBeenCalledWith('https://api.telegram.org/bottest-token/sendMessage', {
             body: JSON.stringify(params),
             headers: {
-                'Content-Type': 'application/json',
-            },
-            method: 'POST',
-        });
+                'Content-Type': 'application/json'},
+            method: 'POST'});
     });
 
     it('should send photo', async () => {
@@ -274,18 +234,15 @@ describe('telegramAPI', () => {
             caption: 'Test photo',
             chat_id: 123,
             photo: 'file_id',
-            protect_content: true,
-        };
+            protect_content: true};
 
         await api.sendPhoto(params);
 
         expect(fetchMock).toHaveBeenCalledWith('https://api.telegram.org/bottest-token/sendPhoto', {
             body: JSON.stringify(params),
             headers: {
-                'Content-Type': 'application/json',
-            },
-            method: 'POST',
-        });
+                'Content-Type': 'application/json'},
+            method: 'POST'});
     });
 
     it('should send video', async () => {
@@ -293,18 +250,15 @@ describe('telegramAPI', () => {
             caption: 'Test video',
             chat_id: 123,
             protect_content: true,
-            video: 'file_id',
-        };
+            video: 'file_id'};
 
         await api.sendVideo(params);
 
         expect(fetchMock).toHaveBeenCalledWith('https://api.telegram.org/bottest-token/sendVideo', {
             body: JSON.stringify(params),
             headers: {
-                'Content-Type': 'application/json',
-            },
-            method: 'POST',
-        });
+                'Content-Type': 'application/json'},
+            method: 'POST'});
     });
 
     it('should send voice', async () => {
@@ -312,35 +266,29 @@ describe('telegramAPI', () => {
             caption: 'Test voice',
             chat_id: 123,
             protect_content: true,
-            voice: 'file_id',
-        };
+            voice: 'file_id'};
 
         await api.sendVoice(params);
 
         expect(fetchMock).toHaveBeenCalledWith('https://api.telegram.org/bottest-token/sendVoice', {
             body: JSON.stringify(params),
             headers: {
-                'Content-Type': 'application/json',
-            },
-            method: 'POST',
-        });
+                'Content-Type': 'application/json'},
+            method: 'POST'});
     });
 
     it('should set webhook', async () => {
         const params = {
             drop_pending_updates: true,
             secret_token: 'secret123',
-            url: 'https://example.com/webhook',
-        };
+            url: 'https://example.com/webhook'};
 
         await api.setWebhook(params);
 
         expect(fetchMock).toHaveBeenCalledWith('https://api.telegram.org/bottest-token/setWebhook', {
             body: JSON.stringify(params),
             headers: {
-                'Content-Type': 'application/json',
-            },
-            method: 'POST',
-        });
+                'Content-Type': 'application/json'},
+            method: 'POST'});
     });
 });

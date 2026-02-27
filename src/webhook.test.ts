@@ -1,34 +1,27 @@
 import { APIGatewayProxyEvent } from 'aws-lambda';
-import { afterEach, beforeEach, describe, expect, it, Mock, vi } from 'vitest';
+import { Mock, afterEach, beforeEach, describe, expect, it, mock } from 'bun:test';
 
 import { Bot } from './bot.js';
 import { registerHandlers } from './handlers/index.js';
 import { DynamoDBService } from './services/dynamodb.js';
 import { TelegramAPI } from './services/telegramAPI.js';
 
-vi.mock('./bot.js', () => ({
-    Bot: vi.fn().mockImplementation(() => ({
-        handleUpdate: vi.fn().mockResolvedValue(undefined),
-        init: vi.fn().mockResolvedValue({ username: 'test_bot' }),
-    })),
-}));
+mock.module('./bot.js', () => ({
+    Bot: mock(() => {}).mockImplementation(() => ({
+        handleUpdate: mock(() => {}).mockResolvedValue(undefined),
+        init: mock(() => {}).mockResolvedValue({ username: 'test_bot' })}))}));
 
-vi.mock('./handlers/index.js', () => ({
-    registerHandlers: vi.fn(),
-}));
+mock.module('./handlers/index.js', () => ({
+    registerHandlers: mock(() => {})}));
 
-vi.mock('./services/dynamodb.js', () => ({
-    DynamoDBService: vi.fn().mockImplementation(() => ({
-        getSettings: vi.fn().mockResolvedValue(null),
-    })),
-}));
+mock.module('./services/dynamodb.js', () => ({
+    DynamoDBService: mock(() => {}).mockImplementation(() => ({
+        getSettings: mock(() => {}).mockResolvedValue(null)}))}));
 
-vi.mock('./services/telegramAPI.js', () => ({
-    TelegramAPI: vi.fn().mockImplementation(() => ({
-        deleteWebhook: vi.fn().mockResolvedValue(true),
-        setWebhook: vi.fn().mockResolvedValue(true),
-    })),
-}));
+mock.module('./services/telegramAPI.js', () => ({
+    TelegramAPI: mock(() => {}).mockImplementation(() => ({
+        deleteWebhook: mock(() => {}).mockResolvedValue(true),
+        setWebhook: mock(() => {}).mockResolvedValue(true)}))}));
 
 describe('webhook', () => {
     let mockEvent: APIGatewayProxyEvent;
@@ -37,8 +30,8 @@ describe('webhook', () => {
     const originalProcessOn = process.on;
 
     beforeEach(() => {
-        vi.clearAllMocks();
-        vi.resetModules();
+        mock.restore();
+        
 
         mockEvent = {
             body: JSON.stringify({
@@ -46,13 +39,10 @@ describe('webhook', () => {
                     chat: { id: 12345, type: 'private' },
                     date: 1645564800,
                     message_id: 123,
-                    text: 'Hello, bot!',
-                },
-                update_id: 123456789,
-            }),
+                    text: 'Hello, bot!'},
+                update_id: 123456789}),
             headers: {
-                'x-telegram-bot-api-secret-token': 'test-secret-token',
-            },
+                'x-telegram-bot-api-secret-token': 'test-secret-token'},
             httpMethod: 'POST',
             isBase64Encoded: false,
             multiValueHeaders: {},
@@ -62,10 +52,9 @@ describe('webhook', () => {
             queryStringParameters: null,
             requestContext: {} as any,
             resource: '',
-            stageVariables: null,
-        };
+            stageVariables: null};
 
-        processOnSpy = vi.fn();
+        processOnSpy = mock(() => {});
         process.on = processOnSpy;
     });
 
@@ -88,8 +77,7 @@ describe('webhook', () => {
 
             expect(result).toEqual({
                 body: JSON.stringify({ ok: true }),
-                statusCode: 200,
-            });
+                statusCode: 200});
         });
 
         it('should use existing bot instance on subsequent calls', async () => {
@@ -143,8 +131,7 @@ describe('webhook', () => {
 
             expect(result).toEqual({
                 body: JSON.stringify({ error: 'Unauthorized', ok: false }),
-                statusCode: 403,
-            });
+                statusCode: 403});
         });
 
         it('should handle missing body properly', async () => {
@@ -155,8 +142,7 @@ describe('webhook', () => {
 
             expect(result).toEqual({
                 body: JSON.stringify({ ok: true }),
-                statusCode: 200,
-            });
+                statusCode: 200});
         });
 
         it('should handle errors', async () => {
@@ -169,8 +155,7 @@ describe('webhook', () => {
 
             expect(result).toEqual({
                 body: JSON.stringify({ error: 'Test error', ok: false }),
-                statusCode: 200,
-            });
+                statusCode: 200});
         });
     });
 
@@ -185,8 +170,7 @@ describe('webhook', () => {
             expect(telegramApiInstance.setWebhook).toHaveBeenCalledWith({
                 drop_pending_updates: true,
                 secret_token: 'test-secret-token',
-                url: 'https://example.com/api/BT',
-            });
+                url: 'https://example.com/api/BT'});
         });
     });
 
@@ -199,8 +183,7 @@ describe('webhook', () => {
 
             const telegramApiInstance = (TelegramAPI as any).mock.results[0].value;
             expect(telegramApiInstance.deleteWebhook).toHaveBeenCalledWith({
-                drop_pending_updates: true,
-            });
+                drop_pending_updates: true});
         });
     });
 });

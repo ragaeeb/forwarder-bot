@@ -1,21 +1,19 @@
 import type { ForwardContext } from '@/types/app.js';
 
 import { replyWithError, replyWithSuccess, replyWithWarning } from '@/utils/replyUtils.js';
-import { afterEach, beforeEach, describe, expect, it, type Mock, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, mock, type Mock, setSystemTime } from 'bun:test';
 
 import { onSetup } from './setup.js';
 
-vi.mock('@/utils/replyUtils.js');
+mock.module('@/utils/replyUtils.js');
 
 describe('setup', () => {
     beforeEach(() => {
-        vi.clearAllMocks();
-        vi.setSystemTime(new Date('2023-01-01T12:00:00Z'));
+        mock.restore();
+        setSystemTime(new Date('2023-01-01T12:00:00Z'));
     });
 
-    afterEach(() => {
-        vi.useRealTimers();
-    });
+    afterEach(() => {});
 
     describe('onSetup', () => {
         it('should save the group id and send success message', async () => {
@@ -29,7 +27,7 @@ describe('setup', () => {
                     id: 1,
                 },
                 db: {
-                    saveSettings: vi.fn(),
+                    saveSettings: mock(() => {}),
                 },
                 from: mockUser,
             } as unknown as ForwardContext;
@@ -50,14 +48,14 @@ describe('setup', () => {
             const ctx = {
                 bot: {
                     api: {
-                        leaveChat: vi.fn(),
+                        leaveChat: mock(() => {}),
                     },
                 },
                 chat: {
                     id: 2,
                 },
                 db: {
-                    saveSettings: vi.fn(),
+                    saveSettings: mock(() => {}),
                 },
                 settings: {
                     adminGroupId: '1',
@@ -76,14 +74,14 @@ describe('setup', () => {
             const ctx = {
                 bot: {
                     api: {
-                        leaveChat: vi.fn().mockRejectedValue(new Error('Cannot leave')),
+                        leaveChat: mock(() => {}).mockRejectedValue(new Error('Cannot leave')),
                     },
                 },
                 chat: {
                     id: 2,
                 },
                 db: {
-                    saveSettings: vi.fn(),
+                    saveSettings: mock(() => {}),
                 },
                 settings: {
                     adminGroupId: '1',
@@ -102,14 +100,14 @@ describe('setup', () => {
             const ctx = {
                 bot: {
                     api: {
-                        leaveChat: vi.fn().mockRejectedValue(new Error('Cannot leave')),
+                        leaveChat: mock(() => {}).mockRejectedValue(new Error('Cannot leave')),
                     },
                 },
                 chat: {
                     id: 2,
                 },
                 db: {
-                    saveSettings: vi.fn(),
+                    saveSettings: mock(() => {}),
                 },
                 settings: {
                     adminGroupId: '1',
@@ -132,7 +130,7 @@ describe('setup', () => {
                     id: 2,
                 },
                 db: {
-                    saveSettings: vi.fn().mockRejectedValue(new Error()),
+                    saveSettings: mock(() => {}).mockRejectedValue(new Error()),
                 },
             } as unknown as ForwardContext;
 

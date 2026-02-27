@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, mock } from 'bun:test';
 
 import { Bot } from '../../src/bot';
 import { config } from '../../src/config';
@@ -8,9 +8,8 @@ import { hashToken } from '../../src/utils/security';
 import { TelegramTestServer } from './telegramServer';
 
 describe('Bot Setup E2E Tests', () => {
-    vi.mock('../../src/utils/security', () => ({
-        hashToken: vi.fn().mockReturnValue('hashed_test_token'),
-    }));
+    mock.module('../../src/utils/security', () => ({
+        hashToken: mock(() => {}).mockReturnValue('hashed_test_token')}));
 
     let telegramServer: TelegramTestServer;
     let uninstall: () => void;
@@ -21,8 +20,7 @@ describe('Bot Setup E2E Tests', () => {
         telegramServer = new TelegramTestServer({
             first_name: 'Test Bot',
             id: 12345,
-            username: 'test_bot',
-        });
+            username: 'test_bot'});
 
         uninstall = telegramServer.install();
 
@@ -34,22 +32,20 @@ describe('Bot Setup E2E Tests', () => {
 
     afterEach(() => {
         uninstall();
-        vi.clearAllTimers();
+        
     });
 
     it('should handle /setup command with valid token and permissions', async () => {
         telegramServer.setResponse('getChatMember', () => ({
             status: 'administrator',
-            user: { first_name: 'Admin', id: 654321, is_bot: false },
-        }));
+            user: { first_name: 'Admin', id: 654321, is_bot: false }}));
 
         const setupCommand = telegramServer.createUserMessage({
             chatId: -987654321,
             firstName: 'Admin',
             isGroupChat: true,
             text: `/setup ${hashToken(config.BOT_TOKEN)}`,
-            userId: 654321,
-        });
+            userId: 654321});
 
         telegramServer.clearRequests();
 
@@ -74,16 +70,14 @@ describe('Bot Setup E2E Tests', () => {
     it('should reject /setup command from non-admin user', async () => {
         telegramServer.setResponse('getChatMember', () => ({
             status: 'member',
-            user: { first_name: 'NonAdmin', id: 654321, is_bot: false },
-        }));
+            user: { first_name: 'NonAdmin', id: 654321, is_bot: false }}));
 
         const setupCommand = telegramServer.createUserMessage({
             chatId: -987654321,
             firstName: 'NonAdmin',
             isGroupChat: true,
             text: `/setup ${hashToken(config.BOT_TOKEN)}`,
-            userId: 654321,
-        });
+            userId: 654321});
 
         telegramServer.clearRequests();
 
@@ -109,8 +103,7 @@ describe('Bot Setup E2E Tests', () => {
             firstName: 'Admin',
             isGroupChat: true,
             text: `/setup invalid_token`,
-            userId: 654321,
-        });
+            userId: 654321});
 
         telegramServer.clearRequests();
 
@@ -132,22 +125,18 @@ describe('Bot Setup E2E Tests', () => {
             setupBy: {
                 first_name: 'Admin',
                 id: 654321,
-                is_bot: false,
-            },
-        });
+                is_bot: false}});
 
         telegramServer.setResponse('getChatMember', () => ({
             status: 'administrator',
-            user: { first_name: 'Admin', id: 654321, is_bot: false },
-        }));
+            user: { first_name: 'Admin', id: 654321, is_bot: false }}));
 
         const setupCommand = telegramServer.createUserMessage({
             chatId: -987654321, // Different group ID
             firstName: 'Admin',
             isGroupChat: true,
             text: `/setup ${hashToken(config.BOT_TOKEN)}`,
-            userId: 654321,
-        });
+            userId: 654321});
 
         telegramServer.clearRequests();
 
@@ -171,16 +160,14 @@ describe('Bot Setup E2E Tests', () => {
     it('should reject /setup in a normal group without topics', async () => {
         telegramServer.setResponse('getChatMember', () => ({
             status: 'administrator',
-            user: { first_name: 'Admin', id: 654321, is_bot: false },
-        }));
+            user: { first_name: 'Admin', id: 654321, is_bot: false }}));
 
         const setupCommand = telegramServer.createUserMessage({
             chatId: -987654321,
             firstName: 'Admin',
             isGroupChat: true,
             text: `/setup ${hashToken(config.BOT_TOKEN)}`,
-            userId: 654321,
-        });
+            userId: 654321});
 
         // Override type to be 'group' instead of 'supergroup'
         setupCommand.message!.chat.type = 'group';
@@ -203,8 +190,7 @@ describe('Bot Setup E2E Tests', () => {
     it('should handle setup failure when bot cannot manage topics', async () => {
         telegramServer.setResponse('getChatMember', () => ({
             status: 'administrator',
-            user: { first_name: 'Admin', id: 654321, is_bot: false },
-        }));
+            user: { first_name: 'Admin', id: 654321, is_bot: false }}));
 
         // Make createForumTopic fail
         telegramServer.setResponse('createForumTopic', () => {
@@ -216,8 +202,7 @@ describe('Bot Setup E2E Tests', () => {
             firstName: 'Admin',
             isGroupChat: true,
             text: `/setup ${hashToken(config.BOT_TOKEN)}`,
-            userId: 654321,
-        });
+            userId: 654321});
 
         telegramServer.clearRequests();
 
@@ -245,22 +230,18 @@ describe('Bot Setup E2E Tests', () => {
             setupBy: {
                 first_name: 'Admin',
                 id: 654321,
-                is_bot: false,
-            },
-        });
+                is_bot: false}});
 
         telegramServer.setResponse('getChatMember', () => ({
             status: 'administrator',
-            user: { first_name: 'Admin', id: 654321, is_bot: false },
-        }));
+            user: { first_name: 'Admin', id: 654321, is_bot: false }}));
 
         const setupCommand = telegramServer.createUserMessage({
             chatId: -987654321, // Same group ID
             firstName: 'Admin',
             isGroupChat: true,
             text: `/setup ${hashToken(config.BOT_TOKEN)}`,
-            userId: 654321,
-        });
+            userId: 654321});
 
         telegramServer.clearRequests();
 

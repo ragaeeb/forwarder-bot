@@ -1,22 +1,20 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, mock } from 'bun:test';
 
 import type { BotSettings, SavedMessage, ThreadData } from '../types/app.js';
 
 import { MockDataService } from './mockDataService.js';
 
-vi.mock('@/utils/logger.js', () => ({
+mock.module('@/utils/logger.js', () => ({
     default: {
-        error: vi.fn(),
-        info: vi.fn(),
-        warn: vi.fn(),
-    },
-}));
+        error: mock(() => {}),
+        info: mock(() => {}),
+        warn: mock(() => {})}}));
 
 describe('MockDataService', () => {
     let mockDataService: MockDataService;
 
     beforeEach(() => {
-        vi.resetAllMocks();
+        mock.restore();
         mockDataService = new MockDataService();
     });
 
@@ -41,9 +39,7 @@ describe('MockDataService', () => {
                 setupBy: {
                     first_name: 'Test',
                     id: 67890,
-                    is_bot: false,
-                },
-            };
+                    is_bot: false}};
 
             await mockDataService.saveSettings(botConfig);
             const config = await mockDataService.getSettings();
@@ -63,25 +59,21 @@ describe('MockDataService', () => {
                 chatId: '100',
                 from: {
                     firstName: 'User1',
-                    userId: '123',
-                },
+                    userId: '123'},
                 id: '1',
                 text: 'Hello from user 1',
                 timestamp: '2023-01-01T00:00:00Z',
-                type: 'user',
-            };
+                type: 'user'};
 
             const user2Message: SavedMessage = {
                 chatId: '200',
                 from: {
                     firstName: 'User2',
-                    userId: '456',
-                },
+                    userId: '456'},
                 id: '2',
                 text: 'Hello from user 2',
                 timestamp: '2023-01-01T00:00:00Z',
-                type: 'user',
-            };
+                type: 'user'};
 
             await mockDataService.saveMessage(user1Message);
             await mockDataService.saveMessage(user2Message);
@@ -98,25 +90,21 @@ describe('MockDataService', () => {
                 chatId: '100',
                 from: {
                     firstName: 'User1',
-                    userId: '123',
-                },
+                    userId: '123'},
                 id: '1',
                 text: 'First message',
                 timestamp: '2023-01-01T00:00:00Z',
-                type: 'user',
-            };
+                type: 'user'};
 
             const message2: SavedMessage = {
                 chatId: '100',
                 from: {
                     firstName: 'User1',
-                    userId: '123',
-                },
+                    userId: '123'},
                 id: '2',
                 text: 'Second message',
                 timestamp: '2023-01-01T00:01:00Z',
-                type: 'user',
-            };
+                type: 'user'};
 
             await mockDataService.saveMessage(message1);
             await mockDataService.saveMessage(message2);
@@ -140,8 +128,7 @@ describe('MockDataService', () => {
                 name: 'Test Thread',
                 threadId: 'thread-123',
                 updatedAt: '2023-01-01T00:00:00Z',
-                userId: 'user-456',
-            };
+                userId: 'user-456'};
 
             await mockDataService.saveThread(threadData);
 
@@ -164,8 +151,7 @@ describe('MockDataService', () => {
                 name: 'Test Thread',
                 threadId: 'thread-123',
                 updatedAt: '2023-01-01T00:00:00Z',
-                userId: 'user-456',
-            };
+                userId: 'user-456'};
 
             await mockDataService.saveThread(threadData);
 
@@ -183,9 +169,7 @@ describe('MockDataService', () => {
                 setupBy: {
                     first_name: 'Test',
                     id: 67890,
-                    is_bot: false,
-                },
-            };
+                    is_bot: false}};
 
             const savedConfig = await mockDataService.saveSettings(botConfig);
 
@@ -201,9 +185,7 @@ describe('MockDataService', () => {
                 setupBy: {
                     first_name: 'Test',
                     id: 67890,
-                    is_bot: false,
-                },
-            };
+                    is_bot: false}};
 
             const updatedConfig: BotSettings = {
                 adminGroupId: '98765',
@@ -212,9 +194,7 @@ describe('MockDataService', () => {
                 setupBy: {
                     first_name: 'Updated Test',
                     id: 54321,
-                    is_bot: false,
-                },
-            };
+                    is_bot: false}};
 
             await mockDataService.saveSettings(initialConfig);
             await mockDataService.saveSettings(updatedConfig);
@@ -230,13 +210,11 @@ describe('MockDataService', () => {
                 chatId: '100',
                 from: {
                     firstName: 'User1',
-                    userId: '123',
-                },
+                    userId: '123'},
                 id: '1',
                 text: 'Test message',
                 timestamp: '2023-01-01T00:00:00Z',
-                type: 'user',
-            };
+                type: 'user'};
 
             const savedMessage = await mockDataService.saveMessage(message);
 
@@ -252,8 +230,7 @@ describe('MockDataService', () => {
                     firstName: 'User1',
                     lastName: 'Test',
                     userId: '123',
-                    username: 'user1test',
-                },
+                    username: 'user1test'},
                 id: '1',
                 mediaId: 'media-123',
                 mediaType: 'photo',
@@ -262,8 +239,7 @@ describe('MockDataService', () => {
                 replyToMessageId: 'reply-123',
                 text: 'Test message',
                 timestamp: '2023-01-01T00:00:00Z',
-                type: 'user',
-            };
+                type: 'user'};
 
             const savedMessage = await mockDataService.saveMessage(message);
 
@@ -280,8 +256,7 @@ describe('MockDataService', () => {
                 name: 'Test Thread',
                 threadId: 'thread-123',
                 updatedAt: '2023-01-01T00:00:00Z',
-                userId: 'user-456',
-            };
+                userId: 'user-456'};
 
             const savedThread = await mockDataService.saveThread(threadData);
 
@@ -297,8 +272,7 @@ describe('MockDataService', () => {
                 name: 'First Thread',
                 threadId: 'thread-123',
                 updatedAt: '2023-01-01T00:00:00Z',
-                userId: 'user-456',
-            };
+                userId: 'user-456'};
 
             const thread2: ThreadData = {
                 chatId: 'chat-123',
@@ -307,8 +281,7 @@ describe('MockDataService', () => {
                 name: 'Second Thread',
                 threadId: 'thread-456',
                 updatedAt: '2023-01-02T00:00:00Z',
-                userId: 'user-789',
-            };
+                userId: 'user-789'};
 
             await mockDataService.saveThread(thread1);
             await mockDataService.saveThread(thread2);

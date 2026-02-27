@@ -1,20 +1,19 @@
 import type { NextFunction } from '@/bot.js';
 import type { ForwardContext } from '@/types/app.js';
 
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, mock } from 'bun:test';
 
 import { requireToken } from './requireToken.js';
 
-vi.mock('@/utils/security.js', () => ({
-    hashToken: vi.fn().mockReturnValue('HBT'),
-}));
+mock.module('@/utils/security.js', () => ({
+    hashToken: mock(() => {}).mockReturnValue('HBT')}));
 
 describe('requireToken', () => {
     let next: NextFunction;
 
     beforeEach(() => {
-        vi.clearAllMocks();
-        next = vi.fn();
+        mock.restore();
+        next = mock(() => {});
     });
 
     it('should do nothing when token is not provided', () => {

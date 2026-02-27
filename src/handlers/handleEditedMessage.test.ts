@@ -1,65 +1,54 @@
 import type { ForwardContext } from '@/types/app.js';
 
-import { beforeEach, describe, expect, it, type Mock, vi } from 'vitest';
+import { beforeEach, describe, expect, it, mock, spyOn, type Mock } from 'bun:test';
 
 import { onEditedMessage } from './handleEditedMessage.js';
 
-vi.mock('@/utils/messageUtils.js', () => ({
-    mapTelegramMessageToSavedMessage: vi.fn((message, type) => ({
+mock.module('@/utils/messageUtils.js', () => ({
+    mapTelegramMessageToSavedMessage: mock((message: any, type: string) => ({
         chatId: '123',
         from: {
             firstName: message.from?.first_name,
             lastName: message.from?.last_name,
             userId: message.from?.id.toString(),
-            username: message.from?.username,
-        },
+            username: message.from?.username},
         text: message.text || '',
         timestamp: new Date().toISOString(),
-        type,
-    })),
-}));
+        type}))}));
 
 describe('onEditedMessage', () => {
     let mockCtx: ForwardContext;
     const now = new Date();
 
     beforeEach(() => {
-        vi.resetAllMocks();
+        mock.restore();
 
         const user = {
             first_name: 'Test',
-            id: 456,
-        };
+            id: 456};
 
         mockCtx = {
             bot: {
                 api: {
-                    forwardMessage: vi.fn().mockResolvedValue({}),
-                    sendMessage: vi.fn().mockResolvedValue({}),
-                },
-            },
+                    forwardMessage: mock(() => {}).mockResolvedValue({}),
+                    sendMessage: mock(() => {}).mockResolvedValue({})}},
             chat: {
                 id: 123,
-                type: 'private',
-            },
+                type: 'private'},
             db: {
-                getThreadByUserId: vi.fn(),
-                saveMessage: vi.fn(),
-            },
+                getThreadByUserId: mock(() => {}),
+                saveMessage: mock(() => {})},
             from: user,
             message: {
                 chat: {
                     id: 123,
-                    type: 'private',
-                },
+                    type: 'private'},
                 from: user,
                 message_id: 789,
-                text: 'Edited message',
-            },
-            settings: { adminGroupId: '789' },
-        } as unknown as ForwardContext;
+                text: 'Edited message'},
+            settings: { adminGroupId: '789' }} as unknown as ForwardContext;
 
-        vi.spyOn(Date, 'now').mockImplementation(() => now.getTime());
+        spyOn(Date, 'now').mockImplementation(() => now.getTime());
     });
 
     describe('onEditedMessage', () => {
@@ -82,21 +71,18 @@ describe('onEditedMessage', () => {
                 name: 'Test User',
                 threadId: '1001',
                 updatedAt: '2023-01-01T00:00:00Z',
-                userId: '456',
-            };
+                userId: '456'};
 
             const savedMessage = {
                 chatId: '123',
                 from: {
                     firstName: 'Test',
-                    userId: '456',
-                },
+                    userId: '456'},
                 id: `789_edited_${now.getTime()}`,
                 originalMessageId: '789',
                 text: 'Edited message',
                 timestamp: expect.any(String),
-                type: 'user',
-            };
+                type: 'user'};
 
             (mockCtx.db.getThreadByUserId as Mock).mockResolvedValue(threadData);
             (mockCtx.db.saveMessage as Mock).mockResolvedValue({ ...savedMessage, id: savedMessage.id });
@@ -108,21 +94,18 @@ describe('onEditedMessage', () => {
             expect(mockCtx.bot.api.sendMessage).toHaveBeenCalledWith({
                 chat_id: '789',
                 message_thread_id: 1001,
-                text: expect.stringContaining('Message Edit Notification'),
-            });
+                text: expect.stringContaining('Message Edit Notification')});
 
             expect(mockCtx.bot.api.forwardMessage).toHaveBeenCalledWith({
                 chat_id: '789',
                 from_chat_id: 123,
                 message_id: 789,
-                message_thread_id: 1001,
-            });
+                message_thread_id: 1001});
 
             expect(mockCtx.db.saveMessage).toHaveBeenCalledWith(
                 expect.objectContaining({
                     id: `789_edited_${now.getTime()}`,
-                    originalMessageId: '789',
-                }),
+                    originalMessageId: '789'}),
             );
         });
 
@@ -143,8 +126,7 @@ describe('onEditedMessage', () => {
                 name: 'Test User',
                 threadId: '1001',
                 updatedAt: '2023-01-01T00:00:00Z',
-                userId: '456',
-            };
+                userId: '456'};
 
             (mockCtx.db.getThreadByUserId as Mock).mockResolvedValue(threadData);
 
@@ -152,14 +134,12 @@ describe('onEditedMessage', () => {
 
             expect(mockCtx.bot.api.sendMessage).toHaveBeenCalledWith(
                 expect.objectContaining({
-                    message_thread_id: 1001,
-                }),
+                    message_thread_id: 1001}),
             );
 
             expect(mockCtx.bot.api.forwardMessage).toHaveBeenCalledWith(
                 expect.objectContaining({
-                    message_thread_id: 1001,
-                }),
+                    message_thread_id: 1001}),
             );
         });
     });

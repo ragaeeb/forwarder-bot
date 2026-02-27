@@ -2,18 +2,18 @@ import type { NextFunction } from '@/bot.js';
 import type { ForwardContext } from '@/types/app.js';
 
 import { replyWithWarning } from '@/utils/replyUtils.js';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, mock } from 'bun:test';
 
 import { requireNewSetup } from './requireNewSetup.js';
 
-vi.mock('@/utils/replyUtils.js');
+mock.module('@/utils/replyUtils.js');
 
 describe('requireNewSetup', () => {
     let next: NextFunction;
 
     beforeEach(() => {
-        vi.clearAllMocks();
-        next = vi.fn();
+        mock.restore();
+        next = mock(() => {});
     });
 
     it('should pass if setup was never completed', async () => {

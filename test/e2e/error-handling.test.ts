@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, mock } from 'bun:test';
 
 import { Bot } from '../../src/bot';
 import { config } from '../../src/config';
@@ -17,8 +17,7 @@ describe('Error Handling E2E Tests', () => {
         telegramServer = new TelegramTestServer({
             first_name: 'Test Bot',
             id: 12345,
-            username: 'test_bot',
-        });
+            username: 'test_bot'});
 
         uninstall = telegramServer.install();
 
@@ -36,14 +35,12 @@ describe('Error Handling E2E Tests', () => {
             setupBy: {
                 first_name: 'Admin',
                 id: 654321,
-                is_bot: false,
-            },
-        });
+                is_bot: false}});
     });
 
     afterEach(() => {
         uninstall();
-        vi.clearAllTimers();
+        
     });
 
     it('should handle message forward failures gracefully', async () => {
@@ -52,8 +49,7 @@ describe('Error Handling E2E Tests', () => {
             firstName: 'Test',
             text: 'Hello, I need help',
             userId: 123456,
-            username: 'testuser',
-        });
+            username: 'testuser'});
 
         // Mock forwardMessage to fail
         telegramServer.setResponse('forwardMessage', () => {
@@ -79,8 +75,7 @@ describe('Error Handling E2E Tests', () => {
             firstName: 'Test',
             text: 'Hello, I need help',
             userId: 123456,
-            username: 'testuser',
-        });
+            username: 'testuser'});
 
         // Mock createForumTopic to fail
         telegramServer.setResponse('createForumTopic', () => {
@@ -109,8 +104,7 @@ describe('Error Handling E2E Tests', () => {
             name: 'Test User',
             threadId: '789',
             updatedAt: new Date().toISOString(),
-            userId: '123456',
-        });
+            userId: '123456'});
 
         // Create an admin reply
         const adminReply = telegramServer.createUserMessage({
@@ -118,8 +112,7 @@ describe('Error Handling E2E Tests', () => {
             firstName: 'Admin',
             isGroupChat: true,
             text: 'This is a reply to the user',
-            userId: 654321,
-        });
+            userId: 654321});
 
         adminReply.message!.message_thread_id = 789;
         adminReply.message!.reply_to_message = {
@@ -127,8 +120,7 @@ describe('Error Handling E2E Tests', () => {
             date: Math.floor(Date.now() / 1000),
             from: { first_name: 'User', id: 123456, is_bot: false },
             message_id: 456,
-            text: 'Original message',
-        };
+            text: 'Original message'};
 
         // Mock sendMessage to fail
         telegramServer.setResponse('sendMessage', (params) => {
@@ -140,13 +132,11 @@ describe('Error Handling E2E Tests', () => {
             return {
                 chat: {
                     id: params.chat_id,
-                    type: params.chat_id < 0 ? 'supergroup' : 'private',
-                },
+                    type: params.chat_id < 0 ? 'supergroup' : 'private'},
                 date: Math.floor(Date.now() / 1000),
                 from: telegramServer['botInfo'],
                 message_id: Math.floor(Math.random() * 10000),
-                text: params.text,
-            };
+                text: params.text};
         });
 
         telegramServer.clearRequests();
@@ -172,8 +162,7 @@ describe('Error Handling E2E Tests', () => {
             firstName: 'Admin',
             isGroupChat: true,
             text: 'This is a reply to the user',
-            userId: 654321,
-        });
+            userId: 654321});
 
         adminReply.message!.message_thread_id = 789;
         adminReply.message!.reply_to_message = {
@@ -181,12 +170,11 @@ describe('Error Handling E2E Tests', () => {
             date: Math.floor(Date.now() / 1000),
             from: { first_name: 'User', id: 123456, is_bot: false },
             message_id: 456,
-            text: 'Original message',
-        };
+            text: 'Original message'};
 
         // Mock db.getThreadById to fail
         const originalGetThreadById = db.getThreadById;
-        db.getThreadById = vi.fn().mockRejectedValue(new Error('Database error'));
+        db.getThreadById = mock(() => {}).mockRejectedValue(new Error('Database error'));
 
         telegramServer.clearRequests();
 
@@ -216,20 +204,18 @@ describe('Error Handling E2E Tests', () => {
             name: 'Test User',
             threadId: '789',
             updatedAt: new Date().toISOString(),
-            userId: '123456',
-        });
+            userId: '123456'});
 
         // Create a user message
         const userMessage = telegramServer.createUserMessage({
             firstName: 'Test',
             text: 'Hello, I need help',
             userId: 123456,
-            username: 'testuser',
-        });
+            username: 'testuser'});
 
         // Mock db.saveMessage to fail
         const originalSaveMessage = db.saveMessage;
-        db.saveMessage = vi.fn().mockRejectedValue(new Error('Database error'));
+        db.saveMessage = mock(() => {}).mockRejectedValue(new Error('Database error'));
 
         telegramServer.clearRequests();
 
@@ -256,22 +242,19 @@ describe('Error Handling E2E Tests', () => {
             name: 'Test User',
             threadId: '789',
             updatedAt: new Date().toISOString(),
-            userId: '123456',
-        });
+            userId: '123456'});
 
         // Create an edited message
         const editedMessage = telegramServer.createUserMessage({
             firstName: 'Test',
             text: 'Edited message content',
             userId: 123456,
-            username: 'testuser',
-        });
+            username: 'testuser'});
 
         // Convert to edited_message
         const update = {
             edited_message: editedMessage.message,
-            update_id: editedMessage.update_id,
-        };
+            update_id: editedMessage.update_id};
         update.edited_message!.message_id = 456; // Same as lastMessageId
 
         // Mock sendMessage to fail
@@ -294,22 +277,19 @@ describe('Error Handling E2E Tests', () => {
             name: 'Test User',
             threadId: '789',
             updatedAt: new Date().toISOString(),
-            userId: '123456',
-        });
+            userId: '123456'});
 
         // Create an admin reply with unsupported content
         const adminReply = telegramServer.createUserMessage({
             chatId: Number(adminGroupId),
             firstName: 'Admin',
             isGroupChat: true,
-            userId: 654321,
-        });
+            userId: 654321});
 
         // Add location to the message (unsupported type)
         (adminReply.message as any).location = {
             latitude: 51.5074,
-            longitude: 0.1278,
-        };
+            longitude: 0.1278};
         delete adminReply.message!.text;
 
         adminReply.message!.message_thread_id = 789;
@@ -318,8 +298,7 @@ describe('Error Handling E2E Tests', () => {
             date: Math.floor(Date.now() / 1000),
             from: { first_name: 'User', id: 123456, is_bot: false },
             message_id: 456,
-            text: 'Original message',
-        };
+            text: 'Original message'};
 
         telegramServer.clearRequests();
 

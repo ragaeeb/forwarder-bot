@@ -1,35 +1,30 @@
 import type { BotSettings, SavedMessage, ThreadData } from '@/types/app.js';
 
 import { DynamoDBDocumentClient, GetCommand, PutCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, mock } from 'bun:test';
 
 import { DynamoDBService } from './dynamodb.js';
 
-vi.mock('@aws-sdk/client-dynamodb', () => ({
-    DynamoDBClient: vi.fn().mockImplementation(() => ({})),
-}));
+mock.module('@aws-sdk/client-dynamodb', () => ({
+    DynamoDBClient: mock(() => {}).mockImplementation(() => ({}))}));
 
-vi.mock('@aws-sdk/lib-dynamodb', () => ({
+mock.module('@aws-sdk/lib-dynamodb', () => ({
     DynamoDBDocumentClient: {
-        from: vi.fn().mockReturnValue({
-            send: vi.fn(),
-        }),
-    },
-    GetCommand: vi.fn(),
-    PutCommand: vi.fn(),
-    QueryCommand: vi.fn(),
-}));
+        from: mock(() => {}).mockReturnValue({
+            send: mock(() => {})})},
+    GetCommand: mock(() => {}),
+    PutCommand: mock(() => {}),
+    QueryCommand: mock(() => {})}));
 
 describe('DynamoDBService', () => {
     let dynamoDBService: DynamoDBService;
     let mockClient: { send: any };
 
     beforeEach(() => {
-        vi.clearAllMocks();
+        mock.restore();
 
         mockClient = {
-            send: vi.fn(),
-        };
+            send: mock(() => {})};
         (DynamoDBDocumentClient.from as any).mockReturnValue(mockClient);
 
         dynamoDBService = new DynamoDBService();
@@ -40,19 +35,16 @@ describe('DynamoDBService', () => {
             const mockConfig: BotSettings = {
                 adminGroupId: 'admin-123',
                 setupAt: '2023-01-01T00:00:00Z',
-                setupBy: { first_name: 'Admin', id: 123, is_bot: false },
-            };
+                setupBy: { first_name: 'Admin', id: 123, is_bot: false }};
 
             mockClient.send.mockResolvedValueOnce({
-                Item: mockConfig,
-            });
+                Item: mockConfig});
 
             const result = await dynamoDBService.getSettings();
 
             expect(GetCommand).toHaveBeenCalledWith({
                 Key: { configId: 'main' },
-                TableName: 'test-table-config',
-            });
+                TableName: 'test-table-config'});
             expect(result).toEqual(mockConfig);
         });
 
@@ -81,26 +73,22 @@ describe('DynamoDBService', () => {
             ] as SavedMessage[];
 
             mockClient.send.mockResolvedValueOnce({
-                Items: mockMessages,
-            });
+                Items: mockMessages});
 
             const result = await dynamoDBService.getMessagesByUserId(userId);
 
             expect(QueryCommand).toHaveBeenCalledWith({
                 ExpressionAttributeValues: {
-                    ':userId': `${userId}`,
-                },
+                    ':userId': `${userId}`},
                 KeyConditionExpression: 'userId = :userId',
                 ScanIndexForward: false,
-                TableName: 'test-table-messages',
-            });
+                TableName: 'test-table-messages'});
             expect(result).toEqual(mockMessages);
         });
 
         it('should return empty array when no messages found', async () => {
             mockClient.send.mockResolvedValueOnce({
-                Items: [],
-            });
+                Items: []});
 
             const result = await dynamoDBService.getMessagesByUserId('user123');
 
@@ -130,30 +118,25 @@ describe('DynamoDBService', () => {
                 name: 'Test Thread',
                 threadId: '123',
                 updatedAt: '2023-01-01T00:01:00Z',
-                userId: 'user123',
-            };
+                userId: 'user123'};
 
             mockClient.send.mockResolvedValueOnce({
-                Items: [mockThread],
-            });
+                Items: [mockThread]});
 
             const result = await dynamoDBService.getThreadById(threadId);
 
             expect(QueryCommand).toHaveBeenCalledWith({
                 ExpressionAttributeValues: {
-                    ':threadId': threadId,
-                },
+                    ':threadId': threadId},
                 IndexName: 'ThreadIdIndex',
                 KeyConditionExpression: 'threadId = :threadId',
-                TableName: 'test-table-threads',
-            });
+                TableName: 'test-table-threads'});
             expect(result).toEqual(mockThread);
         });
 
         it('should return undefined when thread not found', async () => {
             mockClient.send.mockResolvedValueOnce({
-                Items: [],
-            });
+                Items: []});
 
             const result = await dynamoDBService.getThreadById('thread123');
 
@@ -177,25 +160,21 @@ describe('DynamoDBService', () => {
                 name: 'Test Thread',
                 threadId: '123',
                 updatedAt: '2023-01-01T00:01:00Z',
-                userId: userId,
-            };
+                userId: userId};
 
             mockClient.send.mockResolvedValueOnce({
-                Items: [mockThread],
-            });
+                Items: [mockThread]});
 
             const result = await dynamoDBService.getThreadByUserId(userId);
 
             expect(QueryCommand).toHaveBeenCalledWith({
                 ExpressionAttributeValues: {
-                    ':userId': 'user123',
-                },
+                    ':userId': 'user123'},
                 IndexName: 'UserUpdatedIndex',
                 KeyConditionExpression: 'userId = :userId',
                 Limit: 1,
                 ScanIndexForward: false,
-                TableName: 'test-table-threads',
-            });
+                TableName: 'test-table-threads'});
             expect(result).toEqual(mockThread);
         });
 
@@ -220,8 +199,7 @@ describe('DynamoDBService', () => {
             const mockConfig: BotSettings = {
                 adminGroupId: 'admin-123',
                 setupAt: '2023-01-01T00:00:00Z',
-                setupBy: { first_name: 'Admin', id: 123, is_bot: false },
-            };
+                setupBy: { first_name: 'Admin', id: 123, is_bot: false }};
 
             mockClient.send.mockResolvedValueOnce({});
 
@@ -230,10 +208,8 @@ describe('DynamoDBService', () => {
             expect(PutCommand).toHaveBeenCalledWith({
                 Item: {
                     configId: 'main',
-                    ...mockConfig,
-                },
-                TableName: 'test-table-config',
-            });
+                    ...mockConfig},
+                TableName: 'test-table-config'});
             expect(result).toEqual(mockConfig);
         });
 
@@ -241,8 +217,7 @@ describe('DynamoDBService', () => {
             const mockConfig: BotSettings = {
                 adminGroupId: 'admin-123',
                 setupAt: '2023-01-01T00:00:00Z',
-                setupBy: { first_name: 'Admin', id: 123, is_bot: false },
-            };
+                setupBy: { first_name: 'Admin', id: 123, is_bot: false }};
 
             const error = new Error('DynamoDB error');
             mockClient.send.mockRejectedValueOnce(error);
@@ -257,13 +232,11 @@ describe('DynamoDBService', () => {
                 chatId: 'chat123',
                 from: {
                     firstName: 'John',
-                    userId: 'user123',
-                },
+                    userId: 'user123'},
                 id: 'msg123',
                 text: 'Hello world',
                 timestamp: '2023-01-01T00:00:00Z',
-                type: 'user',
-            };
+                type: 'user'};
 
             mockClient.send.mockResolvedValueOnce({});
 
@@ -273,10 +246,8 @@ describe('DynamoDBService', () => {
                 Item: {
                     ...mockMessage,
                     messageId: 'msg123',
-                    userId: 'user123',
-                },
-                TableName: 'test-table-messages',
-            });
+                    userId: 'user123'},
+                TableName: 'test-table-messages'});
             expect(result).toEqual(mockMessage);
         });
 
@@ -285,13 +256,11 @@ describe('DynamoDBService', () => {
                 chatId: 'chat123',
                 from: {
                     firstName: 'John',
-                    userId: 'user123',
-                },
+                    userId: 'user123'},
                 id: 'msg123',
                 text: 'Hello world',
                 timestamp: '2023-01-01T00:00:00Z',
-                type: 'user',
-            };
+                type: 'user'};
 
             const error = new Error('DynamoDB error');
             mockClient.send.mockRejectedValueOnce(error);
@@ -308,8 +277,7 @@ describe('DynamoDBService', () => {
                 name: 'Test Thread',
                 threadId: '123',
                 updatedAt: '2023-01-01T00:01:00Z',
-                userId: 'user123',
-            };
+                userId: 'user123'};
 
             mockClient.send.mockResolvedValueOnce({});
 
@@ -317,8 +285,7 @@ describe('DynamoDBService', () => {
 
             expect(PutCommand).toHaveBeenCalledWith({
                 Item: mockThread,
-                TableName: 'test-table-threads',
-            });
+                TableName: 'test-table-threads'});
             expect(result).toEqual(mockThread);
         });
 
@@ -333,8 +300,7 @@ describe('DynamoDBService', () => {
                     name: 'Test Thread',
                     threadId: '123',
                     updatedAt: '2023-01-01T00:01:00Z',
-                    userId: 'user123',
-                }),
+                    userId: 'user123'}),
             ).rejects.toThrow(error);
         });
     });

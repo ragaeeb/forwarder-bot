@@ -93,8 +93,50 @@ export class MockDataService implements DataService {
      * @returns {Promise<ThreadData>} The saved thread data
      */
     async saveThread(thread: ThreadData): Promise<ThreadData> {
-        this.threads.push(thread);
+        const existing = this.threads.findIndex((t) => t.userId === thread.userId && t.threadId === thread.threadId);
+        if (existing >= 0) {
+            this.threads[existing] = thread;
+        } else {
+            this.threads.push(thread);
+        }
         logger.info(thread, `saveThread`);
         return thread;
+    }
+
+    /**
+     * Retrieves all threads with optional pagination.
+     */
+    async getAllThreads(options?: { limit?: number; offset?: number }): Promise<ThreadData[]> {
+        const sorted = [...this.threads].sort(
+            (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+        );
+        const offset = options?.offset ?? 0;
+        const limit = options?.limit ?? sorted.length;
+        return sorted.slice(offset, offset + limit);
+    }
+
+    /**
+     * Returns the total number of threads.
+     */
+    async getThreadCount(): Promise<number> {
+        return this.threads.length;
+    }
+
+    /**
+     * Returns the unread count for a thread.
+     */
+    async getUnreadCount(userId: string): Promise<number> {
+        const thread = this.threads.find((t) => t.userId === userId);
+        return thread?.unreadCount ?? 0;
+    }
+
+    /**
+     * Marks all messages in a thread as read.
+     */
+    async markThreadRead(userId: string): Promise<void> {
+        const thread = this.threads.find((t) => t.userId === userId);
+        if (thread) {
+            thread.unreadCount = 0;
+        }
     }
 }

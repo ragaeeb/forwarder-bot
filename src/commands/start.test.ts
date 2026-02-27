@@ -1,21 +1,20 @@
 import { ForwardContext } from '@/types/app.js';
 import { mapTelegramMessageToSavedMessage } from '@/utils/messageUtils.js';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, mock } from 'bun:test';
 
 import { onStart } from './start.js';
 
-vi.mock('@/utils/messageUtils.js', () => ({
-    mapTelegramMessageToSavedMessage: vi.fn().mockReturnValue({ id: '1' }),
-}));
+mock.module('@/utils/messageUtils.js', () => ({
+    mapTelegramMessageToSavedMessage: mock(() => {}).mockReturnValue({ id: '1' })}));
 
 describe('start', () => {
     beforeEach(() => {
-        vi.clearAllMocks();
+        mock.restore();
     });
 
     describe('onStart', () => {
         it('should reply to the message', async () => {
-            const ctx = { db: { saveMessage: vi.fn() }, message: { id: 'm1' }, reply: vi.fn(), settings: {} };
+            const ctx = { db: { saveMessage: mock(() => {}) }, message: { id: 'm1' }, reply: mock(() => {}), settings: {} };
 
             await onStart(ctx as unknown as ForwardContext);
 
@@ -29,7 +28,7 @@ describe('start', () => {
         });
 
         it('should reply to the custom greeting', async () => {
-            const ctx = { db: { saveMessage: vi.fn() }, reply: vi.fn(), settings: { greeting: 'G' } };
+            const ctx = { db: { saveMessage: mock(() => {}) }, reply: mock(() => {}), settings: { greeting: 'G' } };
 
             await onStart(ctx as unknown as ForwardContext);
 

@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
 
 import { Bot } from '../../src/bot';
 import { config } from '../../src/config';
@@ -16,8 +16,7 @@ describe('Telegram Bot E2E Tests', () => {
         telegramServer = new TelegramTestServer({
             first_name: 'Test Bot',
             id: 12345,
-            username: 'test_bot',
-        });
+            username: 'test_bot'});
 
         uninstall = telegramServer.install();
 
@@ -29,7 +28,7 @@ describe('Telegram Bot E2E Tests', () => {
 
     afterEach(() => {
         uninstall();
-        vi.clearAllTimers();
+        
     });
 
     it('should handle a direct message from a user', async () => {
@@ -37,8 +36,7 @@ describe('Telegram Bot E2E Tests', () => {
             firstName: 'Test',
             text: 'Hello bot!',
             userId: 123456,
-            username: 'testuser',
-        });
+            username: 'testuser'});
 
         await setupBotWithAdmin();
         telegramServer.clearRequests();
@@ -66,8 +64,7 @@ describe('Telegram Bot E2E Tests', () => {
             name: 'Test User',
             threadId: '789',
             updatedAt: new Date().toISOString(),
-            userId: '123456',
-        });
+            userId: '123456'});
 
         telegramServer.clearRequests();
 
@@ -76,8 +73,7 @@ describe('Telegram Bot E2E Tests', () => {
             firstName: 'Admin',
             isGroupChat: true,
             text: 'This is a reply to the user',
-            userId: 654321,
-        });
+            userId: 654321});
 
         adminReply.message!.message_thread_id = 789;
         adminReply.message!.reply_to_message = {
@@ -85,8 +81,7 @@ describe('Telegram Bot E2E Tests', () => {
             date: Math.floor(Date.now() / 1000),
             from: { first_name: 'User', id: 123456, is_bot: false },
             message_id: 456,
-            text: 'Original message',
-        };
+            text: 'Original message'};
 
         await bot.handleUpdate(adminReply);
 
@@ -115,8 +110,7 @@ describe('Telegram Bot E2E Tests', () => {
             firstName: 'Test',
             text: '/start',
             userId: 123456,
-            username: 'testuser',
-        });
+            username: 'testuser'});
 
         await bot.handleUpdate(startCommand);
 
@@ -140,9 +134,7 @@ describe('Telegram Bot E2E Tests', () => {
             setupBy: {
                 first_name: 'Admin',
                 id: 654321,
-                is_bot: false,
-            },
-        });
+                is_bot: false}});
 
         telegramServer.clearRequests();
 
@@ -150,8 +142,7 @@ describe('Telegram Bot E2E Tests', () => {
             firstName: 'Test',
             text: '/start',
             userId: 123456,
-            username: 'testuser',
-        });
+            username: 'testuser'});
 
         await bot.handleUpdate(startCommand);
 
@@ -171,8 +162,7 @@ describe('Telegram Bot E2E Tests', () => {
         const photoMessage = telegramServer.createUserMessage({
             firstName: 'Test',
             userId: 123456,
-            username: 'testuser',
-        });
+            username: 'testuser'});
 
         // Add photo to the message
         photoMessage.message!.photo = [
@@ -194,15 +184,13 @@ describe('Telegram Bot E2E Tests', () => {
         const documentMessage = telegramServer.createUserMessage({
             firstName: 'Test',
             userId: 123456,
-            username: 'testuser',
-        });
+            username: 'testuser'});
 
         // Add document to the message
         documentMessage.message!.document = {
             file_id: 'doc_id',
             file_name: 'test.pdf',
-            file_unique_id: 'unique_doc_id',
-        };
+            file_unique_id: 'unique_doc_id'};
         documentMessage.message!.caption = 'Check out this document';
         documentMessage.message!.text = undefined;
 
@@ -223,9 +211,7 @@ describe('Telegram Bot E2E Tests', () => {
             setupBy: {
                 first_name: 'Admin',
                 id: 654321,
-                is_bot: false,
-            },
-        });
+                is_bot: false}});
 
         telegramServer.clearRequests();
 
@@ -233,8 +219,7 @@ describe('Telegram Bot E2E Tests', () => {
             firstName: 'Test',
             text: 'Hello there',
             userId: 123456,
-            username: 'testuser',
-        });
+            username: 'testuser'});
 
         await bot.handleUpdate(message);
 
@@ -259,8 +244,7 @@ describe('Telegram Bot E2E Tests', () => {
             name: 'Test User',
             threadId: '789',
             updatedAt: new Date().toISOString(),
-            userId: '123456',
-        });
+            userId: '123456'});
 
         telegramServer.clearRequests();
 
@@ -268,14 +252,12 @@ describe('Telegram Bot E2E Tests', () => {
             firstName: 'Test',
             text: 'Edited message content',
             userId: 123456,
-            username: 'testuser',
-        });
+            username: 'testuser'});
 
         // Convert to edited_message
         const update = {
             edited_message: editedMessage.message,
-            update_id: editedMessage.update_id,
-        };
+            update_id: editedMessage.update_id};
 
         update.edited_message!.message_id = 456; // Same as lastMessageId
 
@@ -303,8 +285,7 @@ describe('Telegram Bot E2E Tests', () => {
             name: 'Test User',
             threadId: '789',
             updatedAt: new Date().toISOString(),
-            userId: '123456',
-        });
+            userId: '123456'});
 
         telegramServer.clearRequests();
 
@@ -312,8 +293,7 @@ describe('Telegram Bot E2E Tests', () => {
             chatId: Number(adminGroupId),
             firstName: 'Admin',
             isGroupChat: true,
-            userId: 654321,
-        });
+            userId: 654321});
 
         // Add photo to the message
         adminReply.message!.photo = [
@@ -329,21 +309,18 @@ describe('Telegram Bot E2E Tests', () => {
             date: Math.floor(Date.now() / 1000),
             from: { first_name: 'User', id: 123456, is_bot: false },
             message_id: 456,
-            text: 'Original message',
-        };
+            text: 'Original message'};
 
         // Setup response for sendPhoto
         telegramServer.setResponse('sendPhoto', (params) => ({
             caption: params.caption,
             chat: {
                 id: params.chat_id,
-                type: params.chat_id < 0 ? 'supergroup' : 'private',
-            },
+                type: params.chat_id < 0 ? 'supergroup' : 'private'},
             date: Math.floor(Date.now() / 1000),
             from: telegramServer['botInfo'],
             message_id: Math.floor(Math.random() * 10000),
-            photo: [{ file_id: params.photo, file_unique_id: 'unique', height: 800, width: 800 }],
-        }));
+            photo: [{ file_id: params.photo, file_unique_id: 'unique', height: 800, width: 800 }]}));
 
         await bot.handleUpdate(adminReply);
 
@@ -365,8 +342,7 @@ describe('Telegram Bot E2E Tests', () => {
             name: 'Test User',
             threadId: '789',
             updatedAt: new Date().toISOString(),
-            userId: '123456',
-        });
+            userId: '123456'});
 
         telegramServer.clearRequests();
 
@@ -374,15 +350,13 @@ describe('Telegram Bot E2E Tests', () => {
             chatId: Number(adminGroupId),
             firstName: 'Admin',
             isGroupChat: true,
-            userId: 654321,
-        });
+            userId: 654321});
 
         // Add document to the message
         adminReply.message!.document = {
             file_id: 'doc_id',
             file_name: 'test.pdf',
-            file_unique_id: 'unique_doc_id',
-        };
+            file_unique_id: 'unique_doc_id'};
         adminReply.message!.caption = 'Document reply';
         adminReply.message!.text = undefined;
 
@@ -392,25 +366,21 @@ describe('Telegram Bot E2E Tests', () => {
             date: Math.floor(Date.now() / 1000),
             from: { first_name: 'User', id: 123456, is_bot: false },
             message_id: 456,
-            text: 'Original message',
-        };
+            text: 'Original message'};
 
         // Setup response for sendDocument
         telegramServer.setResponse('sendDocument', (params) => ({
             caption: params.caption,
             chat: {
                 id: params.chat_id,
-                type: params.chat_id < 0 ? 'supergroup' : 'private',
-            },
+                type: params.chat_id < 0 ? 'supergroup' : 'private'},
             date: Math.floor(Date.now() / 1000),
             document: {
                 file_id: params.document,
                 file_name: 'test.pdf',
-                file_unique_id: 'unique_doc_id',
-            },
+                file_unique_id: 'unique_doc_id'},
             from: telegramServer['botInfo'],
-            message_id: Math.floor(Math.random() * 10000),
-        }));
+            message_id: Math.floor(Math.random() * 10000)}));
 
         await bot.handleUpdate(adminReply);
 
@@ -431,8 +401,7 @@ describe('Telegram Bot E2E Tests', () => {
             firstName: 'Test',
             text: 'Hello there',
             userId: 123456,
-            username: 'testuser',
-        });
+            username: 'testuser'});
 
         await bot.handleUpdate(message);
 
@@ -452,9 +421,7 @@ describe('Telegram Bot E2E Tests', () => {
             setupBy: {
                 first_name: 'Admin',
                 id: 654321,
-                is_bot: false,
-            },
-        });
+                is_bot: false}});
 
         return adminGroupId;
     }

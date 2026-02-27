@@ -2,27 +2,25 @@ import type { NextFunction } from '@/bot.js';
 import type { ForwardContext } from '@/types/app.js';
 
 import { replyWithWarning } from '@/utils/replyUtils.js';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, mock } from 'bun:test';
 
 import { requireGroupAdmin } from './requireGroupAdmin.js';
 
-vi.mock('@/utils/replyUtils.js');
+mock.module('@/utils/replyUtils.js');
 
 describe('requireGroupAdmin', () => {
     let next: NextFunction;
 
     beforeEach(() => {
-        vi.clearAllMocks();
-        next = vi.fn();
+        mock.restore();
+        next = mock(() => {});
     });
 
     it('should reject in non-supergroup chats', async () => {
         const ctx = {
             chat: {
                 id: 1,
-                type: 'group',
-            },
-        };
+                type: 'group'}};
 
         await requireGroupAdmin(ctx as unknown as ForwardContext, next);
 
@@ -34,15 +32,11 @@ describe('requireGroupAdmin', () => {
         const ctx = {
             bot: {
                 api: {
-                    getChatMember: vi.fn().mockResolvedValue({ status: 'member' }),
-                },
-            },
+                    getChatMember: mock(() => {}).mockResolvedValue({ status: 'member' })}},
             chat: {
                 id: 1,
-                type: 'supergroup',
-            },
-            from: { id: 2 },
-        };
+                type: 'supergroup'},
+            from: { id: 2 }};
 
         await requireGroupAdmin(ctx as unknown as ForwardContext, next);
 
@@ -55,15 +49,11 @@ describe('requireGroupAdmin', () => {
         const ctx = {
             bot: {
                 api: {
-                    getChatMember: vi.fn().mockResolvedValue({ status }),
-                },
-            },
+                    getChatMember: mock(() => {}).mockResolvedValue({ status })}},
             chat: {
                 id: 1,
-                type: 'supergroup',
-            },
-            from: { id: 1 },
-        };
+                type: 'supergroup'},
+            from: { id: 1 }};
 
         await requireGroupAdmin(ctx as unknown as ForwardContext, next);
 

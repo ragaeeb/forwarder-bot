@@ -1,15 +1,14 @@
 import type { ForwardContext } from '@/types/app.js';
 
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, mock } from 'bun:test';
 
 import { replyWithError, replyWithSuccess, replyWithWarning } from './replyUtils.js';
 
 describe('replyUtils', () => {
     const createMockContext = (overrides = {}) =>
         ({
-            reply: vi.fn().mockResolvedValue({ message_id: 123 }),
-            ...overrides,
-        }) as unknown as ForwardContext;
+            reply: mock(() => {}).mockResolvedValue({ message_id: 123 }),
+            ...overrides}) as unknown as ForwardContext;
 
     describe('replyWithError', () => {
         it('should reply with error emoji and message', async () => {
@@ -35,8 +34,7 @@ describe('replyUtils', () => {
         it('should return the result from ctx.reply', async () => {
             const mockReplyResult = { message_id: 456, text: 'Test message' };
             const ctx = createMockContext({
-                reply: vi.fn().mockResolvedValue(mockReplyResult),
-            });
+                reply: mock(() => {}).mockResolvedValue(mockReplyResult)});
 
             const result = await replyWithSuccess(ctx, 'Test message');
 

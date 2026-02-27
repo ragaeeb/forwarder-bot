@@ -2,7 +2,7 @@ import type { NextFunction } from '@/bot.js';
 import type { ForwardContext } from '@/types/app.js';
 
 import { DataService } from '@/services/types.js';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, mock } from 'bun:test';
 
 import { injectDependencies, requireAdminReply, requirePrivateChat, requireSetup } from './common.js';
 
@@ -10,8 +10,8 @@ describe('common', () => {
     let next: NextFunction;
 
     beforeEach(() => {
-        vi.clearAllMocks();
-        next = vi.fn();
+        mock.restore();
+        next = mock(() => {});
     });
 
     describe('requireSetup', () => {
@@ -44,7 +44,7 @@ describe('common', () => {
 
     describe('injectDependencies', () => {
         it('should proceed if we were able to inject the settings', async () => {
-            const db = { getSettings: vi.fn().mockResolvedValue({ adminGroupId: '1' }) };
+            const db = { getSettings: mock(() => {}).mockResolvedValue({ adminGroupId: '1' }) };
             const ctx = {} as unknown as ForwardContext;
             const fn = injectDependencies(db as unknown as DataService);
 
@@ -56,7 +56,7 @@ describe('common', () => {
         });
 
         it('should proceed even if we were not setup', async () => {
-            const db = { getSettings: vi.fn() };
+            const db = { getSettings: mock(() => {}) };
             const ctx = {} as unknown as ForwardContext;
             const fn = injectDependencies(db as unknown as DataService);
 
@@ -68,7 +68,7 @@ describe('common', () => {
         });
 
         it('should fail if we could not query the settings', async () => {
-            const db = { getSettings: vi.fn().mockRejectedValue(new Error('Cannot connect to db')) };
+            const db = { getSettings: mock(() => {}).mockRejectedValue(new Error('Cannot connect to db')) };
             const fn = injectDependencies(db as unknown as DataService);
 
             await fn({} as unknown as ForwardContext, next);
@@ -82,8 +82,7 @@ describe('common', () => {
             const ctx = {
                 chat: { id: 1, type: 'supergroup' },
                 message: { message_thread_id: 1, reply_to_message: {} },
-                settings: { adminGroupId: '1' },
-            } as unknown as ForwardContext;
+                settings: { adminGroupId: '1' }} as unknown as ForwardContext;
 
             requireAdminReply(ctx, next);
 
@@ -93,8 +92,7 @@ describe('common', () => {
         it('should not accept a DM from the user', () => {
             const ctx = {
                 chat: { id: 1, type: 'private' },
-                settings: { adminGroupId: '2' },
-            } as unknown as ForwardContext;
+                settings: { adminGroupId: '2' }} as unknown as ForwardContext;
 
             requireAdminReply(ctx, next);
 
@@ -104,8 +102,7 @@ describe('common', () => {
         it('should not proceed if it is an unknown message', () => {
             const ctx = {
                 chat: { id: 1, type: 'group' },
-                settings: { adminGroupId: '2' },
-            } as unknown as ForwardContext;
+                settings: { adminGroupId: '2' }} as unknown as ForwardContext;
 
             requireAdminReply(ctx, next);
 

@@ -1,15 +1,15 @@
 import type { ForwardContext } from '@/types/app.js';
 
 import { replyWithError, replyWithSuccess } from '@/utils/replyUtils.js';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, mock } from 'bun:test';
 
 import { onCustomize } from './customize.js';
 
-vi.mock('@/utils/replyUtils.js');
+mock.module('@/utils/replyUtils.js');
 
 describe('customize', () => {
     beforeEach(() => {
-        vi.clearAllMocks();
+        mock.restore();
     });
 
     describe('onCustomize', () => {
@@ -31,9 +31,8 @@ describe('customize', () => {
         it('should handle errors', async () => {
             const ctx = {
                 args: 'Test',
-                db: { saveSettings: vi.fn().mockRejectedValueOnce(new Error('Error saving')) },
-                text: '/ack Test',
-            };
+                db: { saveSettings: mock(() => {}).mockRejectedValueOnce(new Error('Error saving')) },
+                text: '/ack Test'};
 
             await onCustomize(ctx as unknown as ForwardContext);
 
@@ -46,10 +45,9 @@ describe('customize', () => {
             async (command) => {
                 const ctx = {
                     args: 'Acknowledged it!',
-                    db: { saveSettings: vi.fn().mockResolvedValue({ ack: 'Acknowledged it!' }) },
+                    db: { saveSettings: mock(() => {}).mockResolvedValue({ ack: 'Acknowledged it!' }) },
                     settings: {},
-                    text: `/${command} Acknowledged it!`,
-                };
+                    text: `/${command} Acknowledged it!`};
 
                 await onCustomize(ctx as unknown as ForwardContext);
 

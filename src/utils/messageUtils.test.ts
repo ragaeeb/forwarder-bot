@@ -1,6 +1,6 @@
 import type { TelegramMessage } from '@/types/telegram.js';
 
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'bun:test';
 
 import { mapTelegramMessageToSavedMessage } from './messageUtils.js';
 
@@ -14,11 +14,9 @@ describe('messageUtils', () => {
                     first_name: 'John',
                     id: 98765,
                     last_name: 'Doe',
-                    username: 'johndoe',
-                },
+                    username: 'johndoe'},
                 message_id: 12345,
-                text: 'Hello, world!',
-            };
+                text: 'Hello, world!'};
 
             const result = mapTelegramMessageToSavedMessage(message, 'user');
 
@@ -28,13 +26,11 @@ describe('messageUtils', () => {
                     firstName: 'John',
                     lastName: 'Doe',
                     userId: '98765',
-                    username: 'johndoe',
-                },
+                    username: 'johndoe'},
                 id: '12345',
                 text: 'Hello, world!',
                 timestamp: expect.any(String),
-                type: 'user',
-            });
+                type: 'user'});
 
             expect(new Date(result.timestamp)).toEqual(new Date(message.date * 1000));
         });
@@ -46,11 +42,9 @@ describe('messageUtils', () => {
                 from: {
                     first_name: 'Admin',
                     id: 98765,
-                    username: 'adminuser',
-                },
+                    username: 'adminuser'},
                 message_id: 12345,
-                text: 'Admin announcement',
-            };
+                text: 'Admin announcement'};
 
             const result = mapTelegramMessageToSavedMessage(message, 'admin');
 
@@ -59,13 +53,11 @@ describe('messageUtils', () => {
                 from: {
                     firstName: 'Admin',
                     userId: '98765',
-                    username: 'adminuser',
-                },
+                    username: 'adminuser'},
                 id: '12345',
                 text: 'Admin announcement',
                 timestamp: expect.any(String),
-                type: 'admin',
-            });
+                type: 'admin'});
 
             expect(new Date(result.timestamp)).toEqual(new Date(message.date * 1000));
         });
@@ -76,10 +68,8 @@ describe('messageUtils', () => {
                 date: 1645564800,
                 from: {
                     first_name: 'John',
-                    id: 98765,
-                },
-                message_id: 12345,
-            };
+                    id: 98765},
+                message_id: 12345};
 
             const result = mapTelegramMessageToSavedMessage(message, 'user');
 
@@ -93,15 +83,13 @@ describe('messageUtils', () => {
                 date: 1645564800,
                 from: {
                     first_name: 'John',
-                    id: 98765,
-                },
+                    id: 98765},
                 message_id: 12345,
                 photo: [
                     { file_id: 'small_photo_id', file_size: 1024, file_unique_id: 'small', height: 100, width: 100 },
                     { file_id: 'medium_photo_id', file_size: 10240, file_unique_id: 'medium', height: 320, width: 320 },
                     { file_id: 'large_photo_id', file_size: 51200, file_unique_id: 'large', height: 800, width: 800 },
-                ],
-            };
+                ]};
 
             const result = mapTelegramMessageToSavedMessage(message, 'user');
 
@@ -119,14 +107,11 @@ describe('messageUtils', () => {
                     file_id: 'doc_file_id',
                     file_name: 'document.pdf',
                     file_unique_id: 'doc',
-                    mime_type: 'application/pdf',
-                },
+                    mime_type: 'application/pdf'},
                 from: {
                     first_name: 'John',
-                    id: 98765,
-                },
-                message_id: 12345,
-            };
+                    id: 98765},
+                message_id: 12345};
 
             const result = mapTelegramMessageToSavedMessage(message, 'user');
 
@@ -142,17 +127,14 @@ describe('messageUtils', () => {
                 date: 1645564800,
                 from: {
                     first_name: 'John',
-                    id: 98765,
-                },
+                    id: 98765},
                 message_id: 12345,
                 video: {
                     duration: 30,
                     file_id: 'video_file_id',
                     file_unique_id: 'video',
                     height: 720,
-                    width: 1280,
-                },
-            };
+                    width: 1280}};
 
             const result = mapTelegramMessageToSavedMessage(message, 'user');
 
@@ -167,16 +149,13 @@ describe('messageUtils', () => {
                 date: 1645564800,
                 from: {
                     first_name: 'John',
-                    id: 98765,
-                },
+                    id: 98765},
                 message_id: 12345,
                 voice: {
                     duration: 15,
                     file_id: 'voice_file_id',
                     file_unique_id: 'voice',
-                    mime_type: 'audio/ogg',
-                },
-            };
+                    mime_type: 'audio/ogg'}};
 
             const result = mapTelegramMessageToSavedMessage(message, 'user');
 
@@ -191,16 +170,13 @@ describe('messageUtils', () => {
                     file_id: 'audio_file_id',
                     file_unique_id: 'audio',
                     performer: 'Speaker Name',
-                    title: 'Lecture Title',
-                },
+                    title: 'Lecture Title'},
                 chat: { id: 67890, type: 'private' },
                 date: 1645564800,
                 from: {
                     first_name: 'John',
-                    id: 98765,
-                },
-                message_id: 12345,
-            };
+                    id: 98765},
+                message_id: 12345};
 
             const result = mapTelegramMessageToSavedMessage(message, 'user');
 
@@ -214,8 +190,7 @@ describe('messageUtils', () => {
                 date: 1645564800,
                 from: {
                     first_name: 'John',
-                    id: 98765,
-                },
+                    id: 98765},
                 message_id: 12345,
                 sticker: {
                     emoji: '😊',
@@ -226,9 +201,7 @@ describe('messageUtils', () => {
                     is_video: false,
                     set_name: 'StickerSetName',
                     type: 'regular',
-                    width: 512,
-                },
-            };
+                    width: 512}};
 
             const result = mapTelegramMessageToSavedMessage(message, 'user');
 
@@ -242,21 +215,17 @@ describe('messageUtils', () => {
                 date: 1645564800,
                 from: {
                     first_name: 'John',
-                    id: 98765,
-                },
+                    id: 98765},
                 message_id: 12345,
                 reply_to_message: {
                     chat: { id: 67890, type: 'private' },
                     date: 1645564700,
                     from: {
                         first_name: 'Jane',
-                        id: 11111,
-                    },
+                        id: 11111},
                     message_id: 12340,
-                    text: 'Original message',
-                },
-                text: 'This is a reply',
-            };
+                    text: 'Original message'},
+                text: 'This is a reply'};
 
             const result = mapTelegramMessageToSavedMessage(message, 'user');
 
@@ -269,16 +238,13 @@ describe('messageUtils', () => {
                 date: 1645564800,
                 from: {
                     first_name: 'John',
-                    id: 98765,
-                },
+                    id: 98765},
                 message_id: 12345,
                 quote: {
                     entities: [],
                     position: 10,
-                    text: 'This is the quoted text',
-                },
-                text: 'This is a quote reply',
-            };
+                    text: 'This is the quoted text'},
+                text: 'This is a quote reply'};
 
             const result = mapTelegramMessageToSavedMessage(message, 'user');
 
@@ -294,17 +260,13 @@ describe('messageUtils', () => {
                     sender_user: {
                         first_name: 'Original',
                         id: 11111,
-                        last_name: 'Sender',
-                    },
-                    type: 'user',
-                },
+                        last_name: 'Sender'},
+                    type: 'user'},
                 from: {
                     first_name: 'John',
-                    id: 98765,
-                },
+                    id: 98765},
                 message_id: 12345,
-                text: 'Forwarded message content',
-            };
+                text: 'Forwarded message content'};
 
             const result = mapTelegramMessageToSavedMessage(message, 'user');
 
@@ -313,10 +275,8 @@ describe('messageUtils', () => {
                 sender_user: {
                     first_name: 'Original',
                     id: 11111,
-                    last_name: 'Sender',
-                },
-                type: 'user',
-            });
+                    last_name: 'Sender'},
+                type: 'user'});
         });
     });
 });

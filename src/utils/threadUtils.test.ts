@@ -1,6 +1,6 @@
 import type { TelegramMessage } from '@/types/telegram.js';
 
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, mock, setSystemTime } from 'bun:test';
 
 import type { ForwardContext, ThreadData } from '../types/app.js';
 
@@ -8,21 +8,19 @@ import { createNewThread, updateThreadByMessage } from './threadUtils.js';
 
 describe('threadUtils', () => {
     beforeEach(() => {
-        vi.resetAllMocks();
-        vi.useFakeTimers();
-        vi.setSystemTime(new Date('2022-02-23T12:00:00.000Z'));
+        mock.restore();
+        setSystemTime(new Date());
+        setSystemTime(new Date('2022-02-23T12:00:00.000Z'));
     });
 
-    afterEach(() => {
-        vi.useRealTimers();
-    });
+    afterEach(() => {});
 
     describe('createNewThread', () => {
         it('should create a new thread successfully', async () => {
             const ctx = {
                 bot: {
                     api: {
-                        createForumTopic: vi.fn().mockResolvedValue({
+                        createForumTopic: mock(() => {}).mockResolvedValue({
                             message_thread_id: 99999,
                             name: '12345: John Doe (johndoe)',
                         }),
@@ -30,7 +28,7 @@ describe('threadUtils', () => {
                 },
                 chat: { id: 54321 },
                 db: {
-                    saveThread: vi.fn().mockResolvedValue({
+                    saveThread: mock(() => {}).mockResolvedValue({
                         createdAt: expect.any(String),
                         lastMessageId: '67890',
                         name: '12345: John Doe (johndoe)',
@@ -87,7 +85,7 @@ describe('threadUtils', () => {
             const ctx = {
                 bot: {
                     api: {
-                        createForumTopic: vi.fn().mockResolvedValue({
+                        createForumTopic: mock(() => {}).mockResolvedValue({
                             message_thread_id: 99999,
                             name: '12345: John',
                         }),
@@ -95,7 +93,7 @@ describe('threadUtils', () => {
                 },
                 chat: { id: 54321, type: 'private' },
                 db: {
-                    saveThread: vi.fn().mockResolvedValue({
+                    saveThread: mock(() => {}).mockResolvedValue({
                         chatId: '54321',
                         createdAt: '2022-02-23T00:00:00.000Z',
                         lastMessageId: '67890',
@@ -131,7 +129,7 @@ describe('threadUtils', () => {
             const ctx = {
                 bot: {
                     api: {
-                        createForumTopic: vi.fn().mockRejectedValue(new Error('Could not create topic')),
+                        createForumTopic: mock(() => {}).mockRejectedValue(new Error('Could not create topic')),
                     },
                 },
                 chat: { id: 54321, type: 'private' },
@@ -153,7 +151,7 @@ describe('threadUtils', () => {
             const ctx = {
                 bot: {
                     api: {
-                        createForumTopic: vi.fn().mockResolvedValue({
+                        createForumTopic: mock(() => {}).mockResolvedValue({
                             message_thread_id: 99999,
                             name: '12345: John Doe (johndoe)',
                         }),
@@ -161,7 +159,7 @@ describe('threadUtils', () => {
                 },
                 chat: { id: 54321 },
                 db: {
-                    saveThread: vi.fn().mockRejectedValue(new Error('Could not save thread')),
+                    saveThread: mock(() => {}).mockRejectedValue(new Error('Could not save thread')),
                 },
                 from: {
                     id: 12345,
@@ -177,7 +175,7 @@ describe('threadUtils', () => {
         it('should update thread with new message information', async () => {
             const ctx = {
                 db: {
-                    saveThread: vi.fn().mockResolvedValue({
+                    saveThread: mock(() => {}).mockResolvedValue({
                         chatId: '54321',
                         createdAt: '2022-02-20T00:00:00.000Z',
                         lastMessageId: '99999',

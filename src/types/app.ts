@@ -8,6 +8,7 @@ import type { TelegramMessageOrigin, TelegramUser } from './telegram.js';
 export interface BotSettings {
     ack?: string;
     adminGroupId: string;
+    configId?: string; // used internally by DynamoDB and config layers
     failure?: string;
     greeting?: string;
     setupAt: string;
@@ -44,17 +45,20 @@ export interface SavedMessage {
     replyToMessageId?: string;
     text: string;
     timestamp: string;
-    type: 'admin' | 'user';
+    type: 'admin' | 'system' | 'user';
 }
 
 /**
  * Information about a thread
  */
 export interface ThreadData {
+    chatId?: string;
     createdAt: string;
+    lastMessageAt?: string;
     lastMessageId: string;
     name: string;
     threadId: string;
+    unreadCount?: number;
     updatedAt: string;
     userId: string;
 }
