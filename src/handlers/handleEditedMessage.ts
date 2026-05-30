@@ -21,7 +21,7 @@ export const onEditedMessage = async (ctx: ForwardContext) => {
             return;
         }
 
-        const threadId = parseInt(threadData.threadId);
+        const threadId = parseInt(threadData.threadId, 10);
         const { adminGroupId } = ctx.settings!;
 
         logger.info(`Notifying of edited message to group ${adminGroupId}/${threadId}`);

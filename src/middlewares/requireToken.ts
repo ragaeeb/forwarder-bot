@@ -1,7 +1,6 @@
 import type { NextFunction } from '@/bot.js';
-import type { ForwardContext } from '@/types/app.js';
-
 import { config } from '@/config.js';
+import type { ForwardContext } from '@/types/app.js';
 import logger from '@/utils/logger.js';
 import { hashToken } from '@/utils/security.js';
 

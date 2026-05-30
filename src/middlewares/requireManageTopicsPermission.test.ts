@@ -1,26 +1,27 @@
+import { beforeEach, describe, expect, it, mock } from 'bun:test';
 import type { NextFunction } from '@/bot.js';
 import type { ForwardContext } from '@/types/app.js';
-
 import { replyWithError } from '@/utils/replyUtils.js';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { requireManageTopicsPermission } from './requireManageTopicsPermission.js';
 
-vi.mock('@/utils/replyUtils.js');
+mock.module('@/utils/replyUtils.js', () => ({
+    replyWithError: mock(() => {}),
+}));
 
 describe('requireManageTopicsPermission', () => {
     let next: NextFunction;
 
     beforeEach(() => {
-        vi.clearAllMocks();
-        next = vi.fn();
+        mock.clearAllMocks();
+        next = mock(() => {});
     });
 
     it('should fail if bot could not create topic', async () => {
         const ctx = {
             bot: {
                 api: {
-                    createForumTopic: vi.fn().mockRejectedValue(new Error('Cannot create thread')),
+                    createForumTopic: mock(() => Promise.reject(new Error('Cannot create thread'))),
                 },
             },
             chat: {
@@ -31,8 +32,9 @@ describe('requireManageTopicsPermission', () => {
         await requireManageTopicsPermission(ctx as unknown as ForwardContext, next);
 
         expect(next).not.toHaveBeenCalled();
-        expect(replyWithError).toHaveBeenCalledOnce();
-        expect(ctx.bot.api.createForumTopic).toHaveBeenCalledExactlyOnceWith({
+        expect(replyWithError).toHaveBeenCalledTimes(1);
+        expect(ctx.bot.api.createForumTopic).toHaveBeenCalledTimes(1);
+        expect(ctx.bot.api.createForumTopic).toHaveBeenCalledWith({
             chat_id: 1,
             name: expect.any(String),
         });
@@ -42,8 +44,8 @@ describe('requireManageTopicsPermission', () => {
         const ctx = {
             bot: {
                 api: {
-                    createForumTopic: vi.fn().mockResolvedValue({ message_thread_id: 99, name: 'T' }),
-                    deleteForumTopic: vi.fn().mockRejectedValue(new Error('Cannot create thread')),
+                    createForumTopic: mock(() => Promise.resolve({ message_thread_id: 99, name: 'T' })),
+                    deleteForumTopic: mock(() => Promise.reject(new Error('Cannot create thread'))),
                 },
             },
             chat: {
@@ -54,8 +56,9 @@ describe('requireManageTopicsPermission', () => {
         await requireManageTopicsPermission(ctx as unknown as ForwardContext, next);
 
         expect(next).not.toHaveBeenCalled();
-        expect(replyWithError).toHaveBeenCalledOnce();
-        expect(ctx.bot.api.deleteForumTopic).toHaveBeenCalledExactlyOnceWith({
+        expect(replyWithError).toHaveBeenCalledTimes(1);
+        expect(ctx.bot.api.deleteForumTopic).toHaveBeenCalledTimes(1);
+        expect(ctx.bot.api.deleteForumTopic).toHaveBeenCalledWith({
             chat_id: 1,
             message_thread_id: 99,
         });
@@ -65,8 +68,8 @@ describe('requireManageTopicsPermission', () => {
         const ctx = {
             bot: {
                 api: {
-                    createForumTopic: vi.fn().mockResolvedValue({ message_thread_id: 99, name: 'T' }),
-                    deleteForumTopic: vi.fn().mockResolvedValue(true),
+                    createForumTopic: mock(() => Promise.resolve({ message_thread_id: 99, name: 'T' })),
+                    deleteForumTopic: mock(() => Promise.resolve(true)),
                 },
             },
             chat: {
@@ -76,7 +79,8 @@ describe('requireManageTopicsPermission', () => {
 
         await requireManageTopicsPermission(ctx as unknown as ForwardContext, next);
 
-        expect(next).toHaveBeenCalledExactlyOnceWith();
+        expect(next).toHaveBeenCalledTimes(1);
+        expect(next).toHaveBeenCalledWith();
         expect(replyWithError).not.toHaveBeenCalled();
     });
 });

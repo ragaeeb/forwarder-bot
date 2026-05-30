@@ -1,29 +1,12 @@
 import crypto from 'node:crypto';
-import { promises as fs } from 'node:fs';
-import path from 'node:path';
 
 import { config } from '../src/config.js';
 import { hashToken } from '../src/utils/security.js';
 import { initWebhook, resetHook } from '../src/webhook.js';
 
-/**
- * Retrieves the API URL from the Serverless deployment metadata file.
- *
- * @returns {Promise<string|undefined>} The API URL or undefined if not found
- */
-const getApiUrl = async () => {
-    type Meta = { serviceProviderAwsCfStackOutputs: { OutputKey: string; OutputValue: string }[] };
-
-    const data: Record<string, Meta> = JSON.parse(
-        await fs.readFile(path.format({ dir: '.serverless', ext: '.json', name: 'meta' }), 'utf-8'),
-    );
-    const [meta] = Object.values(data);
-
-    const apiUrl = meta?.serviceProviderAwsCfStackOutputs.find(
-        (output) => output.OutputKey === 'HttpApiUrl',
-    )?.OutputValue;
-
-    return apiUrl;
+const getApiUrl = () => {
+    const base = config.NEXTAUTH_URL.replace(/\/$/, '');
+    return `${base}/api/webhook`;
 };
 
 /**
@@ -48,7 +31,7 @@ const setupWebhook = async () => {
         return;
     }
 
-    const apiUrl = await getApiUrl();
+    const apiUrl = getApiUrl();
 
     if (apiUrl) {
         const success = await initWebhook(apiUrl);

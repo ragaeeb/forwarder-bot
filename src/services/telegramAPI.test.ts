@@ -1,22 +1,22 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, mock } from 'bun:test';
 
 import { TelegramAPI } from './telegramAPI.js';
 
 describe('telegramAPI', () => {
     let api: TelegramAPI;
-    let fetchMock: any;
+    let fetchMock: ReturnType<typeof mock>;
 
     beforeEach(() => {
         api = new TelegramAPI('test-token');
 
-        fetchMock = vi.fn().mockImplementation(async () => {
+        fetchMock = mock(async () => {
             return {
                 json: async () => ({ ok: true, result: { mock: 'data' } }),
                 ok: true,
             };
         });
 
-        global.fetch = fetchMock;
+        global.fetch = fetchMock as any;
     });
 
     it('should initialize with a token', () => {

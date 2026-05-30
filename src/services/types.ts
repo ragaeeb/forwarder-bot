@@ -60,4 +60,12 @@ export interface DataService {
      * @returns {Promise<ThreadData>} The saved thread data
      */
     saveThread(thread: ThreadData): Promise<ThreadData>;
+
+    getAllThreads(options?: { limit?: number; offset?: number }): Promise<ThreadData[]>;
+
+    getThreadCount(): Promise<number>;
+
+    getUnreadCount(userId: string): Promise<number>;
+
+    markThreadRead(userId: string): Promise<void>;
 }

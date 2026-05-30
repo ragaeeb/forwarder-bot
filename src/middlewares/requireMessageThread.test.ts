@@ -1,21 +1,32 @@
+import { afterAll, beforeEach, describe, expect, it, mock } from 'bun:test';
 import type { NextFunction } from '@/bot.js';
 import type { ForwardContext } from '@/types/app.js';
-
 import { replyWithError } from '@/utils/replyUtils.js';
-import { createNewThread, updateThreadByMessage } from '@/utils/threadUtils.js';
-import { beforeEach, describe, expect, it, type Mock, vi } from 'vitest';
+import * as threadUtils from '@/utils/threadUtils.js';
 
 import { requireReferencedThread, requireThreadForUser } from './requireMessageThread.js';
 
-vi.mock('@/utils/threadUtils.js');
-vi.mock('@/utils/replyUtils.js');
+const createNewThreadMock = mock(() => {});
+const updateThreadByMessageMock = mock(() => {});
+
+mock.module('@/utils/threadUtils.js', () => ({
+    createNewThread: createNewThreadMock,
+    updateThreadByMessage: updateThreadByMessageMock,
+}));
+mock.module('@/utils/replyUtils.js', () => ({
+    replyWithError: mock(() => {}),
+}));
 
 describe('requireMessageThread', () => {
     let next: NextFunction;
 
     beforeEach(() => {
-        vi.clearAllMocks();
-        next = vi.fn();
+        mock.clearAllMocks();
+        next = mock(() => {});
+    });
+
+    afterAll(() => {
+        mock.module('@/utils/threadUtils.js', () => threadUtils);
     });
 
     describe('requireThreadForUser', () => {
@@ -26,7 +37,7 @@ describe('requireMessageThread', () => {
 
             const ctx = {
                 db: {
-                    getThreadByUserId: vi.fn().mockResolvedValue(thread),
+                    getThreadByUserId: mock(() => Promise.resolve(thread)),
                 },
                 from: {
                     id: 12345,
@@ -36,20 +47,23 @@ describe('requireMessageThread', () => {
                 },
             } as unknown as ForwardContext;
 
-            (updateThreadByMessage as Mock).mockResolvedValue(thread);
+            updateThreadByMessageMock.mockResolvedValue(thread);
 
             await requireThreadForUser(ctx, next);
 
-            expect(ctx.db.getThreadByUserId).toHaveBeenCalledExactlyOnceWith('12345');
-            expect(updateThreadByMessage).toHaveBeenCalledExactlyOnceWith(ctx, thread, ctx.message);
-            expect(next).toHaveBeenCalledExactlyOnceWith();
+            expect(ctx.db.getThreadByUserId).toHaveBeenCalledTimes(1);
+            expect(ctx.db.getThreadByUserId).toHaveBeenCalledWith('12345');
+            expect(updateThreadByMessageMock).toHaveBeenCalledTimes(1);
+            expect(updateThreadByMessageMock).toHaveBeenCalledWith(ctx, thread, ctx.message);
+            expect(next).toHaveBeenCalledTimes(1);
+            expect(next).toHaveBeenCalledWith();
             expect(ctx.thread).toEqual(thread);
         });
 
         it('should create a new thread when an existing thread does not exist for the user', async () => {
             const ctx = {
                 db: {
-                    getThreadByUserId: vi.fn(),
+                    getThreadByUserId: mock(() => {}),
                 },
                 from: {
                     id: 12345,
@@ -59,22 +73,25 @@ describe('requireMessageThread', () => {
                 },
             } as unknown as ForwardContext;
 
-            (createNewThread as Mock).mockResolvedValue({
+            createNewThreadMock.mockResolvedValue({
                 threadId: '99',
             });
 
             await requireThreadForUser(ctx, next);
 
-            expect(ctx.db.getThreadByUserId).toHaveBeenCalledExactlyOnceWith('12345');
-            expect(createNewThread).toHaveBeenCalledExactlyOnceWith(ctx);
-            expect(next).toHaveBeenCalledExactlyOnceWith();
+            expect(ctx.db.getThreadByUserId).toHaveBeenCalledTimes(1);
+            expect(ctx.db.getThreadByUserId).toHaveBeenCalledWith('12345');
+            expect(createNewThreadMock).toHaveBeenCalledTimes(1);
+            expect(createNewThreadMock).toHaveBeenCalledWith(ctx);
+            expect(next).toHaveBeenCalledTimes(1);
+            expect(next).toHaveBeenCalledWith();
             expect(ctx.thread).toEqual({ threadId: '99' });
         });
 
         it('should not proceed if there are any errors getting the thread', async () => {
             const ctx = {
                 db: {
-                    getThreadByUserId: vi.fn().mockRejectedValue(new Error('Error getting thread')),
+                    getThreadByUserId: mock(() => Promise.reject(new Error('Error getting thread'))),
                 },
                 from: {
                     id: 12345,
@@ -84,16 +101,16 @@ describe('requireMessageThread', () => {
 
             await requireThreadForUser(ctx, next);
 
-            expect(createNewThread).not.toHaveBeenCalled();
+            expect(createNewThreadMock).not.toHaveBeenCalled();
             expect(next).not.toHaveBeenCalled();
             expect(ctx.thread).toBeUndefined();
-            expect(replyWithError).toHaveBeenCalledOnce();
+            expect(replyWithError).toHaveBeenCalledTimes(1);
         });
 
         it('should not proceed if there are any errors creating a new thread', async () => {
             const ctx = {
                 db: {
-                    getThreadByUserId: vi.fn(),
+                    getThreadByUserId: mock(() => {}),
                 },
                 from: {
                     id: 12345,
@@ -101,18 +118,19 @@ describe('requireMessageThread', () => {
                 settings: { failure: 'F' },
             } as unknown as ForwardContext;
 
-            (createNewThread as Mock).mockRejectedValue(new Error('Cannot create thread'));
+            createNewThreadMock.mockRejectedValue(new Error('Cannot create thread'));
 
             await requireThreadForUser(ctx, next);
 
             expect(next).not.toHaveBeenCalled();
-            expect(replyWithError).toHaveBeenCalledExactlyOnceWith(ctx, 'F');
+            expect(replyWithError).toHaveBeenCalledTimes(1);
+            expect(replyWithError).toHaveBeenCalledWith(ctx, 'F');
         });
 
         it('should not proceed if there are any errors updating a thread', async () => {
             const ctx = {
                 db: {
-                    getThreadByUserId: vi.fn().mockResolvedValue({ threadId: '11' }),
+                    getThreadByUserId: mock(() => Promise.resolve({ threadId: '11' })),
                 },
                 from: {
                     id: 12345,
@@ -120,12 +138,12 @@ describe('requireMessageThread', () => {
                 settings: {},
             } as unknown as ForwardContext;
 
-            (updateThreadByMessage as Mock).mockRejectedValue(new Error('Cannot create thread'));
+            updateThreadByMessageMock.mockRejectedValue(new Error('Cannot create thread'));
 
             await requireThreadForUser(ctx, next);
 
             expect(next).not.toHaveBeenCalled();
-            expect(replyWithError).toHaveBeenCalledOnce();
+            expect(replyWithError).toHaveBeenCalledTimes(1);
         });
     });
 
@@ -135,7 +153,7 @@ describe('requireMessageThread', () => {
 
             const ctx = {
                 db: {
-                    getThreadById: vi.fn().mockResolvedValue(thread),
+                    getThreadById: mock(() => Promise.resolve(thread)),
                 },
                 message: {
                     message_thread_id: 11,
@@ -145,15 +163,17 @@ describe('requireMessageThread', () => {
             await requireReferencedThread(ctx, next);
 
             expect(ctx.thread).toEqual(thread);
-            expect(next).toHaveBeenCalledExactlyOnceWith();
+            expect(next).toHaveBeenCalledTimes(1);
+            expect(next).toHaveBeenCalledWith();
             expect(replyWithError).not.toHaveBeenCalled();
-            expect(ctx.db.getThreadById).toHaveBeenCalledExactlyOnceWith('11');
+            expect(ctx.db.getThreadById).toHaveBeenCalledTimes(1);
+            expect(ctx.db.getThreadById).toHaveBeenCalledWith('11');
         });
 
         it('should catch errors if thread cannot be found', async () => {
             const ctx = {
                 db: {
-                    getThreadById: vi.fn(),
+                    getThreadById: mock(() => {}),
                 },
                 message: {
                     message_thread_id: 11,
@@ -170,7 +190,7 @@ describe('requireMessageThread', () => {
         it('should catch errors if there are problems getting thread', async () => {
             const ctx = {
                 db: {
-                    getThreadById: vi.fn().mockRejectedValue(new Error('Cannot get thread')),
+                    getThreadById: mock(() => Promise.reject(new Error('Cannot get thread'))),
                 },
                 message: {
                     message_thread_id: 11,

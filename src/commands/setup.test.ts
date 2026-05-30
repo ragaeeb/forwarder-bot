@@ -1,20 +1,23 @@
+import { afterEach, beforeEach, describe, expect, it, type Mock, mock, setSystemTime } from 'bun:test';
 import type { ForwardContext } from '@/types/app.js';
-
 import { replyWithError, replyWithSuccess, replyWithWarning } from '@/utils/replyUtils.js';
-import { afterEach, beforeEach, describe, expect, it, type Mock, vi } from 'vitest';
 
 import { onSetup } from './setup.js';
 
-vi.mock('@/utils/replyUtils.js');
+mock.module('@/utils/replyUtils.js', () => ({
+    replyWithError: mock(() => {}),
+    replyWithSuccess: mock(() => {}),
+    replyWithWarning: mock(() => {}),
+}));
 
 describe('setup', () => {
     beforeEach(() => {
-        vi.clearAllMocks();
-        vi.setSystemTime(new Date('2023-01-01T12:00:00Z'));
+        mock.clearAllMocks();
+        setSystemTime(new Date('2023-01-01T12:00:00Z'));
     });
 
     afterEach(() => {
-        vi.useRealTimers();
+        setSystemTime();
     });
 
     describe('onSetup', () => {
@@ -29,35 +32,36 @@ describe('setup', () => {
                     id: 1,
                 },
                 db: {
-                    saveSettings: vi.fn(),
+                    saveSettings: mock(() => {}),
                 },
                 from: mockUser,
             } as unknown as ForwardContext;
 
             await onSetup(ctx);
 
-            expect(ctx.db.saveSettings).toHaveBeenCalledExactlyOnceWith({
+            expect(ctx.db.saveSettings).toHaveBeenCalledTimes(1);
+            expect(ctx.db.saveSettings).toHaveBeenCalledWith({
                 adminGroupId: '1',
-                configId: 'main',
                 setupAt: '2023-01-01T12:00:00.000Z',
                 setupBy: mockUser,
             });
 
-            expect(replyWithSuccess).toHaveBeenCalledExactlyOnceWith(ctx, expect.any(String));
+            expect(replyWithSuccess).toHaveBeenCalledTimes(1);
+            expect(replyWithSuccess).toHaveBeenCalledWith(ctx, expect.any(String));
         });
 
         it('should notify previous group and leave it if we were already configured', async () => {
             const ctx = {
                 bot: {
                     api: {
-                        leaveChat: vi.fn(),
+                        leaveChat: mock(() => {}),
                     },
                 },
                 chat: {
                     id: 2,
                 },
                 db: {
-                    saveSettings: vi.fn(),
+                    saveSettings: mock(() => {}),
                 },
                 settings: {
                     adminGroupId: '1',
@@ -66,24 +70,27 @@ describe('setup', () => {
 
             await onSetup(ctx);
 
-            expect(ctx.db.saveSettings).toHaveBeenCalledOnce();
-            expect(ctx.bot.api.leaveChat).toHaveBeenCalledExactlyOnceWith({ chat_id: '1' });
-            expect(replyWithWarning).toHaveBeenCalledExactlyOnceWith(ctx, expect.any(String));
-            expect(replyWithSuccess).toHaveBeenCalledExactlyOnceWith(ctx, expect.any(String));
+            expect(ctx.db.saveSettings).toHaveBeenCalledTimes(1);
+            expect(ctx.bot.api.leaveChat).toHaveBeenCalledTimes(1);
+            expect(ctx.bot.api.leaveChat).toHaveBeenCalledWith({ chat_id: '1' });
+            expect(replyWithWarning).toHaveBeenCalledTimes(1);
+            expect(replyWithWarning).toHaveBeenCalledWith(ctx, expect.any(String));
+            expect(replyWithSuccess).toHaveBeenCalledTimes(1);
+            expect(replyWithSuccess).toHaveBeenCalledWith(ctx, expect.any(String));
         });
 
         it('should continue setup even if there is an error leaving old group', async () => {
             const ctx = {
                 bot: {
                     api: {
-                        leaveChat: vi.fn().mockRejectedValue(new Error('Cannot leave')),
+                        leaveChat: mock(() => Promise.reject(new Error('Cannot leave'))),
                     },
                 },
                 chat: {
                     id: 2,
                 },
                 db: {
-                    saveSettings: vi.fn(),
+                    saveSettings: mock(() => {}),
                 },
                 settings: {
                     adminGroupId: '1',
@@ -92,24 +99,25 @@ describe('setup', () => {
 
             await onSetup(ctx);
 
-            expect(ctx.db.saveSettings).toHaveBeenCalledOnce();
-            expect(ctx.bot.api.leaveChat).toHaveBeenCalledExactlyOnceWith({ chat_id: '1' });
-            expect(replyWithWarning).toHaveBeenCalledOnce();
-            expect(replyWithSuccess).toHaveBeenCalledOnce();
+            expect(ctx.db.saveSettings).toHaveBeenCalledTimes(1);
+            expect(ctx.bot.api.leaveChat).toHaveBeenCalledTimes(1);
+            expect(ctx.bot.api.leaveChat).toHaveBeenCalledWith({ chat_id: '1' });
+            expect(replyWithWarning).toHaveBeenCalledTimes(1);
+            expect(replyWithSuccess).toHaveBeenCalledTimes(1);
         });
 
         it('should continue setup even if there is an error notifying of the old group', async () => {
             const ctx = {
                 bot: {
                     api: {
-                        leaveChat: vi.fn().mockRejectedValue(new Error('Cannot leave')),
+                        leaveChat: mock(() => Promise.reject(new Error('Cannot leave'))),
                     },
                 },
                 chat: {
                     id: 2,
                 },
                 db: {
-                    saveSettings: vi.fn(),
+                    saveSettings: mock(() => {}),
                 },
                 settings: {
                     adminGroupId: '1',
@@ -120,10 +128,10 @@ describe('setup', () => {
 
             await onSetup(ctx);
 
-            expect(ctx.db.saveSettings).toHaveBeenCalledOnce();
+            expect(ctx.db.saveSettings).toHaveBeenCalledTimes(1);
             expect(ctx.bot.api.leaveChat).not.toHaveBeenCalled();
-            expect(replyWithWarning).toHaveBeenCalledOnce();
-            expect(replyWithSuccess).toHaveBeenCalledOnce();
+            expect(replyWithWarning).toHaveBeenCalledTimes(1);
+            expect(replyWithSuccess).toHaveBeenCalledTimes(1);
         });
 
         it('should handle errors', async () => {
@@ -132,7 +140,7 @@ describe('setup', () => {
                     id: 2,
                 },
                 db: {
-                    saveSettings: vi.fn().mockRejectedValue(new Error()),
+                    saveSettings: mock(() => Promise.reject(new Error())),
                 },
             } as unknown as ForwardContext;
 
@@ -140,7 +148,7 @@ describe('setup', () => {
 
             await onSetup(ctx);
 
-            expect(replyWithError).toHaveBeenCalledOnce();
+            expect(replyWithError).toHaveBeenCalledTimes(1);
             expect(replyWithSuccess).not.toHaveBeenCalled();
         });
     });

@@ -43,7 +43,6 @@ export const onSetup = async (ctx: ForwardContext) => {
         // Store group as the forwarding destination
         await ctx.db.saveSettings({
             adminGroupId: ctx.chat.id.toString(),
-            configId: 'main',
             setupAt: new Date().toISOString(),
             setupBy: ctx.from,
         });

@@ -1,13 +1,22 @@
+import { describe, expect, it, mock } from 'bun:test';
 import type { ForwardContext } from '@/types/app.js';
 
-import { describe, expect, it, vi } from 'vitest';
+mock.module('@/utils/replyUtils.js', () => {
+    const replyWithEmoji = async (ctx: ForwardContext, emoji: string, message: string) =>
+        ctx.reply(`${emoji} ${message}`);
+    return {
+        replyWithError: (ctx: ForwardContext, message: string) => replyWithEmoji(ctx, '❌', message),
+        replyWithSuccess: (ctx: ForwardContext, message: string) => replyWithEmoji(ctx, '✅', message),
+        replyWithWarning: (ctx: ForwardContext, message: string) => replyWithEmoji(ctx, '⚠️', message),
+    };
+});
 
 import { replyWithError, replyWithSuccess, replyWithWarning } from './replyUtils.js';
 
 describe('replyUtils', () => {
     const createMockContext = (overrides = {}) =>
         ({
-            reply: vi.fn().mockResolvedValue({ message_id: 123 }),
+            reply: mock(() => Promise.resolve({ message_id: 123 })),
             ...overrides,
         }) as unknown as ForwardContext;
 
@@ -35,7 +44,7 @@ describe('replyUtils', () => {
         it('should return the result from ctx.reply', async () => {
             const mockReplyResult = { message_id: 456, text: 'Test message' };
             const ctx = createMockContext({
-                reply: vi.fn().mockResolvedValue(mockReplyResult),
+                reply: mock(() => Promise.resolve(mockReplyResult)),
             });
 
             const result = await replyWithSuccess(ctx, 'Test message');

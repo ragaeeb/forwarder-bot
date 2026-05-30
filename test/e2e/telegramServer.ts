@@ -1,4 +1,4 @@
-import { TelegramChat, TelegramMessage, TelegramUpdate, TelegramUser } from '../../src/types/telegram';
+import type { TelegramChat, TelegramMessage, TelegramUpdate, TelegramUser } from '../../src/types/telegram';
 
 /**
  * Mock server for Telegram API during tests

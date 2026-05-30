@@ -22,7 +22,7 @@ const forwardMessageToGroup = async (ctx: ForwardContext, threadId: string) => {
         chat_id: ctx.settings!.adminGroupId,
         from_chat_id: ctx.chat.id,
         message_id: ctx.message!.message_id,
-        message_thread_id: parseInt(threadId),
+        message_thread_id: parseInt(threadId, 10),
     });
 
     logger.info(`Replying 200 to user for successful forwarding of ${message.message_id}.`);

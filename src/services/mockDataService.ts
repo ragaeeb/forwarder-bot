@@ -2,7 +2,7 @@ import logger from '@/utils/logger.js';
 
 import type { BotSettings, SavedMessage, ThreadData } from '../types/app.js';
 
-import { DataService } from './types.js';
+import type { DataService } from './types.js';
 
 /**
  * Mock implementation of the DataService interface for local development and testing.
@@ -93,8 +93,30 @@ export class MockDataService implements DataService {
      * @returns {Promise<ThreadData>} The saved thread data
      */
     async saveThread(thread: ThreadData): Promise<ThreadData> {
-        this.threads.push(thread);
+        const existing = this.threads.findIndex((t) => t.userId === thread.userId && t.threadId === thread.threadId);
+        if (existing >= 0) {
+            this.threads[existing] = thread;
+        } else {
+            this.threads.push(thread);
+        }
         logger.info(thread, `saveThread`);
         return thread;
     }
+
+    async getAllThreads(options?: { limit?: number; offset?: number }): Promise<ThreadData[]> {
+        const sorted = [...this.threads].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+        const offset = options?.offset ?? 0;
+        const limit = options?.limit ?? sorted.length;
+        return sorted.slice(offset, offset + limit);
+    }
+
+    async getThreadCount(): Promise<number> {
+        return this.threads.length;
+    }
+
+    async getUnreadCount(_userId: string): Promise<number> {
+        return 0;
+    }
+
+    async markThreadRead(_userId: string): Promise<void> {}
 }

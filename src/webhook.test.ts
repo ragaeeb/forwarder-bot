@@ -1,44 +1,50 @@
-import { APIGatewayProxyEvent } from 'aws-lambda';
-import { afterEach, beforeEach, describe, expect, it, Mock, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, mock } from 'bun:test';
+import type { APIGatewayProxyEvent } from 'aws-lambda';
+
+mock.module('./bot.js', () => ({
+    Bot: mock(() => ({
+        handleUpdate: mock(() => Promise.resolve(undefined)),
+        init: mock(() => Promise.resolve({ username: 'test_bot' })),
+    })),
+}));
+
+mock.module('./handlers/index.js', () => ({
+    registerHandlers: mock(() => {}),
+}));
+
+mock.module('./services/dynamodb.js', () => ({
+    DynamoDBService: mock(() => ({
+        getSettings: mock(() => Promise.resolve(null)),
+    })),
+}));
+
+mock.module('./services/telegramAPI.js', () => ({
+    TelegramAPI: mock(() => ({
+        deleteWebhook: mock(() => Promise.resolve(true)),
+        setWebhook: mock(() => Promise.resolve(true)),
+    })),
+}));
 
 import { Bot } from './bot.js';
 import { registerHandlers } from './handlers/index.js';
 import { DynamoDBService } from './services/dynamodb.js';
 import { TelegramAPI } from './services/telegramAPI.js';
 
-vi.mock('./bot.js', () => ({
-    Bot: vi.fn().mockImplementation(() => ({
-        handleUpdate: vi.fn().mockResolvedValue(undefined),
-        init: vi.fn().mockResolvedValue({ username: 'test_bot' }),
-    })),
-}));
-
-vi.mock('./handlers/index.js', () => ({
-    registerHandlers: vi.fn(),
-}));
-
-vi.mock('./services/dynamodb.js', () => ({
-    DynamoDBService: vi.fn().mockImplementation(() => ({
-        getSettings: vi.fn().mockResolvedValue(null),
-    })),
-}));
-
-vi.mock('./services/telegramAPI.js', () => ({
-    TelegramAPI: vi.fn().mockImplementation(() => ({
-        deleteWebhook: vi.fn().mockResolvedValue(true),
-        setWebhook: vi.fn().mockResolvedValue(true),
-    })),
-}));
-
 describe('webhook', () => {
     let mockEvent: APIGatewayProxyEvent;
-    let processOnSpy: any;
+    let processOnSpy: ReturnType<typeof mock>;
 
     const originalProcessOn = process.on;
 
-    beforeEach(() => {
-        vi.clearAllMocks();
-        vi.resetModules();
+    beforeEach(async () => {
+        const { resetForTesting } = await import('./webhook.js');
+        resetForTesting();
+
+        (Bot as any).mockClear?.();
+        (DynamoDBService as any).mockClear?.();
+        (registerHandlers as any).mockClear?.();
+        (registerHandlers as any).mockImplementation?.(() => {});
+        (TelegramAPI as any).mockClear?.();
 
         mockEvent = {
             body: JSON.stringify({
@@ -65,8 +71,8 @@ describe('webhook', () => {
             stageVariables: null,
         };
 
-        processOnSpy = vi.fn();
-        process.on = processOnSpy;
+        processOnSpy = mock(() => {});
+        process.on = processOnSpy as any;
     });
 
     afterEach(() => {
@@ -74,6 +80,48 @@ describe('webhook', () => {
     });
 
     describe('handler', () => {
+        it('should reject requests with invalid token', async () => {
+            mockEvent.headers['x-telegram-bot-api-secret-token'] = 'invalid-token';
+
+            const { handler } = await import('./webhook.js');
+
+            const result = await handler(mockEvent);
+
+            expect(Bot).not.toHaveBeenCalled();
+            expect(DynamoDBService).not.toHaveBeenCalled();
+            expect(registerHandlers).not.toHaveBeenCalled();
+
+            expect(result).toEqual({
+                body: JSON.stringify({ error: 'Unauthorized', ok: false }),
+                statusCode: 403,
+            });
+        });
+
+        it('should handle errors', async () => {
+            (registerHandlers as any).mockImplementation(() => {
+                throw new Error('Test error');
+            });
+
+            const { handler } = await import('./webhook.js');
+            const result = await handler(mockEvent);
+
+            expect(result).toEqual({
+                body: JSON.stringify({ error: 'Test error', ok: false }),
+                statusCode: 200,
+            });
+        });
+
+        it('should use mock database if provided', async () => {
+            const { handler, setMockDatabase } = await import('./webhook.js');
+            const mockDb = { test: 'mock db' };
+            setMockDatabase(mockDb as any);
+
+            await handler(mockEvent);
+
+            expect(DynamoDBService).not.toHaveBeenCalled();
+            expect(registerHandlers).toHaveBeenCalledWith(expect.anything(), mockDb);
+        });
+
         it('should initialize the bot on first call', async () => {
             const { handler } = await import('./webhook.js');
 
@@ -98,9 +146,10 @@ describe('webhook', () => {
             await handler(mockEvent);
             await handler(mockEvent);
 
-            expect(Bot).toHaveBeenCalledExactlyOnceWith('BT');
-            expect(DynamoDBService).toHaveBeenCalledOnce();
-            expect(registerHandlers).toHaveBeenCalledOnce();
+            expect(Bot).toHaveBeenCalledTimes(1);
+            expect(Bot).toHaveBeenCalledWith('BT');
+            expect(DynamoDBService).toHaveBeenCalledTimes(1);
+            expect(registerHandlers).toHaveBeenCalledTimes(1);
 
             const botInstance = (Bot as any).mock.results[0].value;
             expect(botInstance.handleUpdate).toHaveBeenCalled();
@@ -113,38 +162,10 @@ describe('webhook', () => {
             expect(processOnSpy).toHaveBeenCalledWith('uncaughtException', expect.any(Function));
 
             const [, uncaughtHandler] =
-                processOnSpy.mock.calls.find((call: any) => call[0] === 'uncaughtException') || [];
+                (processOnSpy as any).mock.calls.find((call: any) => call[0] === 'uncaughtException') || [];
 
             const mockError = new Error('Uncaught test error');
             uncaughtHandler(mockError);
-        });
-
-        it('should use mock database if provided', async () => {
-            const { handler, setMockDatabase } = await import('./webhook.js');
-            const mockDb = { test: 'mock db' };
-            setMockDatabase(mockDb as any);
-
-            await handler(mockEvent);
-
-            expect(DynamoDBService).not.toHaveBeenCalled();
-            expect(registerHandlers).toHaveBeenCalledWith(expect.anything(), mockDb);
-        });
-
-        it('should reject requests with invalid token', async () => {
-            mockEvent.headers['x-telegram-bot-api-secret-token'] = 'invalid-token';
-
-            const { handler } = await import('./webhook.js');
-
-            const result = await handler(mockEvent);
-
-            expect(Bot).not.toHaveBeenCalled();
-            expect(DynamoDBService).not.toHaveBeenCalled();
-            expect(registerHandlers).not.toHaveBeenCalled();
-
-            expect(result).toEqual({
-                body: JSON.stringify({ error: 'Unauthorized', ok: false }),
-                statusCode: 403,
-            });
         });
 
         it('should handle missing body properly', async () => {
@@ -155,20 +176,6 @@ describe('webhook', () => {
 
             expect(result).toEqual({
                 body: JSON.stringify({ ok: true }),
-                statusCode: 200,
-            });
-        });
-
-        it('should handle errors', async () => {
-            (registerHandlers as Mock).mockImplementation(() => {
-                throw new Error('Test error');
-            });
-
-            const { handler } = await import('./webhook.js');
-            const result = await handler(mockEvent);
-
-            expect(result).toEqual({
-                body: JSON.stringify({ error: 'Test error', ok: false }),
                 statusCode: 200,
             });
         });
@@ -197,7 +204,8 @@ describe('webhook', () => {
 
             expect(TelegramAPI).toHaveBeenCalledWith('BT');
 
-            const telegramApiInstance = (TelegramAPI as any).mock.results[0].value;
+            const results = (TelegramAPI as any).mock.results;
+            const telegramApiInstance = results[results.length - 1].value;
             expect(telegramApiInstance.deleteWebhook).toHaveBeenCalledWith({
                 drop_pending_updates: true,
             });

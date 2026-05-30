@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
 
 import { Bot } from '../../src/bot';
 import { config } from '../../src/config';
@@ -29,7 +29,6 @@ describe('Telegram Bot E2E Tests', () => {
 
     afterEach(() => {
         uninstall();
-        vi.clearAllTimers();
     });
 
     it('should handle a direct message from a user', async () => {

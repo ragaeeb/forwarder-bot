@@ -1,22 +1,23 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, mock } from 'bun:test';
 
-import { Bot } from './bot.js';
-import { TelegramUpdate } from './types/telegram.js';
-import { isUpdateSentFromBot } from './utils/messageUtils.js';
-
-vi.mock('./services/telegramAPI.js', () => ({
-    TelegramAPI: vi.fn().mockImplementation(() => ({
-        sendMessage: vi.fn().mockResolvedValue({ message_id: 123 }),
+mock.module('./services/telegramAPI.js', () => ({
+    TelegramAPI: mock(() => ({
+        sendMessage: mock(() => Promise.resolve({ message_id: 123 })),
     })),
 }));
 
-vi.mock('./utils/messageUtils.js');
+mock.module('./utils/messageUtils.js', () => ({
+    isUpdateSentFromBot: mock(() => false),
+}));
+
+import { Bot } from './bot.js';
+import type { TelegramUpdate } from './types/telegram.js';
+import { isUpdateSentFromBot } from './utils/messageUtils.js';
 
 describe('Bot', () => {
     let bot: Bot;
 
     beforeEach(() => {
-        vi.clearAllMocks();
         bot = new Bot('test-token');
     });
 
@@ -29,7 +30,7 @@ describe('Bot', () => {
 
     describe('command', () => {
         it('should register a command handler without middleware', async () => {
-            const handler = vi.fn();
+            const handler = mock(() => {});
             bot.command('start', handler);
 
             const update = {
@@ -60,9 +61,9 @@ describe('Bot', () => {
         });
 
         it('should register a command handler with middleware', async () => {
-            const middleware1 = vi.fn().mockImplementation((ctx, next) => next());
-            const middleware2 = vi.fn().mockImplementation((ctx, next) => next());
-            const handler = vi.fn();
+            const middleware1 = mock((ctx: any, next: () => any) => next());
+            const middleware2 = mock((ctx: any, next: () => any) => next());
+            const handler = mock(() => {});
 
             bot.command('test', middleware1, middleware2, handler);
 
@@ -96,8 +97,8 @@ describe('Bot', () => {
         });
 
         it('should handle middleware stopping execution chain', async () => {
-            const middleware = vi.fn().mockImplementation(() => {}); // doesn't call next()
-            const handler = vi.fn();
+            const middleware = mock(() => {}); // doesn't call next()
+            const handler = mock(() => {});
 
             bot.command('stop', middleware, handler);
 
@@ -119,8 +120,8 @@ describe('Bot', () => {
         });
 
         it('should register multiple handlers for the same command', async () => {
-            const handler1 = vi.fn();
-            const handler2 = vi.fn();
+            const handler1 = mock(() => {});
+            const handler2 = mock(() => {});
 
             bot.command('multi', handler1);
             bot.command('multi', handler2);
@@ -145,7 +146,7 @@ describe('Bot', () => {
 
     describe('on', () => {
         it('should register an update handler without middleware', async () => {
-            const handler = vi.fn();
+            const handler = mock(() => {});
             bot.on('message', handler);
 
             const update = {
@@ -175,9 +176,9 @@ describe('Bot', () => {
         });
 
         it('should register an update handler with middleware', async () => {
-            const middleware1 = vi.fn().mockImplementation((ctx, next) => next());
-            const middleware2 = vi.fn().mockImplementation((ctx, next) => next());
-            const handler = vi.fn();
+            const middleware1 = mock((ctx: any, next: () => any) => next());
+            const middleware2 = mock((ctx: any, next: () => any) => next());
+            const handler = mock(() => {});
 
             bot.on('message', middleware1, middleware2, handler);
 
@@ -200,8 +201,8 @@ describe('Bot', () => {
         });
 
         it('should register multiple handlers for the same update type', async () => {
-            const handler1 = vi.fn();
-            const handler2 = vi.fn();
+            const handler1 = mock(() => {});
+            const handler2 = mock(() => {});
 
             bot.on('message', handler1);
             bot.on('message', handler2);
@@ -224,7 +225,7 @@ describe('Bot', () => {
         });
 
         it('should handle edited_message updates', async () => {
-            const handler = vi.fn();
+            const handler = mock(() => {});
             bot.on('edited_message', handler);
 
             const update = {
@@ -257,8 +258,8 @@ describe('Bot', () => {
 
     describe('use', () => {
         it('should register global middleware', async () => {
-            const middleware = vi.fn().mockImplementation((ctx, next) => next());
-            const handler = vi.fn();
+            const middleware = mock((ctx: any, next: () => any) => next());
+            const handler = mock(() => {});
 
             bot.use(middleware);
             bot.command('start', handler);
@@ -283,17 +284,17 @@ describe('Bot', () => {
         it('should execute global middleware in order', async () => {
             const calls: string[] = [];
 
-            const middleware1 = vi.fn().mockImplementation((ctx, next) => {
+            const middleware1 = mock((ctx: any, next: () => Promise<void>) => {
                 calls.push('middleware1-before');
                 return next().then(() => calls.push('middleware1-after'));
             });
 
-            const middleware2 = vi.fn().mockImplementation((ctx, next) => {
+            const middleware2 = mock((ctx: any, next: () => Promise<void>) => {
                 calls.push('middleware2-before');
                 return next().then(() => calls.push('middleware2-after'));
             });
 
-            const handler = vi.fn().mockImplementation(() => {
+            const handler = mock(() => {
                 calls.push('handler');
             });
 
@@ -324,8 +325,8 @@ describe('Bot', () => {
         });
 
         it('should stop execution chain when middleware does not call next', async () => {
-            const middleware = vi.fn(); // doesn't call next
-            const handler = vi.fn();
+            const middleware = mock(() => {}); // doesn't call next
+            const handler = mock(() => {});
 
             bot.use(middleware);
             bot.command('start', handler);
@@ -350,7 +351,7 @@ describe('Bot', () => {
 
     describe('handleUpdate', () => {
         it('should ignore updates from bots', async () => {
-            const handler = vi.fn();
+            const handler = mock(() => {});
             bot.on('message', handler);
 
             (isUpdateSentFromBot as any).mockReturnValueOnce(true);
@@ -372,7 +373,7 @@ describe('Bot', () => {
         });
 
         it('should handle unsupported update types', async () => {
-            const handler = vi.fn();
+            const handler = mock(() => {});
             bot.on('message', handler);
 
             const update = {
@@ -388,7 +389,7 @@ describe('Bot', () => {
 
         it('should handle errors during update processing', async () => {
             const error = new Error('Test error');
-            const handler = vi.fn().mockRejectedValue(error);
+            const handler = mock(() => Promise.reject(error));
             bot.on('message', handler);
 
             const update = {
@@ -402,7 +403,7 @@ describe('Bot', () => {
                 update_id: 123,
             };
 
-            await expect(bot.handleUpdate(update as unknown as TelegramUpdate)).resolves.not.toThrow();
+            await bot.handleUpdate(update as unknown as TelegramUpdate);
             expect(handler).toHaveBeenCalledTimes(1);
         });
     });
@@ -411,7 +412,7 @@ describe('Bot', () => {
         it('should create reply function that sends message', async () => {
             let contextReply: any;
 
-            const handler = vi.fn().mockImplementation((ctx) => {
+            const handler = mock((ctx: any) => {
                 contextReply = ctx.reply;
                 return ctx.reply('Reply text');
             });

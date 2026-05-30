@@ -1,14 +1,12 @@
 import type { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 
 import logger from '@/utils/logger.js';
-
-import type { DataService } from './services/types.js';
-
 import { Bot } from './bot.js';
 import { config } from './config.js';
 import { registerHandlers } from './handlers/index.js';
 import { DynamoDBService } from './services/dynamodb.js';
 import { TelegramAPI } from './services/telegramAPI.js';
+import type { DataService } from './services/types.js';
 
 let mockDatabase: DataService | undefined;
 let bot: Bot | undefined;
@@ -21,6 +19,12 @@ let bot: Bot | undefined;
  */
 export const setMockDatabase = (db: DataService) => {
     mockDatabase = db;
+};
+
+/** Reset module state for testing. Replaces vi.resetModules() behavior. */
+export const resetForTesting = () => {
+    bot = undefined;
+    mockDatabase = undefined;
 };
 
 const initBot = async () => {

@@ -65,7 +65,7 @@ const fetchAndProcessUpdates = async (bot: Bot, lastUpdateId: number | undefined
 
         return lastUpdateId;
     } catch (error) {
-        logger.error('Error polling updates:', error);
+        logger.error(error, 'Error polling updates');
         return lastUpdateId; // Keep the last update ID on error
     }
 };
@@ -75,7 +75,7 @@ const fetchAndProcessUpdates = async (bot: Bot, lastUpdateId: number | undefined
  */
 const startPolling = async (bot: Bot) => {
     const isPolling = true;
-    let lastUpdateId: number | undefined = undefined;
+    let lastUpdateId: number | undefined;
 
     // This is the main polling loop
     while (isPolling) {

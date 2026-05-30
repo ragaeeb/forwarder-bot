@@ -4,6 +4,8 @@ node_modules
 .env.production
 .serverless
 coverage
+.next
+data/
 
 # macOS
 .DS_Store

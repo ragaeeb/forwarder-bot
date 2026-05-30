@@ -1,6 +1,4 @@
 import type { Bot, CommandHandler, Middleware, UpdateHandler } from '@/bot.js';
-import type { DataService } from '@/services/types.js';
-
 import { CUSTOMIZE_COMMANDS, onCustomize } from '@/commands/customize.js';
 import { onSetup } from '@/commands/setup.js';
 import { onStart } from '@/commands/start.js';
@@ -10,6 +8,7 @@ import { requireManageTopicsPermission } from '@/middlewares/requireManageTopics
 import { requireReferencedThread, requireThreadForUser } from '@/middlewares/requireMessageThread.js';
 import { requireNewSetup } from '@/middlewares/requireNewSetup.js';
 import { requireToken } from '@/middlewares/requireToken.js';
+import type { DataService } from '@/services/types.js';
 import logger from '@/utils/logger.js';
 
 import { onAdminReply } from './handleAdminReply.js';

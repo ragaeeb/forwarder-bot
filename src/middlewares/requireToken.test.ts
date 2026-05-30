@@ -1,20 +1,26 @@
+import { afterAll, beforeEach, describe, expect, it, mock } from 'bun:test';
 import type { NextFunction } from '@/bot.js';
 import type { ForwardContext } from '@/types/app.js';
-
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import * as security from '@/utils/security.js';
 
 import { requireToken } from './requireToken.js';
 
-vi.mock('@/utils/security.js', () => ({
-    hashToken: vi.fn().mockReturnValue('HBT'),
+const hashTokenMock = mock(() => 'HBT');
+
+mock.module('@/utils/security.js', () => ({
+    hashToken: hashTokenMock,
 }));
 
 describe('requireToken', () => {
     let next: NextFunction;
 
     beforeEach(() => {
-        vi.clearAllMocks();
-        next = vi.fn();
+        mock.clearAllMocks();
+        next = mock(() => {});
+    });
+
+    afterAll(() => {
+        mock.module('@/utils/security.js', () => security);
     });
 
     it('should do nothing when token is not provided', () => {
@@ -32,6 +38,7 @@ describe('requireToken', () => {
     it('should pass if correct token is provided', () => {
         requireToken({ args: 'HBT' } as unknown as ForwardContext, next);
 
-        expect(next).toHaveBeenCalledExactlyOnceWith();
+        expect(next).toHaveBeenCalledTimes(1);
+        expect(next).toHaveBeenCalledWith();
     });
 });

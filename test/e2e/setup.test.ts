@@ -1,4 +1,5 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterAll, afterEach, beforeEach, describe, expect, it, mock } from 'bun:test';
+import * as security from '@/utils/security.js';
 
 import { Bot } from '../../src/bot';
 import { config } from '../../src/config';
@@ -7,11 +8,11 @@ import { MockDataService } from '../../src/services/mockDataService';
 import { hashToken } from '../../src/utils/security';
 import { TelegramTestServer } from './telegramServer';
 
-describe('Bot Setup E2E Tests', () => {
-    vi.mock('../../src/utils/security', () => ({
-        hashToken: vi.fn().mockReturnValue('hashed_test_token'),
-    }));
+mock.module('@/utils/security.js', () => ({
+    hashToken: mock(() => 'hashed_test_token'),
+}));
 
+describe('Bot Setup E2E Tests', () => {
     let telegramServer: TelegramTestServer;
     let uninstall: () => void;
     let bot: Bot;
@@ -34,7 +35,10 @@ describe('Bot Setup E2E Tests', () => {
 
     afterEach(() => {
         uninstall();
-        vi.clearAllTimers();
+    });
+
+    afterAll(() => {
+        mock.module('@/utils/security.js', () => security);
     });
 
     it('should handle /setup command with valid token and permissions', async () => {

@@ -1,14 +1,14 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, mock } from 'bun:test';
 
 import type { BotSettings, SavedMessage, ThreadData } from '../types/app.js';
 
 import { MockDataService } from './mockDataService.js';
 
-vi.mock('@/utils/logger.js', () => ({
+mock.module('@/utils/logger.js', () => ({
     default: {
-        error: vi.fn(),
-        info: vi.fn(),
-        warn: vi.fn(),
+        error: mock(() => {}),
+        info: mock(() => {}),
+        warn: mock(() => {}),
     },
 }));
 
@@ -16,7 +16,6 @@ describe('MockDataService', () => {
     let mockDataService: MockDataService;
 
     beforeEach(() => {
-        vi.resetAllMocks();
         mockDataService = new MockDataService();
     });
 

@@ -1,6 +1,5 @@
+import { afterEach, beforeEach, describe, expect, it, mock, setSystemTime } from 'bun:test';
 import type { TelegramMessage } from '@/types/telegram.js';
-
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { ForwardContext, ThreadData } from '../types/app.js';
 
@@ -8,13 +7,11 @@ import { createNewThread, updateThreadByMessage } from './threadUtils.js';
 
 describe('threadUtils', () => {
     beforeEach(() => {
-        vi.resetAllMocks();
-        vi.useFakeTimers();
-        vi.setSystemTime(new Date('2022-02-23T12:00:00.000Z'));
+        setSystemTime(new Date('2022-02-23T12:00:00.000Z'));
     });
 
     afterEach(() => {
-        vi.useRealTimers();
+        setSystemTime();
     });
 
     describe('createNewThread', () => {
@@ -22,22 +19,26 @@ describe('threadUtils', () => {
             const ctx = {
                 bot: {
                     api: {
-                        createForumTopic: vi.fn().mockResolvedValue({
-                            message_thread_id: 99999,
-                            name: '12345: John Doe (johndoe)',
-                        }),
+                        createForumTopic: mock(() =>
+                            Promise.resolve({
+                                message_thread_id: 99999,
+                                name: '12345: John Doe (johndoe)',
+                            }),
+                        ),
                     },
                 },
                 chat: { id: 54321 },
                 db: {
-                    saveThread: vi.fn().mockResolvedValue({
-                        createdAt: expect.any(String),
-                        lastMessageId: '67890',
-                        name: '12345: John Doe (johndoe)',
-                        threadId: '99999',
-                        updatedAt: '2022-02-23T12:00:00.000Z',
-                        userId: '12345',
-                    }),
+                    saveThread: mock(() =>
+                        Promise.resolve({
+                            createdAt: expect.any(String),
+                            lastMessageId: '67890',
+                            name: '12345: John Doe (johndoe)',
+                            threadId: '99999',
+                            updatedAt: '2022-02-23T12:00:00.000Z',
+                            userId: '12345',
+                        }),
+                    ),
                 },
                 from: {
                     first_name: 'John',
@@ -59,12 +60,14 @@ describe('threadUtils', () => {
 
             const result = await createNewThread(ctx);
 
-            expect(ctx.bot.api.createForumTopic).toHaveBeenCalledExactlyOnceWith({
+            expect(ctx.bot.api.createForumTopic).toHaveBeenCalledTimes(1);
+            expect(ctx.bot.api.createForumTopic).toHaveBeenCalledWith({
                 chat_id: groupId,
                 name: '12345: John Doe (johndoe)',
             });
 
-            expect(ctx.db.saveThread).toHaveBeenCalledExactlyOnceWith({
+            expect(ctx.db.saveThread).toHaveBeenCalledTimes(1);
+            expect(ctx.db.saveThread).toHaveBeenCalledWith({
                 createdAt: expect.any(String),
                 lastMessageId: '67890',
                 name: '12345: John Doe (johndoe)',
@@ -87,23 +90,27 @@ describe('threadUtils', () => {
             const ctx = {
                 bot: {
                     api: {
-                        createForumTopic: vi.fn().mockResolvedValue({
-                            message_thread_id: 99999,
-                            name: '12345: John',
-                        }),
+                        createForumTopic: mock(() =>
+                            Promise.resolve({
+                                message_thread_id: 99999,
+                                name: '12345: John',
+                            }),
+                        ),
                     },
                 },
                 chat: { id: 54321, type: 'private' },
                 db: {
-                    saveThread: vi.fn().mockResolvedValue({
-                        chatId: '54321',
-                        createdAt: '2022-02-23T00:00:00.000Z',
-                        lastMessageId: '67890',
-                        name: '12345: John',
-                        threadId: '99999',
-                        updatedAt: '2022-02-23T12:00:00.000Z',
-                        userId: '12345',
-                    }),
+                    saveThread: mock(() =>
+                        Promise.resolve({
+                            chatId: '54321',
+                            createdAt: '2022-02-23T00:00:00.000Z',
+                            lastMessageId: '67890',
+                            name: '12345: John',
+                            threadId: '99999',
+                            updatedAt: '2022-02-23T12:00:00.000Z',
+                            userId: '12345',
+                        }),
+                    ),
                 },
                 from: {
                     first_name: 'John',
@@ -119,7 +126,8 @@ describe('threadUtils', () => {
 
             const result = await createNewThread(ctx);
 
-            expect(ctx.bot.api.createForumTopic).toHaveBeenCalledExactlyOnceWith({
+            expect(ctx.bot.api.createForumTopic).toHaveBeenCalledTimes(1);
+            expect(ctx.bot.api.createForumTopic).toHaveBeenCalledWith({
                 chat_id: 'admin-group-123',
                 name: '12345: John',
             });
@@ -131,7 +139,7 @@ describe('threadUtils', () => {
             const ctx = {
                 bot: {
                     api: {
-                        createForumTopic: vi.fn().mockRejectedValue(new Error('Could not create topic')),
+                        createForumTopic: mock(() => Promise.reject(new Error('Could not create topic'))),
                     },
                 },
                 chat: { id: 54321, type: 'private' },
@@ -143,7 +151,8 @@ describe('threadUtils', () => {
 
             await expect(createNewThread(ctx)).rejects.toThrow(expect.any(Error));
 
-            expect(ctx.bot.api.createForumTopic).toHaveBeenCalledExactlyOnceWith({
+            expect(ctx.bot.api.createForumTopic).toHaveBeenCalledTimes(1);
+            expect(ctx.bot.api.createForumTopic).toHaveBeenCalledWith({
                 chat_id: 'admin-group-123',
                 name: '12345',
             });
@@ -153,15 +162,17 @@ describe('threadUtils', () => {
             const ctx = {
                 bot: {
                     api: {
-                        createForumTopic: vi.fn().mockResolvedValue({
-                            message_thread_id: 99999,
-                            name: '12345: John Doe (johndoe)',
-                        }),
+                        createForumTopic: mock(() =>
+                            Promise.resolve({
+                                message_thread_id: 99999,
+                                name: '12345: John Doe (johndoe)',
+                            }),
+                        ),
                     },
                 },
                 chat: { id: 54321 },
                 db: {
-                    saveThread: vi.fn().mockRejectedValue(new Error('Could not save thread')),
+                    saveThread: mock(() => Promise.reject(new Error('Could not save thread'))),
                 },
                 from: {
                     id: 12345,
@@ -177,15 +188,17 @@ describe('threadUtils', () => {
         it('should update thread with new message information', async () => {
             const ctx = {
                 db: {
-                    saveThread: vi.fn().mockResolvedValue({
-                        chatId: '54321',
-                        createdAt: '2022-02-20T00:00:00.000Z',
-                        lastMessageId: '99999',
-                        name: '12345: John Doe (johndoe)',
-                        threadId: '99999',
-                        updatedAt: '2022-02-23T12:00:00.000Z',
-                        userId: '12345',
-                    }),
+                    saveThread: mock(() =>
+                        Promise.resolve({
+                            chatId: '54321',
+                            createdAt: '2022-02-20T00:00:00.000Z',
+                            lastMessageId: '99999',
+                            name: '12345: John Doe (johndoe)',
+                            threadId: '99999',
+                            updatedAt: '2022-02-23T12:00:00.000Z',
+                            userId: '12345',
+                        }),
+                    ),
                 },
             } as unknown as ForwardContext;
 
@@ -217,7 +230,8 @@ describe('threadUtils', () => {
                 userId: '12345',
             };
 
-            expect(ctx.db.saveThread).toHaveBeenCalledExactlyOnceWith(expected);
+            expect(ctx.db.saveThread).toHaveBeenCalledTimes(1);
+            expect(ctx.db.saveThread).toHaveBeenCalledWith(expected);
             expect(result).toEqual(expected);
         });
     });

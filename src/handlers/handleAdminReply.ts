@@ -21,7 +21,7 @@ const forwardMessageToUser = async (ctx: ForwardContext) => {
     const { userId: chatId } = ctx.thread!;
 
     const commonMessage = {
-        chat_id: parseInt(chatId),
+        chat_id: parseInt(chatId, 10),
         protect_content: true,
     };
 

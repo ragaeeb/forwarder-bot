@@ -1,34 +1,32 @@
-import type { BotSettings, SavedMessage, ThreadData } from '@/types/app.js';
+import { beforeEach, describe, expect, it, mock } from 'bun:test';
 
 import { DynamoDBDocumentClient, GetCommand, PutCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { BotSettings, SavedMessage, ThreadData } from '@/types/app.js';
 
 import { DynamoDBService } from './dynamodb.js';
 
-vi.mock('@aws-sdk/client-dynamodb', () => ({
-    DynamoDBClient: vi.fn().mockImplementation(() => ({})),
+mock.module('@aws-sdk/client-dynamodb', () => ({
+    DynamoDBClient: mock(() => ({})),
 }));
 
-vi.mock('@aws-sdk/lib-dynamodb', () => ({
+mock.module('@aws-sdk/lib-dynamodb', () => ({
     DynamoDBDocumentClient: {
-        from: vi.fn().mockReturnValue({
-            send: vi.fn(),
-        }),
+        from: mock(() => ({
+            send: mock(() => {}),
+        })),
     },
-    GetCommand: vi.fn(),
-    PutCommand: vi.fn(),
-    QueryCommand: vi.fn(),
+    GetCommand: mock(() => {}),
+    PutCommand: mock(() => {}),
+    QueryCommand: mock(() => {}),
 }));
 
 describe('DynamoDBService', () => {
     let dynamoDBService: DynamoDBService;
-    let mockClient: { send: any };
+    let mockClient: { send: ReturnType<typeof mock> };
 
     beforeEach(() => {
-        vi.clearAllMocks();
-
         mockClient = {
-            send: vi.fn(),
+            send: mock(() => {}),
         };
         (DynamoDBDocumentClient.from as any).mockReturnValue(mockClient);
 

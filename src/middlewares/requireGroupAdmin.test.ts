@@ -1,19 +1,20 @@
+import { beforeEach, describe, expect, it, mock } from 'bun:test';
 import type { NextFunction } from '@/bot.js';
 import type { ForwardContext } from '@/types/app.js';
-
 import { replyWithWarning } from '@/utils/replyUtils.js';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { requireGroupAdmin } from './requireGroupAdmin.js';
 
-vi.mock('@/utils/replyUtils.js');
+mock.module('@/utils/replyUtils.js', () => ({
+    replyWithWarning: mock(() => {}),
+}));
 
 describe('requireGroupAdmin', () => {
     let next: NextFunction;
 
     beforeEach(() => {
-        vi.clearAllMocks();
-        next = vi.fn();
+        mock.clearAllMocks();
+        next = mock(() => {});
     });
 
     it('should reject in non-supergroup chats', async () => {
@@ -26,7 +27,8 @@ describe('requireGroupAdmin', () => {
 
         await requireGroupAdmin(ctx as unknown as ForwardContext, next);
 
-        expect(replyWithWarning).toHaveBeenCalledExactlyOnceWith(ctx, expect.any(String));
+        expect(replyWithWarning).toHaveBeenCalledTimes(1);
+        expect(replyWithWarning).toHaveBeenCalledWith(ctx, expect.any(String));
         expect(next).not.toHaveBeenCalled();
     });
 
@@ -34,7 +36,7 @@ describe('requireGroupAdmin', () => {
         const ctx = {
             bot: {
                 api: {
-                    getChatMember: vi.fn().mockResolvedValue({ status: 'member' }),
+                    getChatMember: mock(() => Promise.resolve({ status: 'member' })),
                 },
             },
             chat: {
@@ -46,8 +48,10 @@ describe('requireGroupAdmin', () => {
 
         await requireGroupAdmin(ctx as unknown as ForwardContext, next);
 
-        expect(replyWithWarning).toHaveBeenCalledExactlyOnceWith(ctx, expect.any(String));
-        expect(ctx.bot.api.getChatMember).toHaveBeenCalledExactlyOnceWith({ chat_id: 1, user_id: 2 });
+        expect(replyWithWarning).toHaveBeenCalledTimes(1);
+        expect(replyWithWarning).toHaveBeenCalledWith(ctx, expect.any(String));
+        expect(ctx.bot.api.getChatMember).toHaveBeenCalledTimes(1);
+        expect(ctx.bot.api.getChatMember).toHaveBeenCalledWith({ chat_id: 1, user_id: 2 });
         expect(next).not.toHaveBeenCalled();
     });
 
@@ -55,7 +59,7 @@ describe('requireGroupAdmin', () => {
         const ctx = {
             bot: {
                 api: {
-                    getChatMember: vi.fn().mockResolvedValue({ status }),
+                    getChatMember: mock(() => Promise.resolve({ status })),
                 },
             },
             chat: {
@@ -68,6 +72,7 @@ describe('requireGroupAdmin', () => {
         await requireGroupAdmin(ctx as unknown as ForwardContext, next);
 
         expect(replyWithWarning).not.toHaveBeenCalled();
-        expect(next).toHaveBeenCalledExactlyOnceWith();
+        expect(next).toHaveBeenCalledTimes(1);
+        expect(next).toHaveBeenCalledWith();
     });
 });

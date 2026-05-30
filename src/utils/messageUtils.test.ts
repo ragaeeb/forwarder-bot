@@ -1,6 +1,5 @@
-import type { TelegramMessage } from '@/types/telegram.js';
-
 import { describe, expect, it } from 'vitest';
+import type { TelegramMessage } from '@/types/telegram.js';
 
 import { mapTelegramMessageToSavedMessage } from './messageUtils.js';
 

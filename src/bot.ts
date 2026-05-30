@@ -1,6 +1,5 @@
-import type { TelegramMessage, TelegramUpdate, TelegramUser } from './types/telegram.js';
-
 import { TelegramAPI } from './services/telegramAPI.js';
+import type { TelegramMessage, TelegramUpdate, TelegramUser } from './types/telegram.js';
 import logger from './utils/logger.js';
 import { isUpdateSentFromBot } from './utils/messageUtils.js';
 
@@ -98,7 +97,7 @@ export class Bot {
      * @returns {Promise<void>}
      */
     async handleUpdate(update: TelegramUpdate): Promise<void> {
-        logger.debug('Processing update', update.update_id);
+        logger.debug({ updateId: update.update_id }, 'Processing update');
 
         try {
             let updateType = null;
@@ -181,7 +180,7 @@ export class Bot {
 
             await runMiddleware();
         } catch (error) {
-            logger.error('Error handling update', error);
+            logger.error(error, 'Error handling update');
         }
     }
 

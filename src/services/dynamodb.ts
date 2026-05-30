@@ -1,11 +1,9 @@
-import logger from '@/utils/logger.js';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, GetCommand, PutCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
-
+import logger from '@/utils/logger.js';
+import { config } from '../config.js';
 import type { BotSettings, SavedMessage, ThreadData } from '../types/app.js';
 import type { DataService } from './types.js';
-
-import { config } from '../config.js';
 
 /**
  * Service class for interacting with DynamoDB.
@@ -254,5 +252,21 @@ export class DynamoDBService implements DataService {
             logger.error({ error, thread }, 'Error saving thread');
             throw error;
         }
+    }
+
+    async getAllThreads(_options?: { limit?: number; offset?: number }): Promise<ThreadData[]> {
+        throw new Error('getAllThreads is not supported by DynamoDBService. Use SQLite, Turso, or MongoDB.');
+    }
+
+    async getThreadCount(): Promise<number> {
+        throw new Error('getThreadCount is not supported by DynamoDBService. Use SQLite, Turso, or MongoDB.');
+    }
+
+    async getUnreadCount(_userId: string): Promise<number> {
+        throw new Error('getUnreadCount is not supported by DynamoDBService. Use SQLite, Turso, or MongoDB.');
+    }
+
+    async markThreadRead(_userId: string): Promise<void> {
+        throw new Error('markThreadRead is not supported by DynamoDBService. Use SQLite, Turso, or MongoDB.');
     }
 }

@@ -18,7 +18,7 @@ export const injectDependencies = (db: DataService) => {
         try {
             ctx.settings = (await db.getSettings())!;
         } catch (error) {
-            logger.error('Failed to load settings or bot identity', error);
+            logger.error(error, 'Failed to load settings or bot identity');
             return;
         }
 

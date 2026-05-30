@@ -1,8 +1,8 @@
+import { beforeEach, describe, expect, it, mock } from 'bun:test';
 import type { NextFunction } from '@/bot.js';
-import type { ForwardContext } from '@/types/app.js';
 
-import { DataService } from '@/services/types.js';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { DataService } from '@/services/types.js';
+import type { ForwardContext } from '@/types/app.js';
 
 import { injectDependencies, requireAdminReply, requirePrivateChat, requireSetup } from './common.js';
 
@@ -10,8 +10,7 @@ describe('common', () => {
     let next: NextFunction;
 
     beforeEach(() => {
-        vi.clearAllMocks();
-        next = vi.fn();
+        next = mock(() => {});
     });
 
     describe('requireSetup', () => {
@@ -24,7 +23,8 @@ describe('common', () => {
         it('should proceed if the setup was already completed', () => {
             requireSetup({ settings: { adminGroupId: '1' } } as unknown as ForwardContext, next);
 
-            expect(next).toHaveBeenCalledExactlyOnceWith();
+            expect(next).toHaveBeenCalledTimes(1);
+            expect(next).toHaveBeenCalledWith();
         });
     });
 
@@ -38,37 +38,40 @@ describe('common', () => {
         it('should proceed if it is a private chat', () => {
             requirePrivateChat({ chat: { type: 'private' } } as unknown as ForwardContext, next);
 
-            expect(next).toHaveBeenCalledExactlyOnceWith();
+            expect(next).toHaveBeenCalledTimes(1);
+            expect(next).toHaveBeenCalledWith();
         });
     });
 
     describe('injectDependencies', () => {
         it('should proceed if we were able to inject the settings', async () => {
-            const db = { getSettings: vi.fn().mockResolvedValue({ adminGroupId: '1' }) };
+            const db = { getSettings: mock(() => Promise.resolve({ adminGroupId: '1' })) };
             const ctx = {} as unknown as ForwardContext;
             const fn = injectDependencies(db as unknown as DataService);
 
             await fn(ctx, next);
 
-            expect(next).toHaveBeenCalledExactlyOnceWith();
+            expect(next).toHaveBeenCalledTimes(1);
+            expect(next).toHaveBeenCalledWith();
             expect(ctx.db).toBe(db);
             expect(ctx.settings).toEqual({ adminGroupId: '1' });
         });
 
         it('should proceed even if we were not setup', async () => {
-            const db = { getSettings: vi.fn() };
+            const db = { getSettings: mock(() => {}) };
             const ctx = {} as unknown as ForwardContext;
             const fn = injectDependencies(db as unknown as DataService);
 
             await fn(ctx, next);
 
-            expect(next).toHaveBeenCalledExactlyOnceWith();
+            expect(next).toHaveBeenCalledTimes(1);
+            expect(next).toHaveBeenCalledWith();
             expect(ctx.db).toBe(db);
             expect(ctx.settings).toBeUndefined();
         });
 
         it('should fail if we could not query the settings', async () => {
-            const db = { getSettings: vi.fn().mockRejectedValue(new Error('Cannot connect to db')) };
+            const db = { getSettings: mock(() => Promise.reject(new Error('Cannot connect to db'))) };
             const fn = injectDependencies(db as unknown as DataService);
 
             await fn({} as unknown as ForwardContext, next);
@@ -87,7 +90,8 @@ describe('common', () => {
 
             requireAdminReply(ctx, next);
 
-            expect(next).toHaveBeenCalledExactlyOnceWith();
+            expect(next).toHaveBeenCalledTimes(1);
+            expect(next).toHaveBeenCalledWith();
         });
 
         it('should not accept a DM from the user', () => {

@@ -1,26 +1,35 @@
+import { beforeEach, describe, expect, it, mock } from 'bun:test';
 import type { ForwardContext } from '@/types/app.js';
 import type { TelegramMessage } from '@/types/telegram.js';
-
 import { mapTelegramMessageToSavedMessage } from '@/utils/messageUtils.js';
 import { replyWithError, replyWithSuccess } from '@/utils/replyUtils.js';
 import { updateThreadByMessage } from '@/utils/threadUtils.js';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { onAdminReply } from './handleAdminReply.js';
 
-vi.mock('@/utils/messageUtils.js', () => ({
-    mapTelegramMessageToSavedMessage: vi.fn().mockReturnValue({ id: '123', type: 'admin' }),
+mock.module('@/utils/messageUtils.js', () => ({
+    mapTelegramMessageToSavedMessage: mock(() => ({ id: '123', type: 'admin' })),
 }));
 
-vi.mock('@/utils/replyUtils.js');
-vi.mock('@/utils/threadUtils.js');
+mock.module('@/utils/replyUtils.js', () => ({
+    replyWithError: mock(() => {}),
+    replyWithSuccess: mock(() => {}),
+    replyWithWarning: mock(() => {}),
+}));
+mock.module('@/utils/threadUtils.js', () => ({
+    createNewThread: mock(() => {}),
+    updateThreadByMessage: mock(() => {}),
+}));
 
 describe('handleAdminReply', () => {
     let sentMessage: TelegramMessage;
     let ctx: ForwardContext;
 
     beforeEach(() => {
-        vi.clearAllMocks();
+        mapTelegramMessageToSavedMessage.mockClear();
+        updateThreadByMessage.mockClear();
+        replyWithError.mockClear();
+        replyWithSuccess.mockClear();
 
         sentMessage = {
             message_id: 789,
@@ -34,7 +43,7 @@ describe('handleAdminReply', () => {
             },
             chat: { id: 2 },
             db: {
-                saveMessage: vi.fn().mockResolvedValue({}),
+                saveMessage: mock(() => Promise.resolve({})),
             },
             message: {
                 reply_to_message: 10,
@@ -46,26 +55,32 @@ describe('handleAdminReply', () => {
 
     describe('onAdminReply', () => {
         it('should successfully forward text message to user', async () => {
-            ctx.bot.api.sendMessage = vi.fn().mockResolvedValue(sentMessage);
+            ctx.bot.api.sendMessage = mock(() => Promise.resolve(sentMessage));
 
             await onAdminReply(ctx as unknown as ForwardContext);
 
-            expect(ctx.bot.api.sendMessage).toHaveBeenCalledExactlyOnceWith({
+            expect(ctx.bot.api.sendMessage).toHaveBeenCalledTimes(1);
+            expect(ctx.bot.api.sendMessage).toHaveBeenCalledWith({
                 chat_id: 1,
                 protect_content: true,
                 text: 'Hello user',
             });
 
-            expect(ctx.db.saveMessage).toHaveBeenCalledExactlyOnceWith({ id: '123', type: 'admin' });
-            expect(mapTelegramMessageToSavedMessage).toHaveBeenCalledExactlyOnceWith(sentMessage, 'admin');
-            expect(updateThreadByMessage).toHaveBeenCalledExactlyOnceWith(ctx, ctx.thread, sentMessage);
+            expect(ctx.db.saveMessage).toHaveBeenCalledTimes(1);
+            expect(ctx.db.saveMessage).toHaveBeenCalledWith({ id: '123', type: 'admin' });
+            expect(mapTelegramMessageToSavedMessage).toHaveBeenCalledTimes(1);
+            expect(mapTelegramMessageToSavedMessage).toHaveBeenCalledWith(sentMessage, 'admin');
+            expect(updateThreadByMessage).toHaveBeenCalledTimes(1);
+            expect(updateThreadByMessage).toHaveBeenCalledWith(ctx, ctx.thread, sentMessage);
             expect(replyWithSuccess).toHaveBeenCalledWith(ctx, 'Reply sent to user');
         });
 
         it('should successfully forward photo message to user', async () => {
-            ctx.bot.api.sendPhoto = vi.fn().mockResolvedValue({
-                message_id: 789,
-            });
+            ctx.bot.api.sendPhoto = mock(() =>
+                Promise.resolve({
+                    message_id: 789,
+                }),
+            );
             ctx.message = {
                 caption: 'Photo caption',
                 message_thread_id: 123,
@@ -91,9 +106,11 @@ describe('handleAdminReply', () => {
         });
 
         it('should successfully forward document message to user', async () => {
-            ctx.bot.api.sendDocument = vi.fn().mockResolvedValue({
-                message_id: 789,
-            });
+            ctx.bot.api.sendDocument = mock(() =>
+                Promise.resolve({
+                    message_id: 789,
+                }),
+            );
             ctx.message = {
                 caption: 'Document caption',
                 document: {
@@ -116,9 +133,11 @@ describe('handleAdminReply', () => {
         });
 
         it('should successfully forward voice note to user', async () => {
-            ctx.bot.api.sendVoice = vi.fn().mockResolvedValue({
-                message_id: 789,
-            });
+            ctx.bot.api.sendVoice = mock(() =>
+                Promise.resolve({
+                    message_id: 789,
+                }),
+            );
             ctx.message = {
                 caption: 'VN caption',
                 message_thread_id: 123,
@@ -143,9 +162,11 @@ describe('handleAdminReply', () => {
         });
 
         it('should successfully forward video to user', async () => {
-            ctx.bot.api.sendVideo = vi.fn().mockResolvedValue({
-                message_id: 789,
-            });
+            ctx.bot.api.sendVideo = mock(() =>
+                Promise.resolve({
+                    message_id: 789,
+                }),
+            );
             ctx.message = {
                 caption: 'Video caption',
                 message_thread_id: 123,
@@ -168,9 +189,9 @@ describe('handleAdminReply', () => {
 
         it('should return an error for unsupported message types', async () => {
             ctx.bot.api = {
-                sendDocument: vi.fn(),
-                sendMessage: vi.fn(),
-                sendPhoto: vi.fn(),
+                sendDocument: mock(() => {}),
+                sendMessage: mock(() => {}),
+                sendPhoto: mock(() => {}),
             } as any;
             ctx.message = {
                 // No text, photo or document - e.g. a location message
@@ -193,11 +214,11 @@ describe('handleAdminReply', () => {
         });
 
         it('should handle errors', async () => {
-            ctx.bot.api.sendMessage = vi.fn().mockRejectedValue(new Error('Could not send'));
+            ctx.bot.api.sendMessage = mock(() => Promise.reject(new Error('Could not send')));
 
             await onAdminReply(ctx as unknown as ForwardContext);
 
-            expect(replyWithError).toHaveBeenCalledOnce();
+            expect(replyWithError).toHaveBeenCalledTimes(1);
         });
     });
 });

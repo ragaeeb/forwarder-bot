@@ -1,4 +1,9 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, mock } from 'bun:test';
+import crypto from 'node:crypto';
+
+mock.module('@/utils/security.js', () => ({
+    hashToken: (token: string) => crypto.createHash('sha256').update(token).digest('hex'),
+}));
 
 import { hashToken } from './security.js';
 

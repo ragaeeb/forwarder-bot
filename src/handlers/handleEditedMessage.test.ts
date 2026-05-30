@@ -1,11 +1,10 @@
+import { beforeEach, describe, expect, it, type Mock, mock, spyOn } from 'bun:test';
 import type { ForwardContext } from '@/types/app.js';
-
-import { beforeEach, describe, expect, it, type Mock, vi } from 'vitest';
 
 import { onEditedMessage } from './handleEditedMessage.js';
 
-vi.mock('@/utils/messageUtils.js', () => ({
-    mapTelegramMessageToSavedMessage: vi.fn((message, type) => ({
+mock.module('@/utils/messageUtils.js', () => ({
+    mapTelegramMessageToSavedMessage: mock((message: any, type: string) => ({
         chatId: '123',
         from: {
             firstName: message.from?.first_name,
@@ -24,8 +23,6 @@ describe('onEditedMessage', () => {
     const now = new Date();
 
     beforeEach(() => {
-        vi.resetAllMocks();
-
         const user = {
             first_name: 'Test',
             id: 456,
@@ -34,8 +31,8 @@ describe('onEditedMessage', () => {
         mockCtx = {
             bot: {
                 api: {
-                    forwardMessage: vi.fn().mockResolvedValue({}),
-                    sendMessage: vi.fn().mockResolvedValue({}),
+                    forwardMessage: mock(() => Promise.resolve({})),
+                    sendMessage: mock(() => Promise.resolve({})),
                 },
             },
             chat: {
@@ -43,8 +40,8 @@ describe('onEditedMessage', () => {
                 type: 'private',
             },
             db: {
-                getThreadByUserId: vi.fn(),
-                saveMessage: vi.fn(),
+                getThreadByUserId: mock(() => {}),
+                saveMessage: mock(() => {}),
             },
             from: user,
             message: {
@@ -59,7 +56,7 @@ describe('onEditedMessage', () => {
             settings: { adminGroupId: '789' },
         } as unknown as ForwardContext;
 
-        vi.spyOn(Date, 'now').mockImplementation(() => now.getTime());
+        spyOn(Date, 'now').mockImplementation(() => now.getTime());
     });
 
     describe('onEditedMessage', () => {

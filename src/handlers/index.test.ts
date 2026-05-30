@@ -1,5 +1,5 @@
+import { describe, expect, it, mock } from 'bun:test';
 import type { Bot } from '@/bot.js';
-import type { DataService } from '@/services/types.js';
 
 import { onCustomize } from '@/commands/customize.js';
 import { onSetup } from '@/commands/setup.js';
@@ -10,26 +10,31 @@ import { requireManageTopicsPermission } from '@/middlewares/requireManageTopics
 import { requireReferencedThread, requireThreadForUser } from '@/middlewares/requireMessageThread.js';
 import { requireNewSetup } from '@/middlewares/requireNewSetup.js';
 import { requireToken } from '@/middlewares/requireToken.js';
-import { describe, expect, it, vi } from 'vitest';
+import type { DataService } from '@/services/types.js';
 
 import { onAdminReply } from './handleAdminReply.js';
 import { onDirectMessage } from './handleDirectMessage.js';
 import { onEditedMessage } from './handleEditedMessage.js';
 import { registerHandlers } from './index.js';
 
-vi.mock('@/commands/customize.js', () => ({
+mock.module('@/commands/customize.js', () => ({
     CUSTOMIZE_COMMANDS: ['ack', 'failure'],
-    onCustomize: vi.fn(),
+    onCustomize: mock(() => {}),
 }));
 
-vi.mock('@/middlewares/common.js');
+mock.module('@/middlewares/common.js', () => ({
+    injectDependencies: mock((db: any) => async () => {}),
+    requireAdminReply: mock(() => {}),
+    requirePrivateChat: mock(() => {}),
+    requireSetup: mock(() => {}),
+}));
 
 describe('registerHandlers', () => {
     it('should register only setup handler when bot is not configured', async () => {
         const bot = {
-            command: vi.fn(),
-            on: vi.fn(),
-            use: vi.fn(),
+            command: mock(() => {}),
+            on: mock(() => {}),
+            use: mock(() => {}),
         };
 
         const db = {};
@@ -37,7 +42,8 @@ describe('registerHandlers', () => {
         registerHandlers(bot as unknown as Bot, db as unknown as DataService);
 
         expect(bot.use).toHaveBeenCalledTimes(1);
-        expect(injectDependencies).toHaveBeenCalledExactlyOnceWith(db);
+        expect(injectDependencies).toHaveBeenCalledTimes(1);
+        expect(injectDependencies).toHaveBeenCalledWith(db);
 
         expect(bot.command).toHaveBeenCalledTimes(4);
         expect(bot.command).toHaveBeenNthCalledWith(

@@ -1,39 +1,42 @@
-import { ForwardContext } from '@/types/app.js';
+import { describe, expect, it, mock } from 'bun:test';
+import type { ForwardContext } from '@/types/app.js';
 import { mapTelegramMessageToSavedMessage } from '@/utils/messageUtils.js';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { onStart } from './start.js';
 
-vi.mock('@/utils/messageUtils.js', () => ({
-    mapTelegramMessageToSavedMessage: vi.fn().mockReturnValue({ id: '1' }),
+mock.module('@/utils/messageUtils.js', () => ({
+    mapTelegramMessageToSavedMessage: mock(() => ({ id: '1' })),
 }));
 
 describe('start', () => {
-    beforeEach(() => {
-        vi.clearAllMocks();
-    });
-
     describe('onStart', () => {
         it('should reply to the message', async () => {
-            const ctx = { db: { saveMessage: vi.fn() }, message: { id: 'm1' }, reply: vi.fn(), settings: {} };
+            const ctx = {
+                db: { saveMessage: mock(() => {}) },
+                message: { id: 'm1' },
+                reply: mock(() => {}),
+                settings: {},
+            };
 
             await onStart(ctx as unknown as ForwardContext);
 
-            expect(ctx.reply).toHaveBeenCalledOnce();
+            expect(ctx.reply).toHaveBeenCalledTimes(1);
             expect(ctx.reply).toHaveBeenCalledWith(
                 "👋 You can use this bot to communicate with our team. Simply send a message and it will be forwarded to us.\n\nWe'll reply to you through this same chat.",
             );
 
-            expect(ctx.db.saveMessage).toHaveBeenCalledExactlyOnceWith({ id: '1' });
-            expect(mapTelegramMessageToSavedMessage).toHaveBeenCalledExactlyOnceWith({ id: 'm1' }, 'user');
+            expect(ctx.db.saveMessage).toHaveBeenCalledTimes(1);
+            expect(ctx.db.saveMessage).toHaveBeenCalledWith({ id: '1' });
+            expect(mapTelegramMessageToSavedMessage).toHaveBeenCalledTimes(1);
+            expect(mapTelegramMessageToSavedMessage).toHaveBeenCalledWith({ id: 'm1' }, 'user');
         });
 
         it('should reply to the custom greeting', async () => {
-            const ctx = { db: { saveMessage: vi.fn() }, reply: vi.fn(), settings: { greeting: 'G' } };
+            const ctx = { db: { saveMessage: mock(() => {}) }, reply: mock(() => {}), settings: { greeting: 'G' } };
 
             await onStart(ctx as unknown as ForwardContext);
 
-            expect(ctx.reply).toHaveBeenCalledOnce();
+            expect(ctx.reply).toHaveBeenCalledTimes(1);
             expect(ctx.reply).toHaveBeenCalledWith('G');
         });
     });
